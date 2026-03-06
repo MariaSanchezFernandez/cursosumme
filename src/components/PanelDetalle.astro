@@ -1,0 +1,253 @@
+---
+---
+
+<div class="col-detalle" id="colDetalle">
+
+  <!-- Cabecera -->
+  <div class="detalle-top">
+    <button class="btn-volver" id="btnVolver">
+      <svg viewBox="0 0 16 16" fill="none">
+        <path d="M10 4l-4 4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Volver
+    </button>
+    <span class="detalle-titulo-curso" id="detalleTitulo"></span>
+  </div>
+
+  <!-- Cuerpo -->
+  <div class="detalle-cuerpo">
+
+    <!-- Lista de subtemas -->
+    <aside class="panel-subtemas">
+      <p class="subtemas-label">Contenido del curso</p>
+      <ol id="listaTemas"></ol>
+    </aside>
+
+    <!-- Video + tabs -->
+    <div class="panel-contenido">
+
+      <div class="tabs" role="tablist">
+        <button class="tab activo" data-tab="leccion" role="tab">
+          <svg viewBox="0 0 16 16" fill="none">
+            <rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M5 6h6M5 9h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+          Leccion
+        </button>
+        <button class="tab" data-tab="materiales" role="tab">
+          <svg viewBox="0 0 16 16" fill="none">
+            <path d="M4 2h6l4 4v8a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M10 2v4h4" stroke="currentColor" stroke-width="1.4"/>
+          </svg>
+          Materiales
+        </button>
+      </div>
+
+      <!-- Panel Leccion -->
+      <div class="tab-panel activo" id="tab-leccion">
+        <div class="video-box">
+          <div class="video-inner">
+            <svg viewBox="0 0 64 64" fill="none">
+              <circle cx="32" cy="32" r="20" fill="rgba(255,255,255,0.15)"/>
+              <polygon points="27,22 27,42 46,32" fill="white"/>
+            </svg>
+            <span class="video-titulo-overlay" id="videoTitulo">Selecciona un tema</span>
+          </div>
+        </div>
+        <div class="leccion-texto">
+          <h3 class="leccion-titulo" id="leccionTitulo">Selecciona un tema para comenzar</h3>
+          <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+          <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+        </div>
+      </div>
+
+      <!-- Panel Materiales -->
+      <div class="tab-panel" id="tab-materiales">
+        <div class="materiales-lista">
+          <div class="material-item">
+            <svg viewBox="0 0 20 20" fill="none"><path d="M5 3h8l4 4v10a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1z" stroke="#aaa" stroke-width="1.4"/></svg>
+            <div>
+              <p class="material-nombre">Lorem ipsum documento.pdf</p>
+              <p class="material-meta">PDF · 2.4 MB</p>
+            </div>
+          </div>
+          <div class="material-item">
+            <svg viewBox="0 0 20 20" fill="none"><path d="M5 3h8l4 4v10a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1z" stroke="#aaa" stroke-width="1.4"/></svg>
+            <div>
+              <p class="material-nombre">Consectetur ejercicios.pdf</p>
+              <p class="material-meta">PDF · 1.1 MB</p>
+            </div>
+          </div>
+          <div class="material-item">
+            <svg viewBox="0 0 20 20" fill="none"><path d="M5 3h8l4 4v10a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1z" stroke="#aaa" stroke-width="1.4"/></svg>
+            <div>
+              <p class="material-nombre">Adipiscing recursos.zip</p>
+              <p class="material-meta">ZIP · 5.8 MB</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<style>
+  .col-detalle {
+    flex: 0 0 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: flex 0.35s ease, opacity 0.3s ease;
+    display: flex;
+    flex-direction: column;
+  }
+
+  :global(.vista.con-detalle) .col-detalle {
+    flex: 1;
+    opacity: 1;
+    overflow: hidden;
+  }
+
+  /* Cabecera */
+  .detalle-top {
+    display: flex; align-items: center; gap: 1rem;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e8eeec;
+    background: #fff; flex-shrink: 0;
+  }
+
+  .btn-volver {
+    display: flex; align-items: center; gap: 0.3rem;
+    padding: 0.3rem 0.7rem; border: 1px solid #e8eeec;
+    border-radius: 6px; background: #fff;
+    font-family: inherit; font-size: 0.78rem;
+    color: var(--color-text-muted); cursor: pointer;
+    white-space: nowrap; transition: background 0.12s, border-color 0.12s;
+    flex-shrink: 0;
+  }
+  .btn-volver:hover { background: var(--color-light); border-color: var(--color-primary); }
+  .btn-volver svg { width: 14px; height: 14px; }
+
+  .detalle-titulo-curso {
+    font-size: 0.88rem; font-weight: 600;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  /* Cuerpo */
+  .detalle-cuerpo { display: flex; flex: 1; overflow: hidden; }
+
+  /* Panel subtemas */
+  .panel-subtemas {
+    flex: 0 0 260px;
+    border-right: 1px solid #e8eeec;
+    overflow-y: auto;
+    padding: 1.25rem 0 1rem;
+    background: #fff;
+  }
+
+  .subtemas-label {
+    font-size: 0.67rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: #bbb; padding: 0 1.25rem 0.75rem;
+  }
+
+  /* Estilos de los items generados por JS — necesitan :global */
+  :global(#listaTemas) { list-style: none; padding: 0; margin: 0; }
+  :global(.tema-item) { padding: 0 0.75rem; }
+
+  :global(.tema-btn) {
+    width: 100%; display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.75rem 0.75rem;
+    background: none; border: none; border-radius: 8px;
+    cursor: pointer; font-family: inherit; text-align: left;
+    transition: background 0.15s;
+    border-left: 3px solid transparent;
+  }
+  :global(.tema-btn:hover) { background: #f4faf8; }
+  :global(.tema-btn.activo) {
+    background: var(--color-light);
+    border-left-color: var(--color-primary);
+  }
+
+  :global(.tema-icono) {
+    flex-shrink: 0; width: 28px; height: 28px;
+    border-radius: 50%; background: #f0f5f3;
+    display: flex; align-items: center; justify-content: center;
+    color: #aaa; transition: background 0.15s, color 0.15s;
+  }
+  :global(.tema-btn.activo .tema-icono) { background: var(--color-primary); color: var(--color-text); }
+
+  :global(.tema-info) {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column; gap: 0.15rem;
+  }
+  :global(.tema-texto) {
+    font-size: 0.8rem; font-weight: 500;
+    color: var(--color-text); line-height: 1.35;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  :global(.tema-dur) { font-size: 0.7rem; color: #bbb; }
+
+  /* Panel contenido */
+  .panel-contenido {
+    flex: 1; overflow-y: auto;
+    display: flex; flex-direction: column;
+    padding: 1.5rem; gap: 1rem;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex; gap: 0.25rem;
+    border-bottom: 1px solid #e8eeec;
+    flex-shrink: 0;
+  }
+
+  .tab {
+    display: flex; align-items: center; gap: 0.4rem;
+    padding: 0.5rem 1rem; border: none; border-bottom: 2px solid transparent;
+    background: none; font-family: inherit; font-size: 0.82rem;
+    color: var(--color-text-muted); cursor: pointer;
+    margin-bottom: -1px; transition: color 0.12s, border-color 0.12s;
+  }
+  .tab svg { width: 14px; height: 14px; }
+  .tab:hover { color: var(--color-text); }
+  .tab.activo { color: var(--color-text); font-weight: 600; border-bottom-color: var(--color-text); }
+
+  /* Tab panels */
+  .tab-panel { display: none; }
+  .tab-panel.activo { display: flex; flex-direction: column; gap: 1.25rem; }
+
+  /* Video */
+  .video-box {
+    width: 100%; aspect-ratio: 16/9;
+    background: #1a1a2e; border-radius: 10px; overflow: hidden; flex-shrink: 0;
+  }
+  .video-inner {
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 0.75rem;
+  }
+  .video-inner svg { width: 64px; height: 64px; opacity: 0.7; }
+  .video-titulo-overlay {
+    font-size: 0.85rem; color: rgba(255,255,255,0.5);
+    text-align: center; padding: 0 1rem; max-width: 320px;
+  }
+
+  /* Texto lección */
+  .leccion-titulo { font-size: 1rem; font-weight: 700; }
+  .leccion-texto p { font-size: 0.85rem; color: var(--color-text-muted); line-height: 1.7; }
+
+  /* Materiales */
+  .materiales-lista { display: flex; flex-direction: column; gap: 0.5rem; }
+  .material-item {
+    display: flex; align-items: center; gap: 0.9rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid #e8eeec; border-radius: 8px;
+    background: #fff; cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .material-item:hover { background: #f7faf9; border-color: var(--color-primary); }
+  .material-item svg { width: 28px; height: 28px; flex-shrink: 0; }
+  .material-nombre { font-size: 0.83rem; font-weight: 600; margin-bottom: 0.1rem; }
+  .material-meta { font-size: 0.72rem; color: #bbb; }
+</style>

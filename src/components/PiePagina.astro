@@ -1,0 +1,19 @@
+---
+const anio = new Date().getFullYear();
+---
+
+<footer class="footer">
+  <span class="footer-logo">Cursos <strong>Umme</strong></span>
+  <span class="footer-copy">&copy; {anio} Cursos Umme. Todos los derechos reservados.</span>
+</footer>
+
+<style>
+  .footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.25rem 2.5rem;
+    border-top: 1px solid #e8eeec; background: #fff;
+  }
+  .footer-logo { font-size: 0.85rem; color: var(--color-text-muted); }
+  .footer-logo strong { font-weight: 800; color: var(--color-text); }
+  .footer-copy { font-size: 0.75rem; color: #bbb; }
+</style>

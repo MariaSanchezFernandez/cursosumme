@@ -1,0 +1,253 @@
+---
+import Plantilla from '../layouts/Plantilla.astro';
+import CabeceraApp from '../components/CabeceraApp.astro';
+import PiePagina from '../components/PiePagina.astro';
+import TarjetaCurso from '../components/TarjetaCurso.astro';
+import PanelDetalle from '../components/PanelDetalle.astro';
+---
+
+<Plantilla>
+  <CabeceraApp />
+
+  <main class="main">
+    <div class="vista" id="vista">
+
+      <!-- Columna izquierda: lista de cursos -->
+      <div class="col-lista">
+        <div class="seccion-header">
+          <div>
+            <h1>Todos los cursos</h1>
+            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+          </div>
+          <div class="filtros">
+            <button class="filtro activo">Todos</button>
+            <button class="filtro">Categoria A</button>
+            <button class="filtro">Categoria B</button>
+            <button class="filtro">Categoria C</button>
+          </div>
+        </div>
+
+        <section class="lista">
+          <TarjetaCurso
+            titulo="Lorem ipsum dolor sit amet consectetur"
+            etiqueta="Categoria A"
+            subtemas={4}
+            duracion="4 h 30 min"
+            nivel="Nivel basico"
+            acento="c1"
+            temas={[
+              { titulo: "Lorem ipsum dolor sit amet", duracion: "45 min" },
+              { titulo: "Consectetur adipiscing elit sed", duracion: "30 min" },
+              { titulo: "Ut enim ad minim veniam quis", duracion: "1 h 10 min" },
+              { titulo: "Duis aute irure dolor reprehenderit", duracion: "55 min" }
+            ]}
+          />
+          <TarjetaCurso
+            titulo="Consectetur adipiscing elit sed do eiusmod"
+            etiqueta="Categoria B"
+            subtemas={3}
+            duracion="2 h 15 min"
+            nivel="Nivel intermedio"
+            acento="c2"
+            temas={[
+              { titulo: "Excepteur sint occaecat cupidatat", duracion: "40 min" },
+              { titulo: "Non proident sunt in culpa officia", duracion: "50 min" },
+              { titulo: "Deserunt mollit anim id est laborum", duracion: "45 min" }
+            ]}
+          />
+          <TarjetaCurso
+            titulo="Sed do eiusmod tempor incididunt ut labore"
+            etiqueta="Categoria A"
+            subtemas={6}
+            duracion="8 h 00 min"
+            nivel="Nivel avanzado"
+            acento="c3"
+            temas={[
+              { titulo: "Lorem ipsum dolor sit amet", duracion: "1 h 20 min" },
+              { titulo: "Consectetur adipiscing elit do", duracion: "1 h 00 min" },
+              { titulo: "Sed eiusmod tempor incididunt", duracion: "1 h 30 min" },
+              { titulo: "Ut labore et dolore magna aliqua", duracion: "1 h 10 min" },
+              { titulo: "Quis nostrud exercitation ullamco", duracion: "1 h 00 min" },
+              { titulo: "Laboris nisi ut aliquip commodo", duracion: "1 h 00 min" }
+            ]}
+          />
+          <TarjetaCurso
+            titulo="Incididunt ut labore et dolore magna aliqua"
+            etiqueta="Categoria C"
+            subtemas={2}
+            duracion="1 h 45 min"
+            nivel="Nivel basico"
+            acento="c4"
+            temas={[
+              { titulo: "Duis aute irure dolor reprehenderit", duracion: "50 min" },
+              { titulo: "Voluptate velit esse cillum dolore", duracion: "55 min" }
+            ]}
+          />
+          <TarjetaCurso
+            titulo="Quis nostrud exercitation ullamco laboris"
+            etiqueta="Categoria B"
+            subtemas={5}
+            duracion="5 h 20 min"
+            nivel="Nivel intermedio"
+            acento="c1"
+            temas={[
+              { titulo: "Lorem ipsum dolor sit amet", duracion: "1 h 00 min" },
+              { titulo: "Ut enim ad minim veniam quis", duracion: "1 h 00 min" },
+              { titulo: "Nostrud exercitation ullamco laboris", duracion: "1 h 10 min" },
+              { titulo: "Nisi ut aliquip ex ea commodo", duracion: "1 h 00 min" },
+              { titulo: "Consequat duis aute irure dolor", duracion: "1 h 10 min" }
+            ]}
+          />
+          <TarjetaCurso
+            titulo="Dolore magna aliqua ut enim ad minim"
+            etiqueta="Categoria C"
+            subtemas={3}
+            duracion="3 h 10 min"
+            nivel="Nivel avanzado"
+            acento="c2"
+            temas={[
+              { titulo: "Excepteur sint occaecat cupidatat", duracion: "1 h 00 min" },
+              { titulo: "Non proident sunt in culpa qui", duracion: "1 h 05 min" },
+              { titulo: "Officia deserunt mollit anim laborum", duracion: "1 h 05 min" }
+            ]}
+          />
+        </section>
+      </div>
+
+      <!-- Columna derecha: panel de detalle -->
+      <PanelDetalle />
+
+    </div>
+  </main>
+
+  <PiePagina />
+</Plantilla>
+
+<script>
+  const vista      = document.getElementById('vista')!;
+  const detalleTit = document.getElementById('detalleTitulo')!;
+  const listaTemas = document.getElementById('listaTemas')!;
+  const btnVolver  = document.getElementById('btnVolver')!;
+  const leccionTit = document.getElementById('leccionTitulo')!;
+  const videoTit   = document.getElementById('videoTitulo')!;
+
+  // Abrir panel al pulsar un curso
+  document.querySelectorAll<HTMLElement>('.curso').forEach((curso) => {
+    curso.querySelector('.curso-fila')!.addEventListener('click', () => {
+      const titulo = curso.dataset.titulo ?? '';
+      const temas: { titulo: string; duracion: string }[] = JSON.parse(curso.dataset.temas ?? '[]');
+
+      detalleTit.textContent = titulo;
+
+      listaTemas.innerHTML = temas.map((t) => `
+        <li class="tema-item" data-titulo="${t.titulo}">
+          <button class="tema-btn">
+            <span class="tema-icono">
+              <svg viewBox="0 0 16 16" fill="none" width="14" height="14" style="display:block">
+                <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3"/>
+                <polygon points="6.5,5 11.5,8 6.5,11" fill="currentColor"/>
+              </svg>
+            </span>
+            <span class="tema-info">
+              <span class="tema-texto">${t.titulo}</span>
+              <span class="tema-dur">${t.duracion}</span>
+            </span>
+          </button>
+        </li>
+      `).join('');
+
+      const primero = listaTemas.querySelector<HTMLButtonElement>('.tema-btn');
+      if (primero) seleccionarTema(primero);
+
+      document.querySelectorAll('.curso').forEach(c => c.classList.remove('activo'));
+      curso.classList.add('activo');
+      vista.classList.add('con-detalle');
+
+      listaTemas.querySelectorAll<HTMLButtonElement>('.tema-btn').forEach((btn) => {
+        btn.addEventListener('click', () => seleccionarTema(btn));
+      });
+    });
+  });
+
+  function seleccionarTema(btn: HTMLButtonElement) {
+    listaTemas.querySelectorAll('.tema-btn').forEach(b => b.classList.remove('activo'));
+    btn.classList.add('activo');
+    const titulo = btn.closest<HTMLElement>('.tema-item')?.dataset.titulo ?? '';
+    leccionTit.textContent = titulo;
+    videoTit.textContent = titulo;
+  }
+
+  // Cerrar panel
+  btnVolver.addEventListener('click', () => {
+    vista.classList.remove('con-detalle');
+    document.querySelectorAll('.curso').forEach(c => c.classList.remove('activo'));
+  });
+
+  // Tabs
+  document.querySelectorAll<HTMLButtonElement>('.tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('activo'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('activo'));
+      tab.classList.add('activo');
+      document.getElementById(`tab-${tab.dataset.tab}`)!.classList.add('activo');
+    });
+  });
+</script>
+
+<style>
+  .main {
+    min-height: calc(100vh - 56px - 56px);
+    overflow: hidden;
+  }
+
+  .vista {
+    display: flex;
+    height: 100%;
+  }
+
+  /* Columna lista */
+  .col-lista {
+    flex: 1;
+    min-width: 0;
+    padding: 3rem 2rem 4rem;
+    max-width: 860px;
+    margin: 0 auto;
+    transition: flex 0.35s ease, max-width 0.35s ease, padding 0.35s ease;
+  }
+
+  .vista.con-detalle .col-lista {
+    flex: 0 0 340px;
+    max-width: 340px;
+    padding: 1.5rem 1rem;
+    margin: 0;
+    border-right: 1px solid #e8eeec;
+    overflow-y: auto;
+  }
+
+  /* Encabezado */
+  .seccion-header {
+    display: flex; align-items: flex-start;
+    justify-content: space-between; gap: 1.5rem;
+    margin-bottom: 2rem; flex-wrap: wrap;
+  }
+  .seccion-header h1 { font-size: 1.6rem; font-weight: 800; margin-bottom: 0.25rem; }
+  .seccion-header > div > p { font-size: 0.875rem; color: var(--color-text-muted); }
+
+  .vista.con-detalle .seccion-header h1 { font-size: 1rem; }
+  .vista.con-detalle .seccion-header > div > p { display: none; }
+  .vista.con-detalle .filtros { display: none; }
+
+  /* Filtros */
+  .filtros { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
+  .filtro {
+    padding: 0.35rem 0.9rem; border: 1px solid #dde8e4; border-radius: 20px;
+    background: #fff; font-family: inherit; font-size: 0.78rem;
+    color: var(--color-text-muted); cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .filtro:hover { background: var(--color-light); border-color: var(--color-primary); }
+  .filtro.activo { background: var(--color-primary); border-color: var(--color-primary); color: var(--color-text); font-weight: 600; }
+
+  /* Lista */
+  .lista { display: flex; flex-direction: column; gap: 0.4rem; }
+</style>
