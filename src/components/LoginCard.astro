@@ -1,0 +1,74 @@
+---
+/**
+ * COMPONENTE: LoginCard
+ * ---------------------
+ * Tarjeta de login completa. Agrupa cabecera y formulario.
+ * Usa FormField y Button para mantener consistencia visual.
+ *
+ * ESTADO ACTUAL: Solo visual. Sin lógica ni autenticación.
+ * PENDIENTE:     Conectar formulario con sistema de autenticación
+ *                cuando esté definida la arquitectura de backend.
+ */
+import FormField from './FormField.astro';
+import Button from './Button.astro';
+---
+
+<!-- Tarjeta de login centrada -->
+<div class="login-card">
+
+  <!-- CABECERA: título y subtítulo de bienvenida -->
+  <div class="login-header">
+    <h1>Bienvenida</h1>
+    <p>Accede a tu área privada</p>
+  </div>
+
+  <!-- FORMULARIO
+       PENDIENTE: añadir action, method y lógica de autenticación -->
+  <form class="login-form">
+    <FormField
+      label="Email"
+      type="email"
+      id="email"
+      name="email"
+      placeholder="tucorreo@ejemplo.com"
+    />
+    <FormField
+      label="Contraseña"
+      type="password"
+      id="password"
+      name="password"
+      placeholder="••••••••"
+    />
+    <Button text="Entrar" type="submit" />
+  </form>
+
+</div>
+
+<style>
+  /* Tarjeta blanca centrada */
+  .login-card {
+    background-color: #fff;
+    border-radius: 16px;
+    padding: 2.5rem 2rem;
+    width: 100%;
+    max-width: 400px;
+  }
+
+  /* Cabecera */
+  .login-header {
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+
+  .login-header h1 {
+    font-weight: 600;
+    font-size: 1.75rem;
+    color: var(--color-text);
+  }
+
+  .login-header p {
+    font-weight: 200;
+    color: var(--color-text-muted);
+    margin-top: 0.25rem;
+  }
+</style>

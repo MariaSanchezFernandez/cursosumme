@@ -1,0 +1,56 @@
+---
+/**
+ * COMPONENTE: FormField
+ * ---------------------
+ * Campo de formulario reutilizable: label + input.
+ *
+ * Props:
+ *   - label       {string}  Texto visible de la etiqueta
+ *   - type        {string}  Tipo del input (text, email, password...)
+ *   - id          {string}  Id del input (vincula label y input)
+ *   - name        {string}  Nombre del campo para el formulario
+ *   - placeholder {string}  Texto de ayuda dentro del input
+ */
+const { label, type, id, name, placeholder } = Astro.props;
+---
+
+<!-- Grupo label + input -->
+<div class="field">
+  <label for={id}>{label}</label>
+  <input
+    type={type}
+    id={id}
+    name={name}
+    placeholder={placeholder}
+  />
+</div>
+
+<style>
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .field label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--color-text);
+  }
+
+  .field input {
+    padding: 0.75rem 1rem;
+    border: 1.5px solid var(--color-primary);
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    color: var(--color-text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .field input:focus {
+    border-color: var(--color-accent);
+  }
+</style>

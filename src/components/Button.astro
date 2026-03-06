@@ -1,0 +1,39 @@
+---
+/**
+ * COMPONENTE: Button
+ * ------------------
+ * Botón principal reutilizable con el coral de marca.
+ *
+ * Props:
+ *   - text  {string}  Texto que muestra el botón
+ *   - type  {string}  Tipo del botón (submit, button, reset). Por defecto: button
+ */
+const { text, type = 'button' } = Astro.props;
+---
+
+<!-- Botón reutilizable
+     PENDIENTE: añadir soporte para variantes de color cuando sea necesario -->
+<button type={type} class="btn">
+  {text}
+</button>
+
+<style>
+  .btn {
+    width: 100%;
+    padding: 0.85rem;
+    background-color: var(--color-coral);
+    border: none;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 800;
+    font-size: 1rem;
+    color: var(--color-text);
+    cursor: pointer;
+    margin-top: 0.5rem;
+    transition: opacity 0.2s;
+  }
+
+  .btn:hover {
+    opacity: 0.85;
+  }
+</style>
