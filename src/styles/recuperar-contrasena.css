@@ -1,0 +1,47 @@
+.pagina {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tarjeta {
+  background-color: #fff;
+  border-radius: 16px;
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 400px;
+}
+
+.cabecera {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.cabecera h1 {
+  font-weight: 600;
+  font-size: 1.75rem;
+  color: var(--color-text);
+}
+
+.cabecera p {
+  font-weight: 200;
+  color: var(--color-text-muted);
+  margin-top: 0.25rem;
+}
+
+.volver {
+  display: block;
+  margin-top: 1rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+.volver:hover {
+  color: var(--color-text);
+}

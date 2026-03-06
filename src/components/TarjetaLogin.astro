@@ -11,6 +11,7 @@
  */
 import CampoFormulario from './CampoFormulario.astro';
 import Boton from './Boton.astro';
+import '../styles/TarjetaLogin.css';
 ---
 
 <div class="login-card">
@@ -47,47 +48,3 @@ import Boton from './Boton.astro';
 
 </div>
 
-<style>
-  .login-card {
-    background-color: #fff;
-    border-radius: 20px;
-    overflow: hidden;
-    padding: 2.5rem 2.5rem 2rem;
-    width: 100%;
-    max-width: 420px;
-  }
-
-  .login-header {
-    margin-bottom: 2rem;
-    text-align: center;
-  }
-
-  .login-header h1 {
-    font-weight: 600;
-    font-size: 1.9rem;
-    color: var(--color-text);
-    margin: 0;
-  }
-
-  .login-header p {
-    font-weight: 200;
-    color: var(--color-text-muted);
-    margin-top: 0.35rem;
-    font-size: 0.95rem;
-  }
-
-  /* Enlace a recuperación de contraseña */
-  .forgot-link {
-    display: block;
-    margin-top: 1rem;
-    text-align: center;
-    font-size: 0.85rem;
-    color: var(--color-text-muted);
-    text-decoration: underline;
-    transition: color 0.2s;
-  }
-
-  .forgot-link:hover {
-    color: var(--color-text);
-  }
-</style>

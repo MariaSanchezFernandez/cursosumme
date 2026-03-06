@@ -1,0 +1,94 @@
+.main {
+  min-height: calc(100vh - 56px - 56px);
+  overflow: hidden;
+}
+
+/* ── Layout de dos columnas ── */
+.vista {
+  display: flex;
+  height: 100%;
+}
+
+/* Columna lista */
+.col-lista {
+  flex: 1;
+  min-width: 0;
+  padding: 3rem 2rem 4rem;
+  max-width: 860px;
+  margin: 0 auto;
+  transition: flex 0.35s ease, max-width 0.35s ease, padding 0.35s ease;
+}
+
+.vista.con-detalle .col-lista {
+  flex: 0 0 340px;
+  max-width: 340px;
+  padding: 1.5rem 1rem;
+  margin: 0;
+  border-right: 1px solid #e8eeec;
+  overflow-y: auto;
+}
+
+/* ── Encabezado de sección ── */
+.seccion-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.seccion-header h1 {
+  font-size: 1.6rem;
+  font-weight: 800;
+  margin-bottom: 0.25rem;
+  transition: font-size 0.3s;
+}
+
+.seccion-header > div > p {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.vista.con-detalle .seccion-header h1 { font-size: 1rem; }
+.vista.con-detalle .seccion-header > div > p { display: none; }
+.vista.con-detalle .filtros { display: none; }
+
+/* ── Filtros ── */
+.filtros {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.filtro {
+  padding: 0.35rem 0.9rem;
+  border: 1px solid #dde8e4;
+  border-radius: 20px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.filtro:hover {
+  background: var(--color-light);
+  border-color: var(--color-primary);
+}
+
+.filtro.activo {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+/* ── Lista de cursos ── */
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}

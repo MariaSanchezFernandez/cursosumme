@@ -8,26 +8,12 @@
 import Plantilla from '../layouts/Plantilla.astro';
 import TarjetaLogin from '../components/TarjetaLogin.astro';
 import FondoLogin from '../components/FondoLogin.astro';
+import '../styles/index.css';
 ---
 
 <Plantilla>
-  <!-- Fondo animado (nubes + globo). Queda por debajo de la tarjeta -->
   <FondoLogin />
-
-  <!-- Tarjeta de login centrada. z-index 1 para quedar sobre el fondo -->
   <main class="login-page">
     <TarjetaLogin />
   </main>
 </Plantilla>
-
-<style>
-  /* Centra la tarjeta. Sin background: lo pone el body en global.css */
-  .login-page {
-    position: relative;
-    z-index: 1;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-</style>

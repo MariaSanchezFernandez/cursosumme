@@ -1,0 +1,117 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2.5rem;
+  height: 56px;
+  background: #fff;
+  border-bottom: 1px solid #e8eeec;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.logo {
+  display: flex;
+  align-items: baseline;
+  gap: 0.2rem;
+}
+
+.logo-marca {
+  font-size: 0.9rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.logo-umme {
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--color-text);
+}
+
+/* ── Avatar ── */
+.usuario {
+  position: relative;
+}
+
+.avatar-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem 0.35rem 0.4rem;
+  border: 1px solid #e8eeec;
+  border-radius: 20px;
+  background: #fff;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.avatar-btn:hover {
+  border-color: var(--color-primary);
+  background: #f7faf9;
+}
+
+.avatar-circulo {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.avatar-circulo svg {
+  width: 16px;
+  height: 16px;
+}
+
+.avatar-nombre {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.avatar-chevron {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* ── Submenu ── */
+.submenu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  min-width: 170px;
+  background: #fff;
+  border: 1px solid #e8eeec;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
+  list-style: none;
+  padding: 0.35rem 0;
+  z-index: 200;
+}
+
+.submenu.open {
+  display: block;
+}
+
+.submenu li a {
+  display: block;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.85rem;
+  color: var(--color-text);
+  text-decoration: none;
+  transition: background 0.12s;
+}
+
+.submenu li a:hover {
+  background: var(--color-light);
+}
