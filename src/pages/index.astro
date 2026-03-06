@@ -5,20 +5,20 @@
  * Primera página que ve el usuario. Muestra la pantalla de acceso.
  * Delega la estructura visual a LoginCard y el fondo a LoginBackground.
  */
-import Layout from '../layouts/Layout.astro';
-import LoginCard from '../components/LoginCard.astro';
-import LoginBackground from '../components/LoginBackground.astro';
+import Plantilla from '../layouts/Plantilla.astro';
+import TarjetaLogin from '../components/TarjetaLogin.astro';
+import FondoLogin from '../components/FondoLogin.astro';
 ---
 
-<Layout>
+<Plantilla>
   <!-- Fondo animado (nubes + globo). Queda por debajo de la tarjeta -->
-  <LoginBackground />
+  <FondoLogin />
 
   <!-- Tarjeta de login centrada. z-index 1 para quedar sobre el fondo -->
   <main class="login-page">
-    <LoginCard />
+    <TarjetaLogin />
   </main>
-</Layout>
+</Plantilla>
 
 <style>
   /* Centra la tarjeta. Sin background: lo pone el body en global.css */

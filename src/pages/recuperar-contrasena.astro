@@ -1,0 +1,108 @@
+---
+/**
+ * PÁGINA: Recuperar contraseña
+ * ----------------------------
+ * Formulario para que el usuario introduzca y repita su nueva contraseña.
+ *
+ * ESTADO ACTUAL: Solo visual. Sin lógica ni validación.
+ * PENDIENTE:     Conectar con sistema de autenticación y recuperación
+ *                cuando esté definida la arquitectura de backend.
+ */
+import Plantilla from '../layouts/Plantilla.astro';
+import FondoLogin from '../components/FondoLogin.astro';
+import CampoFormulario from '../components/CampoFormulario.astro';
+import Boton from '../components/Boton.astro';
+---
+
+<Plantilla>
+  <!-- Mismo fondo animado que el login -->
+  <FondoLogin />
+
+  <main class="pagina">
+    <div class="tarjeta">
+
+      <!-- CABECERA -->
+      <div class="cabecera">
+        <h1>Nueva contraseña</h1>
+        <p>Introduce tu nueva contraseña</p>
+      </div>
+
+      <!-- FORMULARIO
+           PENDIENTE: añadir action, method y lógica de recuperación -->
+      <form>
+        <!-- CAMPO: Nueva contraseña -->
+        <CampoFormulario
+          label="Nueva contraseña"
+          type="password"
+          id="nueva-contrasena"
+          name="nueva-contrasena"
+          placeholder="••••••••"
+        />
+        <!-- CAMPO: Repite contraseña -->
+        <CampoFormulario
+          label="Repite la contraseña"
+          type="password"
+          id="repetir-contrasena"
+          name="repetir-contrasena"
+          placeholder="••••••••"
+        />
+        <Boton text="Guardar contraseña" type="submit" />
+      </form>
+
+      <!-- Enlace para volver al login -->
+      <a href="/" class="volver">← Volver al inicio de sesión</a>
+
+    </div>
+  </main>
+</Plantilla>
+
+<style>
+  .pagina {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .tarjeta {
+    background-color: #fff;
+    border-radius: 16px;
+    padding: 2.5rem 2rem;
+    width: 100%;
+    max-width: 400px;
+  }
+
+  .cabecera {
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+
+  .cabecera h1 {
+    font-weight: 600;
+    font-size: 1.75rem;
+    color: var(--color-text);
+  }
+
+  .cabecera p {
+    font-weight: 200;
+    color: var(--color-text-muted);
+    margin-top: 0.25rem;
+  }
+
+  /* Enlace de vuelta al login */
+  .volver {
+    display: block;
+    margin-top: 1rem;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    text-decoration: underline;
+    transition: color 0.2s;
+  }
+
+  .volver:hover {
+    color: var(--color-text);
+  }
+</style>

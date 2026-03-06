@@ -1,0 +1,32 @@
+---
+import '../styles/global.css';
+---
+
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <title>Cursos Umme</title>
+  </head>
+  <body>
+    <slot />
+    <!-- Firma de marca: aparece en todas las páginas, esquina inferior izquierda -->
+    <span class="firma">cursos umme</span>
+  </body>
+</html>
+
+<style>
+  /* Texto fijo en esquina inferior izquierda */
+  .firma {
+    position: fixed;
+    bottom: 1rem;
+    left: 1.25rem;
+    font-size: 0.7rem;
+    font-weight: 200;
+    color: var(--color-text-muted);
+    letter-spacing: 0.08em;
+    z-index: 10;
+    pointer-events: none;
+  }
+</style>
