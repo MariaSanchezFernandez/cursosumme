@@ -1,0 +1,84 @@
+---
+import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
+import { getAlumnos } from '../../data/usuarios';
+import { cursos } from '../../data/cursos';
+
+const alumnos = getAlumnos();
+const totalAlumnos = alumnos.length;
+const totalCursos = cursos.length;
+const alumnosConCursos = alumnos.filter(a => a.modulosAsignados.length > 0).length;
+
+// Últimos 4 alumnos por fecha de alta
+const ultimosAlumnos = [...alumnos]
+  .sort((a, b) => b.fechaAlta.localeCompare(a.fechaAlta))
+  .slice(0, 4);
+
+// Mapa id → título de curso
+const cursoMap = Object.fromEntries(cursos.map(c => [c.id, c.titulo]));
+---
+
+<PlantillaAdmin titulo="Dashboard" paginaActual="dashboard">
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <p class="stat-card-label">Alumnos</p>
+      <p class="stat-card-valor">{totalAlumnos}</p>
+      <p class="stat-card-sub">registrados</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-card-label">Cursos</p>
+      <p class="stat-card-valor">{totalCursos}</p>
+      <p class="stat-card-sub">disponibles</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-card-label">Con módulos</p>
+      <p class="stat-card-valor">{alumnosConCursos}</p>
+      <p class="stat-card-sub">de {totalAlumnos} alumnos</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-card-label">Sin módulos</p>
+      <p class="stat-card-valor">{totalAlumnos - alumnosConCursos}</p>
+      <p class="stat-card-sub">pendientes de asignar</p>
+    </div>
+  </div>
+
+  <!-- Últimas altas -->
+  <div class="tabla-wrap">
+    <div class="tabla-header">
+      <span class="tabla-titulo">Últimas altas</span>
+      <a href="/admin/alumnos" class="btn-admin">
+        Ver todos
+        <svg viewBox="0 0 16 16" fill="none">
+          <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Email</th>
+          <th>Módulos asignados</th>
+          <th>Alta</th>
+        </tr>
+      </thead>
+      <tbody>
+        {ultimosAlumnos.map(alumno => (
+          <tr>
+            <td class="td-nombre">{alumno.nombre} {alumno.apellidos}</td>
+            <td class="td-email">{alumno.email}</td>
+            <td>
+              {alumno.modulosAsignados.length === 0
+                ? <span class="badge-modulos vacio">—</span>
+                : <span class="badge-modulos">{alumno.modulosAsignados.length}</span>
+              }
+            </td>
+            <td>{alumno.fechaAlta}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+</PlantillaAdmin>

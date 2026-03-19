@@ -1,0 +1,58 @@
+---
+import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
+import { getAlumnos } from '../../../data/usuarios';
+import { cursos } from '../../../data/cursos';
+
+const alumnos = getAlumnos();
+const cursoMap = Object.fromEntries(cursos.map(c => [c.id, c.titulo]));
+---
+
+<PlantillaAdmin titulo="Alumnos" paginaActual="alumnos">
+
+  <div class="tabla-wrap">
+    <div class="tabla-header">
+      <span class="tabla-titulo">Todos los alumnos</span>
+      <a href="/admin/alumnos/nuevo" class="btn-admin primario">
+        <svg viewBox="0 0 16 16" fill="none">
+          <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        Nuevo alumno
+      </a>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Email</th>
+          <th>Módulos</th>
+          <th>Alta</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {alumnos.map(alumno => (
+          <tr>
+            <td class="td-nombre">{alumno.nombre} {alumno.apellidos}</td>
+            <td class="td-email">{alumno.email}</td>
+            <td>
+              {alumno.modulosAsignados.length === 0
+                ? <span class="badge-modulos vacio">—</span>
+                : <span class="badge-modulos">{alumno.modulosAsignados.length}</span>
+              }
+            </td>
+            <td>{alumno.fechaAlta}</td>
+            <td>
+              <a href={`/admin/alumnos/${alumno.id}`} class="btn-admin">
+                Ver detalle
+                <svg viewBox="0 0 16 16" fill="none">
+                  <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </a>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+</PlantillaAdmin>

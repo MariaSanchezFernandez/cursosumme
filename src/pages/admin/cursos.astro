@@ -1,0 +1,62 @@
+---
+import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
+import { cursos } from '../../data/cursos';
+import { getAlumnos } from '../../data/usuarios';
+
+const alumnos = getAlumnos();
+
+// Para cada curso, cuántos alumnos lo tienen asignado
+const inscritosPorCurso = Object.fromEntries(
+  cursos.map(c => [c.id, alumnos.filter(a => a.modulosAsignados.includes(c.id)).length])
+);
+
+const acentoColors: Record<string, string> = {
+  c1: '#b5d8cc',
+  c2: '#b5c8e8',
+  c3: '#d4c8e8',
+  c4: '#e8d4b5',
+};
+---
+
+<PlantillaAdmin titulo="Cursos" paginaActual="cursos">
+
+  <div class="tabla-wrap">
+    <div class="tabla-header">
+      <span class="tabla-titulo">Todos los cursos</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Título</th>
+          <th>Categoría</th>
+          <th>Nivel</th>
+          <th>Duración</th>
+          <th>Subtemas</th>
+          <th>Alumnos</th>
+        </tr>
+      </thead>
+      <tbody>
+        {cursos.map(curso => (
+          <tr>
+            <td style="width:8px; padding-right:0;">
+              <div style={`width:4px; height:36px; border-radius:3px; background:${acentoColors[curso.acento] ?? '#ddd'}`}></div>
+            </td>
+            <td class="td-nombre">{curso.titulo}</td>
+            <td class="td-email">{curso.etiqueta}</td>
+            <td>{curso.nivel}</td>
+            <td>{curso.duracion}</td>
+            <td><span class="badge-modulos">{curso.subtemas}</span></td>
+            <td>
+              {inscritosPorCurso[curso.id] === 0
+                ? <span class="badge-modulos vacio">—</span>
+                : <span class="badge-modulos">{inscritosPorCurso[curso.id]}</span>
+              }
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+</PlantillaAdmin>

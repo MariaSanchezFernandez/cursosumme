@@ -4,10 +4,7 @@
  * ------------------------
  * Tarjeta de acceso con email y contraseña.
  * Incluye enlace a la página de recuperación de contraseña.
- *
- * ESTADO ACTUAL: Solo visual. Sin lógica ni autenticación.
- * PENDIENTE:     Conectar con sistema de autenticación cuando
- *                esté definida la arquitectura de backend.
+ * Simula redirección por rol: admin → /admin, alumno → /inicio
  */
 import CampoFormulario from './CampoFormulario.astro';
 import Boton from './Boton.astro';
@@ -22,9 +19,7 @@ import '../styles/TarjetaLogin.css';
     <p>Accede a tu área privada</p>
   </div>
 
-  <!-- FORMULARIO
-       PENDIENTE: añadir action, method y lógica de autenticación -->
-  <form class="login-form">
+  <form class="login-form" id="login-form">
     <CampoFormulario
       label="Email"
       type="email"
@@ -39,6 +34,9 @@ import '../styles/TarjetaLogin.css';
       name="password"
       placeholder="••••••••"
     />
+    <p id="login-error" style="display:none; font-size:0.78rem; color:#c0392b; margin:-0.25rem 0 0.25rem;">
+      Email o contraseña incorrectos.
+    </p>
     <Boton text="Entrar" type="submit" />
 
     <a href="/recuperar-contrasena" class="forgot-link">
@@ -48,3 +46,33 @@ import '../styles/TarjetaLogin.css';
 
 </div>
 
+<script>
+  // Simulación de login por rol (sin backend)
+  // Admin: rocio@cursosumme.com → /admin
+  // Alumnos: cualquier email registrado → /inicio
+  const USUARIOS = [
+    { email: 'rocio@cursosumme.com', rol: 'admin' },
+    { email: 'ana@ejemplo.com', rol: 'alumno' },
+    { email: 'maria@ejemplo.com', rol: 'alumno' },
+    { email: 'carmen@ejemplo.com', rol: 'alumno' },
+    { email: 'lucia@ejemplo.com', rol: 'alumno' },
+    { email: 'isabel@ejemplo.com', rol: 'alumno' },
+  ];
+
+  const form = document.getElementById('login-form') as HTMLFormElement;
+  const errorMsg = document.getElementById('login-error') as HTMLParagraphElement;
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = (form.querySelector('#email') as HTMLInputElement).value.trim().toLowerCase();
+    const usuario = USUARIOS.find(u => u.email === email);
+
+    if (!usuario) {
+      errorMsg.style.display = 'block';
+      return;
+    }
+
+    errorMsg.style.display = 'none';
+    window.location.href = usuario.rol === 'admin' ? '/admin' : '/inicio';
+  });
+</script>
