@@ -29,15 +29,27 @@ $email     = trim(strtolower($body['email']));
 $hashEnv   = hash('sha256', $body['contrasena']);
 
 // ── Conexión a la base de datos ──────────────────────────────
-$dsn = 'mysql:host=db5020047845.hosting-data.io;port=3306;dbname=dbs15459256;charset=utf8mb4';
+require_once __DIR__ . '/db-config.php';
 
-try {
-    $pdo = new PDO($dsn, 'dbs15459256', 'cursosumme123', [
-        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_TIMEOUT            => 5,
-    ]);
-} catch (PDOException $e) {
+// IONOS shared hosting: intentamos primero localhost, luego el host externo
+$hosts = [DB_HOST_1, DB_HOST_2];
+$pdo = null;
+
+foreach ($hosts as $host) {
+    try {
+        $dsn = "mysql:host={$host};port=3306;dbname=" . DB_NOMBRE . ";charset=utf8mb4";
+        $pdo = new PDO($dsn, DB_USUARIO, DB_PASSWORD, [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_TIMEOUT            => 5,
+        ]);
+        break; // conexión exitosa
+    } catch (PDOException $e) {
+        $pdo = null;
+    }
+}
+
+if ($pdo === null) {
     http_response_code(503);
     echo json_encode(['ok' => false, 'mensaje' => 'Error de conexión con la base de datos']);
     exit;
@@ -45,7 +57,7 @@ try {
 
 // ── Buscar usuario activo por email ──────────────────────────
 $stmt = $pdo->prepare(
-    'SELECT rol, contrasena FROM usuarios WHERE email = :email AND activo = 1 LIMIT 1'
+    'SELECT id, rol, contrasena FROM usuarios WHERE email = :email AND activo = 1 LIMIT 1'
 );
 $stmt->execute([':email' => $email]);
 $usuario = $stmt->fetch();
@@ -62,4 +74,9 @@ if (!hash_equals($usuario['contrasena'], $hashEnv)) {
 }
 
 // ── Login correcto ────────────────────────────────────────────
-echo json_encode(['ok' => true, 'rol' => $usuario['rol']]);
+echo json_encode([
+    'ok'    => true,
+    'rol'   => $usuario['rol'],
+    'id'    => (string) $usuario['id'],
+    'email' => $email,
+]);

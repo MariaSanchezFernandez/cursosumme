@@ -76,6 +76,15 @@ import '../styles/TarjetaLogin.css';
         return;
       }
 
+      // Crear sesión en sessionStorage (expira en 8 horas)
+      const sesion = {
+        userId: datos.id,
+        rol: datos.rol,
+        email: datos.email,
+        exp: Date.now() + 8 * 60 * 60 * 1000,
+      };
+      sessionStorage.setItem('umme_session', JSON.stringify(sesion));
+
       window.location.href = datos.rol === 'admin' ? '/admin' : '/inicio';
 
     } catch {
