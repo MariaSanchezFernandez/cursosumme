@@ -2,9 +2,9 @@
 /**
  * COMPONENTE: TarjetaLogin
  * ------------------------
- * Tarjeta de acceso con email y contraseña.
- * Incluye enlace a la página de recuperación de contraseña.
- * Simula redirección por rol: admin → /admin, alumno → /inicio
+ * Envía email + contraseña al endpoint PHP /api/login.php.
+ * El servidor valida contra MySQL y devuelve el rol.
+ * En caso de éxito redirige: admin → /admin, alumno → /inicio.
  */
 import CampoFormulario from './CampoFormulario.astro';
 import Boton from './Boton.astro';
@@ -13,7 +13,6 @@ import '../styles/TarjetaLogin.css';
 
 <div class="login-card">
 
-  <!-- CABECERA -->
   <div class="login-header">
     <h1>Bienvenida</h1>
     <p>Accede a tu área privada</p>
@@ -47,32 +46,43 @@ import '../styles/TarjetaLogin.css';
 </div>
 
 <script>
-  // Simulación de login por rol (sin backend)
-  // Admin: rocio@cursosumme.com → /admin
-  // Alumnos: cualquier email registrado → /inicio
-  const USUARIOS = [
-    { email: 'rocio@cursosumme.com', rol: 'admin' },
-    { email: 'ana@ejemplo.com', rol: 'alumno' },
-    { email: 'maria@ejemplo.com', rol: 'alumno' },
-    { email: 'carmen@ejemplo.com', rol: 'alumno' },
-    { email: 'lucia@ejemplo.com', rol: 'alumno' },
-    { email: 'isabel@ejemplo.com', rol: 'alumno' },
-  ];
-
   const form = document.getElementById('login-form') as HTMLFormElement;
   const errorMsg = document.getElementById('login-error') as HTMLParagraphElement;
+  const boton = form.querySelector('button[type="submit"]') as HTMLButtonElement;
 
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
+
     const email = (form.querySelector('#email') as HTMLInputElement).value.trim().toLowerCase();
-    const usuario = USUARIOS.find(u => u.email === email);
+    const contrasena = (form.querySelector('#password') as HTMLInputElement).value;
 
-    if (!usuario) {
-      errorMsg.style.display = 'block';
-      return;
-    }
-
+    boton.disabled = true;
+    boton.textContent = 'Entrando...';
     errorMsg.style.display = 'none';
-    window.location.href = usuario.rol === 'admin' ? '/admin' : '/inicio';
+
+    try {
+      const respuesta = await fetch('/api/login.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, contrasena }),
+      });
+
+      const datos = await respuesta.json();
+
+      if (!datos.ok) {
+        errorMsg.style.display = 'block';
+        boton.disabled = false;
+        boton.textContent = 'Entrar';
+        return;
+      }
+
+      window.location.href = datos.rol === 'admin' ? '/admin' : '/inicio';
+
+    } catch {
+      errorMsg.textContent = 'Error de conexión. Inténtalo de nuevo.';
+      errorMsg.style.display = 'block';
+      boton.disabled = false;
+      boton.textContent = 'Entrar';
+    }
   });
 </script>

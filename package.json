@@ -1,14 +1,19 @@
 {
-  "name": "technological-telescope",
+  "name": "cursosumme",
   "type": "module",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "deploy": "node scripts/deploy.mjs",
+    "hash-password": "node scripts/hash-password.mjs"
   },
   "dependencies": {
     "astro": "^5.17.1"
+  },
+  "devDependencies": {
+    "ssh2-sftp-client": "^12.1.0"
   }
 }

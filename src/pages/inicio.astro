@@ -195,3 +195,20 @@ import '../styles/inicio.css';
   });
 </script>
 
+<!-- GUARDIA DE RUTA: redirige al login si no hay sesión activa -->
+<script is:inline>
+  (function () {
+    try {
+      const raw = sessionStorage.getItem('umme_session');
+      if (!raw) { window.location.replace('/'); return; }
+      const s = JSON.parse(raw);
+      if (!s || Date.now() > s.exp) {
+        sessionStorage.removeItem('umme_session');
+        window.location.replace('/');
+      }
+    } catch {
+      window.location.replace('/');
+    }
+  })();
+</script>
+

@@ -89,12 +89,12 @@ const { titulo, paginaActual } = Astro.props;
         <header class="admin-header">
           <span class="admin-header-titulo">{titulo}</span>
           <div class="admin-header-acciones">
-            <a href="/" class="btn-admin">
+            <button id="btn-logout" class="btn-admin">
               <svg viewBox="0 0 16 16" fill="none">
                 <path d="M10 4l-4 4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
               Salir
-            </a>
+            </button>
           </div>
         </header>
 
@@ -104,5 +104,33 @@ const { titulo, paginaActual } = Astro.props;
       </div>
 
     </div>
+
+  <!-- GUARDIA DE RUTA: solo admin puede acceder -->
+  <script is:inline>
+    (function () {
+      try {
+        var raw = sessionStorage.getItem('umme_session');
+        if (!raw) { window.location.replace('/'); return; }
+        var s = JSON.parse(raw);
+        if (!s || Date.now() > s.exp) {
+          sessionStorage.removeItem('umme_session');
+          window.location.replace('/');
+          return;
+        }
+        if (s.rol !== 'admin') {
+          window.location.replace('/inicio');
+          return;
+        }
+      } catch (e) {
+        window.location.replace('/');
+      }
+    })();
+
+    // Logout: borra la sesión y redirige al login
+    document.getElementById('btn-logout').addEventListener('click', function () {
+      sessionStorage.removeItem('umme_session');
+      window.location.replace('/');
+    });
+  </script>
   </body>
 </html>
