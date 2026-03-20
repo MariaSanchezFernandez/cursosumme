@@ -47,6 +47,18 @@ if ($method === 'GET') {
 
     // Admin: todos los tickets con info del alumno
     if (isset($_GET['admin'])) {
+        // Verificar que el solicitante es realmente admin
+        $adminId = isset($_GET['usuario_id']) ? (int)$_GET['usuario_id'] : 0;
+        if ($adminId) {
+            $chk = $pdo->prepare("SELECT rol FROM usuarios WHERE id = ?");
+            $chk->execute([$adminId]);
+            $rol = $chk->fetchColumn();
+            if ($rol !== 'admin') {
+                http_response_code(403);
+                echo json_encode(['ok' => false, 'error' => 'Acceso denegado']);
+                exit;
+            }
+        }
         try {
             $stmt = $pdo->query("
                 SELECT t.id, t.asunto, t.mensaje, t.estado, t.creado_en,

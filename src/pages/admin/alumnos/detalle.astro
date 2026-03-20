@@ -178,6 +178,11 @@ async function cargar() {
 
   document.getElementById('btn-guardar-fechas')!.addEventListener('click', async () => {
     const btn = document.getElementById('btn-guardar-fechas') as HTMLButtonElement;
+    // Validar que fecha_baja no sea anterior a fecha_alta
+    if (inpAlta.value && inpBaja.value && inpBaja.value < inpAlta.value) {
+      mostrarMsg('La fecha de baja no puede ser anterior a la fecha de alta.', 'error');
+      return;
+    }
     btn.disabled = true; btn.textContent = 'Guardando…';
     const res  = await fetch('/api/alumnos.php', {
       method: 'PUT', headers: {'Content-Type':'application/json'},

@@ -17,12 +17,13 @@ import '../styles/CabeceraApp.css';
     </span>
     <input type="file" id="avatar-file-input" accept="image/jpeg,image/png,image/webp,image/gif" />
     <a class="avatar-nombre" id="nombreUsuario" href="/perfil" title="Mi perfil">—</a>
-    <a class="btn-soporte" href="/soporte" title="Soporte y consultas">
+    <a class="btn-soporte" href="/soporte" title="Soporte y consultas" id="btnSoporte">
       <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
         <path d="M2 3.5A1.5 1.5 0 013.5 2h9A1.5 1.5 0 0114 3.5v7A1.5 1.5 0 0112.5 12H9l-3 2v-2H3.5A1.5 1.5 0 012 10.5v-7z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
         <path d="M5 6h6M5 8.5h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
       </svg>
       Soporte
+      <span class="soporte-badge" id="soporteBadge" style="display:none;"></span>
     </a>
     <button class="btn-salir" id="btnSalir">
       <svg viewBox="0 0 16 16" fill="none">
@@ -68,6 +69,20 @@ import '../styles/CabeceraApp.css';
   }
 
   cargarFoto();
+
+  // Badge de notificación en Soporte si hay tickets respondidos
+  async function comprobarTickets() {
+    if (!s.userId) return;
+    try {
+      const res  = await fetch(`/api/tickets.php?usuario_id=${s.userId}`);
+      const data = await res.json();
+      if (!data.ok) return;
+      const hayRespuesta = (data.tickets || []).some((t: any) => t.estado === 'respondido');
+      const badge = document.getElementById('soporteBadge') as HTMLElement;
+      if (hayRespuesta) badge.style.display = 'block';
+    } catch {}
+  }
+  comprobarTickets();
 
   // Abrir selector de archivo al clicar el avatar
   avatarBtn.addEventListener('click', () => fileInput.click());
@@ -116,5 +131,18 @@ import '../styles/CabeceraApp.css';
   background: #e6f4ed;
   border-color: #b8d9c8;
   color: var(--color-text);
+}
+.btn-soporte {
+  position: relative;
+}
+.soporte-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  background: #e53;
+  border-radius: 50%;
+  border: 1.5px solid #fff;
 }
 </style>

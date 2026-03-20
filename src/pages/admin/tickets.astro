@@ -39,7 +39,7 @@ const tkCargando  = document.getElementById('tkCargando') as HTMLElement;
 // ── Cargar tickets ────────────────────────────────────────────────────────────
 async function cargarTickets() {
   try {
-    const res  = await fetch('/api/tickets.php?admin=1');
+    const res  = await fetch(`/api/tickets.php?admin=1&usuario_id=${adminId}`);
     const data = await res.json();
     tkCargando.style.display = 'none';
 

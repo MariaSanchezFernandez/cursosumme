@@ -108,7 +108,7 @@ if ($metodo === 'DELETE') {
         $pdo->prepare('DELETE FROM materiales WHERE tema_id = :tid')->execute([':tid' => $t['id']]);
     }
     $pdo->prepare('DELETE FROM temas WHERE curso_id = :id')->execute([':id' => $id]);
-    $pdo->prepare('DELETE FROM usuario_curso WHERE curso_id = :id')->execute([':id' => $id]);
+    $pdo->prepare('DELETE FROM usuarios_cursos WHERE curso_id = :id')->execute([':id' => $id]);
     $pdo->prepare('DELETE FROM cursos WHERE id = :id')->execute([':id' => $id]);
     echo json_encode(['ok' => true]);
     exit;
