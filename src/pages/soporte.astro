@@ -180,6 +180,12 @@ async function cargarTickets() {
     data.tickets.forEach((ticket: any) => {
       listaTickets.appendChild(crearTarjetaTicket(ticket));
     });
+
+    // Actualizar badge en tiempo real según los tickets actuales
+    const hayRespondido = data.tickets.some((t: any) => t.estado === 'respondido');
+    sessionStorage.setItem('umme_badge', JSON.stringify({ valor: hayRespondido, hasta: Date.now() + 5 * 60 * 1000 }));
+    const badge = document.getElementById('soporteBadge') as HTMLElement | null;
+    if (badge) badge.style.display = hayRespondido ? 'block' : 'none';
   } catch {
     estadoCargando.textContent = 'Error al cargar las consultas.';
   }
@@ -213,32 +219,44 @@ function crearTarjetaTicket(ticket: any): HTMLElement {
     </div>
 
     <div class="sp-ticket-detalle" id="detalle-${ticket.id}">
-      <div class="sp-mensaje-original">
-        <p class="sp-msg-label">Tu mensaje</p>
-        <p class="sp-msg-texto">${escHtml(ticket.mensaje)}</p>
+
+      <!-- Hilo de conversación -->
+      <div class="sp-hilo">
+        <!-- Mensaje original del alumno -->
+        <div class="sp-burbuja sp-burbuja-alumno">
+          <div class="sp-burbuja-meta">
+            <span class="sp-burbuja-autor">Tú</span>
+            <span class="sp-burbuja-fecha">${fechaStr}</span>
+          </div>
+          <p class="sp-burbuja-texto">${escHtml(ticket.mensaje)}</p>
+        </div>
+
+        <!-- Respuestas en orden cronológico -->
+        ${numResp > 0 ? ticket.respuestas.map((r: any) => {
+          const esAlumno = r.alumno_id != null && r.alumno_id != 0;
+          return `
+            <div class="sp-burbuja ${esAlumno ? 'sp-burbuja-alumno' : 'sp-burbuja-admin'}">
+              <div class="sp-burbuja-meta">
+                <span class="sp-burbuja-autor">${esAlumno ? 'Tú' : 'Cursos Umme'}</span>
+                <span class="sp-burbuja-fecha">${formatearFecha(r.creado_en)}</span>
+              </div>
+              <p class="sp-burbuja-texto">${escHtml(r.mensaje)}</p>
+            </div>
+          `;
+        }).join('') : ''}
       </div>
 
-      ${numResp > 0 ? `
-        <div class="sp-respuestas">
-          ${ticket.respuestas.map((r: any) => `
-            <div class="sp-respuesta">
-              <div class="sp-resp-header">
-                <span class="sp-resp-admin">${escHtml(r.admin_nombre || 'Administrador')}</span>
-                <span class="sp-resp-fecha">${formatearFecha(r.creado_en)}</span>
-              </div>
-              <p class="sp-resp-texto">${escHtml(r.mensaje)}</p>
-            </div>
-          `).join('')}
-        </div>
-      ` : ''}
-
+      <!-- Reply box (si no está cerrado) -->
       ${puedeC ? `
-        <div class="sp-ticket-acciones">
-          <button class="sp-btn-cerrar-ticket" data-id="${ticket.id}">
-            Marcar como cerrada
-          </button>
+        <div class="sp-reply-box" id="replyBox-${ticket.id}">
+          <textarea class="sp-reply-textarea" id="replyMsg-${ticket.id}" rows="3" placeholder="Escribe tu respuesta…"></textarea>
+          <div class="sp-reply-acciones">
+            <button class="sp-btn-cerrar-ticket" data-id="${ticket.id}">Cerrar consulta</button>
+            <button class="sp-btn-reply" data-id="${ticket.id}">Enviar</button>
+          </div>
+          <p class="sp-reply-error" id="replyErr-${ticket.id}"></p>
         </div>
-      ` : ''}
+      ` : `<p class="sp-cerrada-txt">Consulta cerrada</p>`}
     </div>
   `;
 
@@ -268,14 +286,51 @@ function crearTarjetaTicket(ticket: any): HTMLElement {
         });
         const data = await res.json();
         if (data.ok) {
+          sessionStorage.removeItem('umme_badge');
           cargarTickets();
         } else {
           btn.disabled = false;
-          btn.textContent = 'Marcar como cerrada';
+          btn.textContent = 'Cerrar consulta';
         }
       } catch {
         btn.disabled = false;
-        btn.textContent = 'Marcar como cerrada';
+        btn.textContent = 'Cerrar consulta';
+      }
+    });
+  }
+
+  // Botón responder alumno
+  const btnReply = div.querySelector('.sp-btn-reply');
+  if (btnReply) {
+    btnReply.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const btn    = e.currentTarget as HTMLButtonElement;
+      const txtArea = document.getElementById(`replyMsg-${ticket.id}`) as HTMLTextAreaElement;
+      const errEl   = document.getElementById(`replyErr-${ticket.id}`) as HTMLElement;
+      const mensaje = txtArea.value.trim();
+      errEl.textContent = '';
+      if (!mensaje) { errEl.textContent = 'El mensaje no puede estar vacío.'; return; }
+      btn.disabled = true;
+      btn.textContent = 'Enviando…';
+      try {
+        const res  = await fetch('/api/tickets.php', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ticket_id: parseInt(ticket.id), alumno_id: userId, mensaje }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          sessionStorage.removeItem('umme_badge');
+          cargarTickets();
+        } else {
+          errEl.textContent = data.error || 'Error al enviar.';
+          btn.disabled = false;
+          btn.textContent = 'Enviar';
+        }
+      } catch {
+        errEl.textContent = 'Error de conexión.';
+        btn.disabled = false;
+        btn.textContent = 'Enviar';
       }
     });
   }
@@ -630,39 +685,55 @@ cargarTickets();
   white-space: pre-wrap;
 }
 
-/* ── Respuestas admin ────────────────────────────────────────────────────────*/
-.sp-respuestas {
+/* ── Hilo de conversación ────────────────────────────────────────────────────*/
+.sp-hilo {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 0.75rem;
 }
 
-.sp-respuesta {
+.sp-burbuja {
+  border-radius: 10px;
+  padding: 0.8rem 1rem;
+  max-width: 88%;
+}
+
+.sp-burbuja-alumno {
+  background: #f0f4f2;
+  align-self: flex-end;
+  margin-left: auto;
+  border-bottom-right-radius: 3px;
+}
+
+.sp-burbuja-admin {
   background: #edf7f2;
   border-left: 3px solid var(--color-primary);
-  border-radius: 0 8px 8px 0;
-  padding: 0.85rem 1rem;
+  align-self: flex-start;
+  border-bottom-left-radius: 3px;
 }
 
-.sp-resp-header {
+.sp-burbuja-meta {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.4rem;
+  gap: 0.6rem;
+  margin-bottom: 0.35rem;
 }
 
-.sp-resp-admin {
-  font-size: 0.75rem;
+.sp-burbuja-autor {
+  font-size: 0.72rem;
   font-weight: 700;
   color: var(--color-primary);
 }
-
-.sp-resp-fecha {
-  font-size: 0.72rem;
+.sp-burbuja-alumno .sp-burbuja-autor {
   color: var(--color-text-muted);
 }
 
-.sp-resp-texto {
+.sp-burbuja-fecha {
+  font-size: 0.7rem;
+  color: #b5bfbb;
+}
+
+.sp-burbuja-texto {
   font-size: 0.86rem;
   color: var(--color-text);
   line-height: 1.65;
@@ -670,12 +741,70 @@ cargarTickets();
   white-space: pre-wrap;
 }
 
-/* ── Acciones ────────────────────────────────────────────────────────────────*/
-.sp-ticket-acciones {
+/* ── Reply box ───────────────────────────────────────────────────────────────*/
+.sp-reply-box {
   display: flex;
-  justify-content: flex-end;
+  flex-direction: column;
+  gap: 0.55rem;
+  border-top: 1px solid #edf2ef;
+  padding-top: 1rem;
 }
 
+.sp-reply-textarea {
+  padding: 0.6rem 0.85rem;
+  border: 1px solid #d8e4df;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.86rem;
+  color: var(--color-text);
+  background: #fff;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.sp-reply-textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(66,178,134,0.12);
+}
+
+.sp-reply-acciones {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.sp-btn-reply {
+  padding: 0.45rem 1.1rem;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.14s;
+}
+.sp-btn-reply:hover { opacity: 0.87; }
+.sp-btn-reply:disabled { opacity: 0.5; cursor: default; }
+
+.sp-reply-error {
+  font-size: 0.78rem;
+  color: #c33;
+  min-height: 1em;
+  margin: 0;
+}
+
+.sp-cerrada-txt {
+  font-size: 0.78rem;
+  color: #b5bfbb;
+  text-align: center;
+  padding: 0.5rem 0 0;
+  margin: 0;
+}
+
+/* ── Botón cerrar ────────────────────────────────────────────────────────────*/
 .sp-btn-cerrar-ticket {
   padding: 0.4rem 0.9rem;
   background: none;

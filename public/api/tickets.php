@@ -13,33 +13,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require_once __DIR__ . '/db-connect.php';
 $pdo = obtenerPDO();
 
-// ── Auto-crear tablas ─────────────────────────────────────────────────────────
-try {
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS tickets (
-            id          INT AUTO_INCREMENT PRIMARY KEY,
-            usuario_id  INT NOT NULL,
-            asunto      VARCHAR(255) NOT NULL,
-            mensaje     TEXT NOT NULL,
-            estado      ENUM('abierto','respondido','cerrado') NOT NULL DEFAULT 'abierto',
-            creado_en   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ");
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS ticket_respuestas (
-            id          INT AUTO_INCREMENT PRIMARY KEY,
-            ticket_id   INT NOT NULL,
-            admin_id    INT NOT NULL,
-            mensaje     TEXT NOT NULL,
-            creado_en   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            CONSTRAINT fk_tr_ticket FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ");
-} catch (PDOException $e) {
-    echo json_encode(['ok' => false, 'error' => 'Error al crear tablas: ' . $e->getMessage()]);
-    exit;
-}
-
 $method = $_SERVER['REQUEST_METHOD'];
 
 // ── GET ───────────────────────────────────────────────────────────────────────
@@ -79,10 +52,10 @@ if ($method === 'GET') {
             $ids = array_map(fn($t) => (int)$t['id'], $tickets);
             $placeholders = implode(',', array_fill(0, count($ids), '?'));
             $stmtR = $pdo->prepare("
-                SELECT r.id, r.ticket_id, r.admin_id, r.mensaje, r.creado_en,
-                       CONCAT(u.nombre, ' ', u.apellidos) AS admin_nombre
+                SELECT r.id, r.ticket_id, r.admin_id, r.alumno_id, r.mensaje, r.creado_en,
+                       CASE WHEN r.alumno_id IS NOT NULL THEN CONCAT(ua.nombre, ' ', ua.apellidos) ELSE NULL END AS alumno_nombre
                 FROM ticket_respuestas r
-                JOIN usuarios u ON u.id = r.admin_id
+                LEFT JOIN usuarios ua ON ua.id = r.alumno_id
                 WHERE r.ticket_id IN ($placeholders)
                 ORDER BY r.creado_en ASC
             ");
@@ -129,10 +102,8 @@ if ($method === 'GET') {
             $ids = array_map(fn($t) => (int)$t['id'], $tickets);
             $placeholders = implode(',', array_fill(0, count($ids), '?'));
             $stmtR = $pdo->prepare("
-                SELECT r.id, r.ticket_id, r.admin_id, r.mensaje, r.creado_en,
-                       CONCAT(u.nombre, ' ', u.apellidos) AS admin_nombre
+                SELECT r.id, r.ticket_id, r.admin_id, r.alumno_id, r.mensaje, r.creado_en
                 FROM ticket_respuestas r
-                JOIN usuarios u ON u.id = r.admin_id
                 WHERE r.ticket_id IN ($placeholders)
                 ORDER BY r.creado_en ASC
             ");
@@ -212,6 +183,32 @@ if ($method === 'PUT') {
         try {
             $stmt = $pdo->prepare("UPDATE tickets SET estado = ? WHERE id = ?");
             $stmt->execute([$estado, $ticketId]);
+            echo json_encode(['ok' => true]);
+        } catch (PDOException $e) {
+            http_response_code(500);
+            echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+        }
+        exit;
+    }
+
+    // Alumno responde (reply en conversación)
+    if (isset($body['alumno_id']) && isset($body['mensaje']) && !isset($body['admin_id'])) {
+        $alumnoId = (int)$body['alumno_id'];
+        $mensaje  = trim($body['mensaje']);
+        if (!$alumnoId || $mensaje === '') {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Faltan campos: alumno_id, mensaje']);
+            exit;
+        }
+        try {
+            $stmtR = $pdo->prepare("
+                INSERT INTO ticket_respuestas (ticket_id, admin_id, alumno_id, mensaje)
+                VALUES (?, 0, ?, ?)
+            ");
+            $stmtR->execute([$ticketId, $alumnoId, $mensaje]);
+            // Reabrir ticket si estaba respondido
+            $pdo->prepare("UPDATE tickets SET estado = 'abierto' WHERE id = ? AND estado = 'respondido'")
+                ->execute([$ticketId]);
             echo json_encode(['ok' => true]);
         } catch (PDOException $e) {
             http_response_code(500);

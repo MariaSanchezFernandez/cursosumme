@@ -15,9 +15,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 require_once __DIR__ . '/db-connect.php';
 $pdo = obtenerPDO();
 
-// Migración automática
-try { $pdo->exec('ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS foto_perfil VARCHAR(255) DEFAULT NULL'); } catch (PDOException $e) {}
-
 $metodo = $_SERVER['REQUEST_METHOD'];
 
 // ── GET ───────────────────────────────────────────────────────

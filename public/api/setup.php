@@ -59,6 +59,9 @@ ejecutar($pdo, "CREATE TABLE IF NOT EXISTS ticket_respuestas (
     CONSTRAINT fk_tr_ticket FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", 'tabla ticket_respuestas', $resultados);
 
+// ── Columna para conversación alumno ─────────────────────────
+ejecutar($pdo, 'ALTER TABLE ticket_respuestas ADD COLUMN IF NOT EXISTS alumno_id INT DEFAULT NULL', 'alumno_id en ticket_respuestas', $resultados);
+
 // ── Índices (mejoran rendimiento en JOINs y filtros frecuentes) ──
 ejecutar($pdo, 'ALTER TABLE usuarios_cursos ADD INDEX IF NOT EXISTS idx_uc_usuario (usuario_id)', 'índice usuarios_cursos.usuario_id', $resultados);
 ejecutar($pdo, 'ALTER TABLE usuarios_cursos ADD INDEX IF NOT EXISTS idx_uc_curso   (curso_id)',   'índice usuarios_cursos.curso_id', $resultados);

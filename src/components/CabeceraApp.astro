@@ -17,6 +17,13 @@ import '../styles/CabeceraApp.css';
     </span>
     <input type="file" id="avatar-file-input" accept="image/jpeg,image/png,image/webp,image/gif" />
     <a class="avatar-nombre" id="nombreUsuario" href="/perfil" title="Mi perfil">—</a>
+    <a class="btn-cursos" href="/inicio" title="Mis cursos">
+      <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
+        <rect x="1" y="3" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
+        <path d="M5 7h6M5 10h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+      </svg>
+      Mis cursos
+    </a>
     <a class="btn-soporte" href="/soporte" title="Soporte y consultas" id="btnSoporte">
       <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
         <path d="M2 3.5A1.5 1.5 0 013.5 2h9A1.5 1.5 0 0114 3.5v7A1.5 1.5 0 0112.5 12H9l-3 2v-2H3.5A1.5 1.5 0 012 10.5v-7z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
@@ -50,10 +57,16 @@ import '../styles/CabeceraApp.css';
 
   async function cargarFoto() {
     if (!s.userId) return;
+    // Use cached URL from session to avoid extra request on every page
+    const cached = sessionStorage.getItem('umme_foto');
+    if (cached) { mostrarFoto(cached); return; }
     try {
       const res  = await fetch(`/api/foto-perfil.php?usuario_id=${s.userId}`);
       const data = await res.json();
-      if (data.ok && data.url) mostrarFoto(data.url);
+      if (data.ok && data.url) {
+        sessionStorage.setItem('umme_foto', data.url);
+        mostrarFoto(data.url);
+      }
     } catch {}
   }
 
@@ -70,15 +83,21 @@ import '../styles/CabeceraApp.css';
 
   cargarFoto();
 
-  // Badge de notificación en Soporte si hay tickets respondidos
+  // Badge de notificación en Soporte si hay tickets respondidos (cache 5min)
   async function comprobarTickets() {
     if (!s.userId) return;
+    const badge = document.getElementById('soporteBadge') as HTMLElement;
+    const cached = sessionStorage.getItem('umme_badge');
+    if (cached) {
+      const { valor, hasta } = JSON.parse(cached);
+      if (Date.now() < hasta) { if (valor) badge.style.display = 'block'; return; }
+    }
     try {
       const res  = await fetch(`/api/tickets.php?usuario_id=${s.userId}`);
       const data = await res.json();
       if (!data.ok) return;
       const hayRespuesta = (data.tickets || []).some((t: any) => t.estado === 'respondido');
-      const badge = document.getElementById('soporteBadge') as HTMLElement;
+      sessionStorage.setItem('umme_badge', JSON.stringify({ valor: hayRespuesta, hasta: Date.now() + 5 * 60 * 1000 }));
       if (hayRespuesta) badge.style.display = 'block';
     } catch {}
   }
@@ -98,7 +117,10 @@ import '../styles/CabeceraApp.css';
     try {
       const res  = await fetch('/api/foto-perfil.php', { method: 'POST', body: fd });
       const data = await res.json();
-      if (data.ok) mostrarFoto(data.url);
+      if (data.ok) {
+        sessionStorage.setItem('umme_foto', data.url);
+        mostrarFoto(data.url);
+      }
     } catch {}
 
     fileInput.value = '';
@@ -107,11 +129,33 @@ import '../styles/CabeceraApp.css';
   // Cerrar sesión
   document.getElementById('btnSalir')!.addEventListener('click', () => {
     sessionStorage.removeItem('umme_session');
+    sessionStorage.removeItem('umme_foto');
+    sessionStorage.removeItem('umme_badge');
     window.location.replace('/');
   });
 </script>
 
 <style>
+.btn-cursos {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.75rem;
+  border: 1px solid #d8e8e0;
+  border-radius: 7px;
+  background: #f4f9f6;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.btn-cursos:hover {
+  background: #e6f4ed;
+  border-color: #b8d9c8;
+  color: var(--color-text);
+}
 .btn-soporte {
   display: inline-flex;
   align-items: center;

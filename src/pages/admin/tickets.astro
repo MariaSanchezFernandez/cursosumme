@@ -129,20 +129,23 @@ function crearFilaTicket(ticket: any): HTMLElement {
         </div>
       </div>
 
-      <!-- Respuestas existentes -->
+      <!-- Hilo de conversación -->
       ${numResp > 0 ? `
         <div class="tk-seccion">
-          <p class="tk-seccion-label">Respuestas anteriores</p>
-          <div class="tk-respuestas-lista">
-            ${ticket.respuestas.map((r: any) => `
-              <div class="tk-respuesta-item">
-                <div class="tk-resp-meta">
-                  <span class="tk-resp-admin">${escHtml(r.admin_nombre || 'Admin')}</span>
-                  <span class="tk-resp-fecha">${formatearFecha(r.creado_en)}</span>
+          <p class="tk-seccion-label">Conversación</p>
+          <div class="tk-hilo">
+            ${ticket.respuestas.map((r: any) => {
+              const esAlumno = r.alumno_id != null && r.alumno_id != 0;
+              return `
+                <div class="tk-burbuja ${esAlumno ? 'tk-burbuja-alumno' : 'tk-burbuja-admin'}">
+                  <div class="tk-resp-meta">
+                    <span class="tk-resp-autor">${esAlumno ? escHtml(ticket.alumno_nombre || 'Alumno') : 'Cursos Umme'}</span>
+                    <span class="tk-resp-fecha">${formatearFecha(r.creado_en)}</span>
+                  </div>
+                  <p class="tk-msg-texto">${escHtml(r.mensaje)}</p>
                 </div>
-                <p class="tk-msg-texto">${escHtml(r.mensaje)}</p>
-              </div>
-            `).join('')}
+              `;
+            }).join('')}
           </div>
         </div>
       ` : ''}
@@ -482,18 +485,31 @@ cargarTickets();
   white-space: pre-wrap;
 }
 
-/* ── Respuestas anteriores ───────────────────────────────────────────────────*/
-.tk-respuestas-lista {
+/* ── Hilo de conversación ────────────────────────────────────────────────────*/
+.tk-hilo {
   display: flex;
   flex-direction: column;
-  gap: 0.7rem;
+  gap: 0.65rem;
 }
 
-.tk-respuesta-item {
+.tk-burbuja {
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  max-width: 88%;
+}
+
+.tk-burbuja-admin {
   background: #edf7f2;
   border-left: 3px solid var(--color-primary);
-  border-radius: 0 8px 8px 0;
-  padding: 0.8rem 1rem;
+  align-self: flex-start;
+  border-bottom-left-radius: 3px;
+}
+
+.tk-burbuja-alumno {
+  background: #f0f4f2;
+  align-self: flex-end;
+  margin-left: auto;
+  border-bottom-right-radius: 3px;
 }
 
 .tk-resp-meta {
@@ -502,10 +518,13 @@ cargarTickets();
   gap: 0.6rem;
   margin-bottom: 0.35rem;
 }
-.tk-resp-admin {
+.tk-resp-autor {
   font-size: 0.75rem;
   font-weight: 700;
   color: var(--color-primary);
+}
+.tk-burbuja-alumno .tk-resp-autor {
+  color: var(--color-text-muted);
 }
 .tk-resp-fecha {
   font-size: 0.72rem;

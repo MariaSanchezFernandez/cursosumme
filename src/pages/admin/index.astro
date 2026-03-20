@@ -28,6 +28,29 @@ import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
     </div>
   </div>
 
+  <!-- Soporte: tickets abiertos -->
+  <div class="tabla-wrap" id="soporte-wrap" style="margin-bottom:1.5rem;">
+    <div class="tabla-header">
+      <span class="tabla-titulo">Soporte — consultas abiertas</span>
+      <a href="/admin/tickets" class="btn-admin" style="font-size:0.75rem;">
+        Ver todos
+        <svg viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+    <div id="soporte-carga" style="padding:2rem 1.5rem; color:#aaa; font-size:0.85rem;">Cargando…</div>
+    <table id="soporte-tabla" style="display:none;">
+      <thead>
+        <tr>
+          <th>Alumno</th>
+          <th>Asunto</th>
+          <th>Fecha</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="soporte-tbody"></tbody>
+    </table>
+  </div>
+
   <!-- Dos columnas: alumnos + cursos -->
   <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; align-items:start;">
 
@@ -75,13 +98,17 @@ const acentos = ['#b5d8cc','#b5c8e8','#d4c8e8','#e8d4b5','#e8c8b5','#c8e8b5'];
 
 async function cargarDashboard() {
   try {
-    const [resAlumnos, resCursos] = await Promise.all([
+    const s: any = (() => { try { return JSON.parse(sessionStorage.getItem('umme_session') || '{}'); } catch { return {}; } })();
+
+    const [resAlumnos, resCursos, resTickets] = await Promise.all([
       fetch('/api/alumnos.php'),
       fetch('/api/cursos.php'),
+      s.userId ? fetch('/api/tickets.php?admin=1&usuario_id=' + s.userId) : Promise.resolve(null),
     ]);
-    const [dataAlumnos, dataCursos] = await Promise.all([
+    const [dataAlumnos, dataCursos, dataTickets] = await Promise.all([
       resAlumnos.json(),
       resCursos.json(),
+      resTickets ? resTickets.json() : Promise.resolve({ ok: false }),
     ]);
 
     const alumnos    = dataAlumnos.alumnos ?? [];
@@ -94,6 +121,33 @@ async function cargarDashboard() {
     (document.getElementById('stat-cursos')     as HTMLElement).textContent = String(cursos.length);
     (document.getElementById('stat-packs')      as HTMLElement).textContent = String(packs.length);
     (document.getElementById('stat-sin-cursos') as HTMLElement).textContent = String(sinAsignar);
+
+    // ── Soporte: tickets abiertos ──
+    const soporteCarga = document.getElementById('soporte-carga')!;
+    const soporteTabla = document.getElementById('soporte-tabla')!;
+    const soporteTbody = document.getElementById('soporte-tbody')!;
+    soporteCarga.style.display = 'none';
+
+    const ticketsAbiertos = (dataTickets?.tickets ?? []).filter((t: any) => t.estado === 'abierto');
+    if (ticketsAbiertos.length === 0) {
+      soporteCarga.textContent = 'No hay consultas abiertas.';
+      soporteCarga.style.display = 'block';
+    } else {
+      soporteTabla.style.display = 'table';
+      soporteTbody.innerHTML = ticketsAbiertos.slice(0, 5).map((t: any) => {
+        const fecha = new Date(t.creado_en).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+        return `
+          <tr>
+            <td class="td-nombre">${t.alumno_nombre}<br>
+              <span style="font-size:0.72rem;color:#aaa;font-weight:400;">${t.alumno_email}</span>
+            </td>
+            <td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.asunto}</td>
+            <td style="font-size:0.78rem;color:#aaa;">${fecha}</td>
+            <td><a href="/admin/tickets" class="btn-admin" style="font-size:0.72rem;padding:0.25rem 0.6rem;height:auto;">Ver</a></td>
+          </tr>
+        `;
+      }).join('');
+    }
 
     // ── Tabla alumnos ──
     const carga = document.getElementById('dash-carga')!;

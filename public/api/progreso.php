@@ -17,16 +17,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 require_once __DIR__ . '/db-connect.php';
 $pdo = obtenerPDO();
 
-// Auto-migración
-try {
-    $pdo->exec("CREATE TABLE IF NOT EXISTS progresos (
-        usuario_id INT NOT NULL,
-        tema_id    INT NOT NULL,
-        visto_en   DATETIME DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY (usuario_id, tema_id)
-    )");
-} catch (\Throwable $e) {}
-
 // ── GET ───────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $uid = isset($_GET['usuario_id']) ? (int)$_GET['usuario_id'] : 0;
