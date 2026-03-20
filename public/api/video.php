@@ -37,7 +37,13 @@ if (!file_exists($rutaFisica)) { http_response_code(404); exit; }
 $size = filesize($rutaFisica);
 $mime = mime_content_type($rutaFisica) ?: 'video/mp4';
 
+// Desactivar compresión de salida para que Content-Length sea correcto
+// (sin esto el navegador no puede determinar la duración del vídeo)
+if (ob_get_level()) ob_end_clean();
+ini_set('zlib.output_compression', '0');
+
 header("Content-Type: $mime");
+header('Content-Encoding: identity');
 header('Accept-Ranges: bytes');
 header('Cache-Control: no-store, no-cache');
 header('X-Content-Type-Options: nosniff');

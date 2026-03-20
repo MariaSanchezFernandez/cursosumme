@@ -22,6 +22,7 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
     <table id="tabla-alumnos" style="display:none;">
       <thead>
         <tr>
+          <th style="width:44px;"></th>
           <th>Nombre</th>
           <th>Email</th>
           <th>Cursos</th>
@@ -77,8 +78,14 @@ async function cargarAlumnos() {
         }
       }
 
+      const avatarStyle = 'width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid #e4ede9;display:block;';
+      const avatarHtml = a.foto_perfil
+        ? `<img src="${a.foto_perfil}" alt="" style="${avatarStyle}" />`
+        : `<div style="width:36px;height:36px;border-radius:50%;background:var(--color-light);display:flex;align-items:center;justify-content:center;font-size:0.78rem;font-weight:800;color:var(--color-text);border:2px solid #e4ede9;flex-shrink:0;">${(a.nombre?.[0] || '?').toUpperCase()}</div>`;
+
       return `
         <tr>
+          <td style="padding:0.5rem 0.75rem;">${avatarHtml}</td>
           <td class="td-nombre">${a.nombre} ${a.apellidos}</td>
           <td class="td-email">${a.email}</td>
           <td>

@@ -113,3 +113,14 @@
 .curso.activo .chevron-fila {
   color: var(--color-primary);
 }
+
+/* Barra de progreso en la tarjeta */
+.curso-prog-bar {
+  height: 3px;
+  background: #e8eeec;
+}
+
+.curso-prog-fill {
+  height: 100%;
+  transition: width 0.4s ease;
+}

@@ -3,10 +3,10 @@ import '../styles/CabeceraApp.css';
 ---
 
 <header class="header">
-  <span class="logo">
+  <a class="logo" href="/inicio">
     <span class="logo-marca">Cursos</span>
     <span class="logo-umme">Umme</span>
-  </span>
+  </a>
 
   <div class="usuario">
     <span class="avatar-circulo" id="avatarBtn" title="Cambiar foto de perfil">
@@ -17,6 +17,13 @@ import '../styles/CabeceraApp.css';
     </span>
     <input type="file" id="avatar-file-input" accept="image/jpeg,image/png,image/webp,image/gif" />
     <a class="avatar-nombre" id="nombreUsuario" href="/perfil" title="Mi perfil">—</a>
+    <a class="btn-soporte" href="/soporte" title="Soporte y consultas">
+      <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
+        <path d="M2 3.5A1.5 1.5 0 013.5 2h9A1.5 1.5 0 0114 3.5v7A1.5 1.5 0 0112.5 12H9l-3 2v-2H3.5A1.5 1.5 0 012 10.5v-7z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+        <path d="M5 6h6M5 8.5h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+      Soporte
+    </a>
     <button class="btn-salir" id="btnSalir">
       <svg viewBox="0 0 16 16" fill="none">
         <path d="M10 8H3M3 8l2.5-2.5M3 8l2.5 2.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
@@ -88,3 +95,26 @@ import '../styles/CabeceraApp.css';
     window.location.replace('/');
   });
 </script>
+
+<style>
+.btn-soporte {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.75rem;
+  border: 1px solid #d8e8e0;
+  border-radius: 7px;
+  background: #f4f9f6;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.btn-soporte:hover {
+  background: #e6f4ed;
+  border-color: #b8d9c8;
+  color: var(--color-text);
+}
+</style>

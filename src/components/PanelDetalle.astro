@@ -32,8 +32,8 @@ import '../styles/PanelDetalle.css';
   <!-- Cuerpo -->
   <div class="detalle-cuerpo">
 
-    <!-- Lista de subtemas -->
-    <aside class="panel-subtemas">
+    <!-- Sidebar de navegación entre temas (visible solo al ver un tema) -->
+    <aside class="panel-subtemas" id="panelSubtemas">
       <p class="subtemas-label">Contenido del curso</p>
       <ol id="listaTemas"></ol>
     </aside>
@@ -69,6 +69,10 @@ import '../styles/PanelDetalle.css';
 
       <!-- Panel Lección -->
       <div class="tab-panel activo" id="tab-leccion">
+        <div class="leccion-texto">
+          <h3 class="leccion-titulo" id="leccionTitulo">Selecciona un tema para comenzar</h3>
+          <p class="leccion-descripcion" id="leccionDescripcion"></p>
+        </div>
         <div class="video-box">
           <!-- Reproductor real -->
           <video id="videoPlayer" controls
@@ -86,10 +90,6 @@ import '../styles/PanelDetalle.css';
             </svg>
             <span class="video-titulo-overlay" id="videoTitulo">Selecciona un tema</span>
           </div>
-        </div>
-        <div class="leccion-texto">
-          <h3 class="leccion-titulo" id="leccionTitulo">Selecciona un tema para comenzar</h3>
-          <p class="leccion-descripcion" id="leccionDescripcion"></p>
         </div>
       </div>
 

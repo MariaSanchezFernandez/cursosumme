@@ -5,7 +5,7 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
 <PlantillaAdmin titulo="Detalle alumno" paginaActual="alumnos">
 
   <div id="msg-global" style="display:none; padding:0.75rem 1rem; border-radius:7px;
-    font-size:0.82rem; margin-bottom:1.25rem; max-width:640px;"></div>
+    font-size:0.82rem; margin-bottom:1.25rem;"></div>
 
   <!-- Cabecera perfil -->
   <div class="perfil-cabecera" id="perfil-cabecera" style="display:none;">
@@ -17,9 +17,9 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
   </div>
 
   <!-- Fechas de acceso -->
-  <div id="acceso-wrap" style="display:none; max-width:640px; margin-bottom:1.75rem;">
+  <div id="acceso-wrap" style="display:none; margin-bottom:1.75rem;">
     <p class="seccion-titulo" style="margin-bottom:0.75rem;">Acceso a la plataforma</p>
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:1rem;">
       <div class="form-grupo" style="margin:0;">
         <label class="form-label">Fecha de alta</label>
         <input class="form-input" type="date" id="inp-fecha-alta" />
@@ -42,7 +42,7 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
   </div>
 
   <!-- Progreso del alumno -->
-  <div id="progreso-wrap" style="display:none; max-width:760px; margin-bottom:2rem;">
+  <div id="progreso-wrap" style="display:none; margin-bottom:2rem;">
     <p class="seccion-titulo" style="margin-bottom:0.75rem;">Progreso del alumno</p>
     <div id="progreso-lista"></div>
   </div>
@@ -51,7 +51,7 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
 
   <div id="cursos-carga" style="color:#aaa; font-size:0.85rem; margin-bottom:1rem;">Cargando…</div>
 
-  <div id="cursos-container" style="max-width:640px; display:none;"></div>
+  <div id="cursos-container" style="display:none;"></div>
 
   <div id="cursos-vacio" style="display:none; font-size:0.85rem; color:#aaa; margin-bottom:1rem;">
     No hay cursos disponibles todavía.
@@ -109,7 +109,7 @@ function mostrarMsg(texto: string, tipo: 'ok' | 'error') {
   setTimeout(() => { msgGlobal.style.display = 'none'; }, 4000);
 }
 
-const acentos = ['#b5d8cc','#b5c8e8','#d4c8e8','#e8d4b5','#e8c8b5','#c8e8b5'];
+const PALETA = ['#b5d8cc','#b5c8e8','#d4c8e8','#e8d4b5','#e8c8b5','#c8e8b5'];
 const cursosSeleccionados = new Set<number>();
 
 async function cargar() {
@@ -210,7 +210,7 @@ async function cargar() {
       const total    = temas.length;
       const vistos   = temas.filter((t: any) => temaVistos.has(Number(t.id))).length;
       const pct      = total > 0 ? Math.round((vistos / total) * 100) : 0;
-      const color    = curso.color || curso.pack_color || 'var(--color-primary)';
+      const color    = curso.color || curso.pack_color || PALETA[Number(curso.id) % PALETA.length];
 
       const card = document.createElement('div');
       card.style.cssText = 'background:#fff; border:1px solid #e8eeec; border-radius:12px; padding:1rem 1.25rem; margin-bottom:0.75rem;';
@@ -301,7 +301,6 @@ function renderCursosConPacks(cursos: any[], idsAsignados: Set<number>, containe
     grupos.get(key)!.push(c);
   }
 
-  let idxGlobal = 0;
   const hayPacks = [...grupos.keys()].some(k => k !== '');
 
   grupos.forEach((lista, pack) => {
@@ -339,7 +338,7 @@ function renderCursosConPacks(cursos: any[], idsAsignados: Set<number>, containe
       lista.forEach(curso => {
         const asignado = idsAsignados.has(Number(curso.id));
         if (asignado) cursosSeleccionados.add(Number(curso.id));
-        grupo.appendChild(crearItemCurso(curso, asignado, idxGlobal++, btnSel, lista));
+        grupo.appendChild(crearItemCurso(curso, asignado, btnSel, lista));
       });
       actualizarBtnPack(btnSel, lista);
       container.appendChild(grupo);
@@ -357,7 +356,7 @@ function renderCursosConPacks(cursos: any[], idsAsignados: Set<number>, containe
       lista.forEach(curso => {
         const asignado = idsAsignados.has(Number(curso.id));
         if (asignado) cursosSeleccionados.add(Number(curso.id));
-        grid.appendChild(crearItemCurso(curso, asignado, idxGlobal++, null, []));
+        grid.appendChild(crearItemCurso(curso, asignado, null, []));
       });
       container.appendChild(grid);
     }
@@ -372,7 +371,7 @@ function actualizarBtnPack(btn: HTMLButtonElement, lista: any[]) {
   btn.style.color       = todosOn ? '#1a2e28' : '';
 }
 
-function crearItemCurso(curso: any, asignado: boolean, idx: number, btnPack: HTMLButtonElement | null, packLista: any[]): HTMLElement {
+function crearItemCurso(curso: any, asignado: boolean, btnPack: HTMLButtonElement | null, packLista: any[]): HTMLElement {
   const item = document.createElement('div');
   item.className       = `modulo-item${asignado ? ' asignado' : ''}`;
   item.dataset.cursoId = String(curso.id);
@@ -382,7 +381,7 @@ function crearItemCurso(curso: any, asignado: boolean, idx: number, btnPack: HTM
         <path d="M1 4l3 3 6-6" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>
-    <div class="modulo-acento" style="background:${curso.color || curso.pack_color || acentos[idx % acentos.length]}"></div>
+    <div class="modulo-acento" style="background:${curso.color || curso.pack_color || PALETA[Number(curso.id) % PALETA.length]}"></div>
     <div class="modulo-info">
       <p class="modulo-titulo">${curso.titulo}</p>
       <p class="modulo-meta">${curso.etiqueta} · ${curso.nivel}${curso.duracion ? ' · ' + curso.duracion : ''}</p>

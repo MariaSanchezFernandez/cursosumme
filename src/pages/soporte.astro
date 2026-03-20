@@ -1,0 +1,708 @@
+---
+import Plantilla from '../layouts/Plantilla.astro';
+import CabeceraApp from '../components/CabeceraApp.astro';
+import PiePagina from '../components/PiePagina.astro';
+---
+
+<Plantilla>
+  <CabeceraApp />
+
+  <main class="sp-main">
+    <div class="sp-container">
+
+      <!-- Cabecera de sección -->
+      <div class="sp-header">
+        <div>
+          <h1 class="sp-titulo">Mis consultas</h1>
+          <p class="sp-subtitulo">Escríbenos si tienes alguna duda o incidencia</p>
+        </div>
+        <button class="sp-btn-nueva" id="btnNueva">
+          <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
+            <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+          Nueva consulta
+        </button>
+      </div>
+
+      <!-- Modal: nueva consulta -->
+      <div class="sp-modal-overlay" id="modalOverlay">
+        <div class="sp-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitulo">
+          <div class="sp-modal-header">
+            <h2 class="sp-modal-titulo" id="modalTitulo">Nueva consulta</h2>
+            <button class="sp-modal-cerrar" id="btnCerrarModal" aria-label="Cerrar">
+              <svg viewBox="0 0 16 16" fill="none" width="16" height="16">
+                <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+          <div class="sp-modal-cuerpo">
+            <div class="sp-field">
+              <label class="sp-label" for="inputAsunto">Asunto</label>
+              <input class="sp-input" type="text" id="inputAsunto" placeholder="¿Sobre qué trata tu consulta?" maxlength="255" />
+            </div>
+            <div class="sp-field">
+              <label class="sp-label" for="inputMensaje">Mensaje</label>
+              <textarea class="sp-textarea" id="inputMensaje" rows="5" placeholder="Describe tu consulta con el mayor detalle posible…"></textarea>
+            </div>
+            <p class="sp-form-error" id="formError"></p>
+            <div class="sp-modal-acciones">
+              <button class="sp-btn-cancelar" id="btnCancelarModal">Cancelar</button>
+              <button class="sp-btn-enviar" id="btnEnviar">Enviar consulta</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lista de tickets -->
+      <div id="listaTickets">
+        <div class="sp-cargando" id="estadoCargando">Cargando tus consultas…</div>
+      </div>
+
+    </div>
+  </main>
+
+  <PiePagina />
+</Plantilla>
+
+<!-- GUARDIA DE RUTA -->
+<script is:inline>
+  (function () {
+    try {
+      var raw = sessionStorage.getItem('umme_session');
+      if (!raw) { window.location.replace('/'); return; }
+      var s = JSON.parse(raw);
+      if (!s || Date.now() > s.exp) {
+        sessionStorage.removeItem('umme_session');
+        window.location.replace('/');
+        return;
+      }
+      if (s.rol === 'admin') {
+        window.location.replace('/admin');
+        return;
+      }
+    } catch (e) {
+      window.location.replace('/');
+    }
+  })();
+</script>
+
+<script>
+const s = (() => {
+  try { return JSON.parse(sessionStorage.getItem('umme_session') || '{}'); } catch { return {}; }
+})();
+
+const userId = parseInt(s.userId) || 0;
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+const overlay        = document.getElementById('modalOverlay') as HTMLElement;
+const btnNueva       = document.getElementById('btnNueva') as HTMLButtonElement;
+const btnCerrar      = document.getElementById('btnCerrarModal') as HTMLButtonElement;
+const btnCancelar    = document.getElementById('btnCancelarModal') as HTMLButtonElement;
+const btnEnviar      = document.getElementById('btnEnviar') as HTMLButtonElement;
+const inputAsunto    = document.getElementById('inputAsunto') as HTMLInputElement;
+const inputMensaje   = document.getElementById('inputMensaje') as HTMLTextAreaElement;
+const formError      = document.getElementById('formError') as HTMLElement;
+const listaTickets   = document.getElementById('listaTickets') as HTMLElement;
+const estadoCargando = document.getElementById('estadoCargando') as HTMLElement;
+
+function abrirModal() {
+  overlay.classList.add('activo');
+  inputAsunto.focus();
+}
+
+function cerrarModal() {
+  overlay.classList.remove('activo');
+  inputAsunto.value  = '';
+  inputMensaje.value = '';
+  formError.textContent = '';
+}
+
+btnNueva.addEventListener('click', abrirModal);
+btnCerrar.addEventListener('click', cerrarModal);
+btnCancelar.addEventListener('click', cerrarModal);
+overlay.addEventListener('click', (e) => { if (e.target === overlay) cerrarModal(); });
+
+// ── Crear ticket ─────────────────────────────────────────────────────────────
+btnEnviar.addEventListener('click', async () => {
+  const asunto  = inputAsunto.value.trim();
+  const mensaje = inputMensaje.value.trim();
+  formError.textContent = '';
+
+  if (!asunto)  { formError.textContent = 'El asunto es obligatorio.'; return; }
+  if (!mensaje) { formError.textContent = 'El mensaje es obligatorio.'; return; }
+
+  btnEnviar.disabled = true;
+  btnEnviar.textContent = 'Enviando…';
+
+  try {
+    const res  = await fetch('/api/tickets.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ usuario_id: userId, asunto, mensaje }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      cerrarModal();
+      cargarTickets();
+    } else {
+      formError.textContent = data.error || 'Error al enviar la consulta.';
+    }
+  } catch {
+    formError.textContent = 'Error de conexión. Inténtalo de nuevo.';
+  }
+
+  btnEnviar.disabled = false;
+  btnEnviar.textContent = 'Enviar consulta';
+});
+
+// ── Cargar tickets ────────────────────────────────────────────────────────────
+async function cargarTickets() {
+  try {
+    const res  = await fetch(`/api/tickets.php?usuario_id=${userId}`);
+    const data = await res.json();
+
+    estadoCargando.style.display = 'none';
+    listaTickets.innerHTML = '';
+
+    if (!data.ok || !data.tickets || data.tickets.length === 0) {
+      listaTickets.innerHTML = `
+        <div class="sp-vacio">
+          <svg viewBox="0 0 48 48" fill="none" width="48" height="48">
+            <circle cx="24" cy="24" r="20" stroke="#c8dcd3" stroke-width="2"/>
+            <path d="M16 20h16M16 27h10" stroke="#c8dcd3" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <p>Aún no tienes ninguna consulta</p>
+          <p class="sp-vacio-sub">Usa el botón "Nueva consulta" para escribirnos</p>
+        </div>`;
+      return;
+    }
+
+    data.tickets.forEach((ticket: any) => {
+      listaTickets.appendChild(crearTarjetaTicket(ticket));
+    });
+  } catch {
+    estadoCargando.textContent = 'Error al cargar las consultas.';
+  }
+}
+
+// ── Crear tarjeta de ticket ───────────────────────────────────────────────────
+function crearTarjetaTicket(ticket: any): HTMLElement {
+  const div = document.createElement('div');
+  div.className = 'sp-ticket';
+  div.dataset.id = ticket.id;
+
+  const numResp    = ticket.respuestas ? ticket.respuestas.length : 0;
+  const fechaStr   = formatearFecha(ticket.creado_en);
+  const badgeClass = claseBadge(ticket.estado);
+  const badgeTxt   = textoEstado(ticket.estado);
+  const puedeC     = ticket.estado !== 'cerrado';
+
+  div.innerHTML = `
+    <div class="sp-ticket-cabecera" data-toggle="${ticket.id}">
+      <div class="sp-ticket-info">
+        <span class="sp-ticket-asunto">${escHtml(ticket.asunto)}</span>
+        <div class="sp-ticket-meta">
+          <span class="sp-badge ${badgeClass}">${badgeTxt}</span>
+          <span class="sp-ticket-fecha">${fechaStr}</span>
+          <span class="sp-ticket-resp">${numResp} ${numResp === 1 ? 'respuesta' : 'respuestas'}</span>
+        </div>
+      </div>
+      <svg class="sp-chevron" viewBox="0 0 16 16" fill="none" width="16" height="16">
+        <path d="M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <div class="sp-ticket-detalle" id="detalle-${ticket.id}">
+      <div class="sp-mensaje-original">
+        <p class="sp-msg-label">Tu mensaje</p>
+        <p class="sp-msg-texto">${escHtml(ticket.mensaje)}</p>
+      </div>
+
+      ${numResp > 0 ? `
+        <div class="sp-respuestas">
+          ${ticket.respuestas.map((r: any) => `
+            <div class="sp-respuesta">
+              <div class="sp-resp-header">
+                <span class="sp-resp-admin">${escHtml(r.admin_nombre || 'Administrador')}</span>
+                <span class="sp-resp-fecha">${formatearFecha(r.creado_en)}</span>
+              </div>
+              <p class="sp-resp-texto">${escHtml(r.mensaje)}</p>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+
+      ${puedeC ? `
+        <div class="sp-ticket-acciones">
+          <button class="sp-btn-cerrar-ticket" data-id="${ticket.id}">
+            Marcar como cerrada
+          </button>
+        </div>
+      ` : ''}
+    </div>
+  `;
+
+  // Toggle expandir
+  const cabecera = div.querySelector(`[data-toggle="${ticket.id}"]`) as HTMLElement;
+  const detalle  = div.querySelector(`#detalle-${ticket.id}`) as HTMLElement;
+  const chevron  = div.querySelector('.sp-chevron') as HTMLElement;
+
+  cabecera.addEventListener('click', () => {
+    const abierto = detalle.classList.toggle('abierto');
+    chevron.classList.toggle('girado', abierto);
+  });
+
+  // Botón cerrar ticket
+  const btnCerrarT = div.querySelector('.sp-btn-cerrar-ticket');
+  if (btnCerrarT) {
+    btnCerrarT.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const btn = e.currentTarget as HTMLButtonElement;
+      btn.disabled = true;
+      btn.textContent = 'Cerrando…';
+      try {
+        const res  = await fetch('/api/tickets.php', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ticket_id: parseInt(ticket.id), estado: 'cerrado' }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          cargarTickets();
+        } else {
+          btn.disabled = false;
+          btn.textContent = 'Marcar como cerrada';
+        }
+      } catch {
+        btn.disabled = false;
+        btn.textContent = 'Marcar como cerrada';
+      }
+    });
+  }
+
+  return div;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function escHtml(str: string): string {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function formatearFecha(fechaStr: string): string {
+  try {
+    const d = new Date(fechaStr.replace(' ', 'T'));
+    return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+  } catch { return fechaStr; }
+}
+
+function claseBadge(estado: string): string {
+  if (estado === 'abierto')    return 'badge-abierto';
+  if (estado === 'respondido') return 'badge-respondido';
+  if (estado === 'cerrado')    return 'badge-cerrado';
+  return '';
+}
+
+function textoEstado(estado: string): string {
+  if (estado === 'abierto')    return 'Abierta';
+  if (estado === 'respondido') return 'Respondida';
+  if (estado === 'cerrado')    return 'Cerrada';
+  return estado;
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+cargarTickets();
+</script>
+
+<style is:global>
+/* ── Layout ──────────────────────────────────────────────────────────────────*/
+.sp-main {
+  min-height: calc(100vh - 56px);
+  background: #f4f7f6;
+  padding: 2.5rem 1.5rem 4rem;
+}
+
+.sp-container {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+/* ── Cabecera sección ─────────────────────────────────────────────────────────*/
+.sp-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+
+.sp-titulo {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.sp-subtitulo {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  margin: 0.2rem 0 0;
+}
+
+.sp-btn-nueva {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1.1rem;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 9px;
+  font-family: inherit;
+  font-size: 0.83rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.14s;
+}
+.sp-btn-nueva:hover { opacity: 0.87; }
+
+/* ── Modal ───────────────────────────────────────────────────────────────────*/
+.sp-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+.sp-modal-overlay.activo { display: flex; }
+
+.sp-modal {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+  width: 100%;
+  max-width: 520px;
+  overflow: hidden;
+}
+
+.sp-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem 0.9rem;
+  border-bottom: 1px solid #e8eeec;
+}
+
+.sp-modal-titulo {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.sp-modal-cerrar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  transition: background 0.12s;
+}
+.sp-modal-cerrar:hover { background: #f0f4f2; }
+
+.sp-modal-cuerpo {
+  padding: 1.4rem 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.sp-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #b5bfbb;
+}
+
+.sp-input,
+.sp-textarea {
+  padding: 0.6rem 0.85rem;
+  border: 1px solid #d8e4df;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.87rem;
+  color: var(--color-text);
+  background: #fff;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.sp-input:focus,
+.sp-textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(66,178,134,0.12);
+}
+
+.sp-form-error {
+  font-size: 0.8rem;
+  color: #c33;
+  min-height: 1em;
+  margin: 0;
+}
+
+.sp-modal-acciones {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.sp-btn-cancelar {
+  padding: 0.52rem 1rem;
+  background: none;
+  border: 1px solid #d8e4df;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.sp-btn-cancelar:hover { background: #f4f7f6; }
+
+.sp-btn-enviar {
+  padding: 0.52rem 1.25rem;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.83rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.14s;
+}
+.sp-btn-enviar:hover { opacity: 0.87; }
+.sp-btn-enviar:disabled { opacity: 0.5; cursor: default; }
+
+/* ── Estado cargando / vacío ─────────────────────────────────────────────────*/
+.sp-cargando {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.sp-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 3.5rem 1rem;
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+}
+.sp-vacio p { margin: 0; }
+.sp-vacio-sub { font-size: 0.78rem; color: #b5bfbb; }
+
+/* ── Tarjeta ticket ──────────────────────────────────────────────────────────*/
+.sp-ticket {
+  background: #fff;
+  border: 1px solid #e8eeec;
+  border-radius: 12px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+  margin-bottom: 0.9rem;
+  overflow: hidden;
+}
+
+.sp-ticket-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.12s;
+}
+.sp-ticket-cabecera:hover { background: #f9fbfa; }
+
+.sp-ticket-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.sp-ticket-asunto {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sp-ticket-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.sp-ticket-fecha,
+.sp-ticket-resp {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+/* ── Badges ──────────────────────────────────────────────────────────────────*/
+.sp-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+.badge-abierto    { background: #fff3e6; color: #b25a00; }
+.badge-respondido { background: #e6f0fb; color: #1a5fa8; }
+.badge-cerrado    { background: #f0f2f0; color: #7a8a82; }
+
+/* ── Chevron ─────────────────────────────────────────────────────────────────*/
+.sp-chevron {
+  flex-shrink: 0;
+  color: #b5bfbb;
+  transition: transform 0.2s;
+}
+.sp-chevron.girado { transform: rotate(180deg); }
+
+/* ── Detalle ticket ──────────────────────────────────────────────────────────*/
+.sp-ticket-detalle {
+  display: none;
+  border-top: 1px solid #edf2ef;
+  padding: 1.25rem;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.sp-ticket-detalle.abierto { display: flex; }
+
+.sp-mensaje-original {
+  background: #f9fbfa;
+  border-radius: 8px;
+  padding: 1rem 1.1rem;
+}
+
+.sp-msg-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #b5bfbb;
+  margin: 0 0 0.4rem;
+}
+
+.sp-msg-texto {
+  font-size: 0.86rem;
+  color: var(--color-text);
+  line-height: 1.65;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+/* ── Respuestas admin ────────────────────────────────────────────────────────*/
+.sp-respuestas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.sp-respuesta {
+  background: #edf7f2;
+  border-left: 3px solid var(--color-primary);
+  border-radius: 0 8px 8px 0;
+  padding: 0.85rem 1rem;
+}
+
+.sp-resp-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.4rem;
+}
+
+.sp-resp-admin {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.sp-resp-fecha {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+}
+
+.sp-resp-texto {
+  font-size: 0.86rem;
+  color: var(--color-text);
+  line-height: 1.65;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+/* ── Acciones ────────────────────────────────────────────────────────────────*/
+.sp-ticket-acciones {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.sp-btn-cerrar-ticket {
+  padding: 0.4rem 0.9rem;
+  background: none;
+  border: 1px solid #d8e4df;
+  border-radius: 7px;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.sp-btn-cerrar-ticket:hover {
+  background: #f4f7f6;
+  border-color: #c2d4cc;
+  color: var(--color-text);
+}
+.sp-btn-cerrar-ticket:disabled { opacity: 0.5; cursor: default; }
+
+/* ── Responsive ──────────────────────────────────────────────────────────────*/
+@media (max-width: 600px) {
+  .sp-main { padding: 1.5rem 1rem 3rem; }
+  .sp-header { flex-direction: column; align-items: stretch; }
+  .sp-btn-nueva { justify-content: center; }
+  .sp-ticket-asunto { white-space: normal; }
+  .sp-modal-acciones { flex-direction: column-reverse; }
+  .sp-btn-cancelar,
+  .sp-btn-enviar { width: 100%; justify-content: center; }
+}
+</style>

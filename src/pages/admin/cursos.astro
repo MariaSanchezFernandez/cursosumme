@@ -212,7 +212,7 @@ import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
 </style>
 
 <script>
-const acentos = ['#b5d8cc','#b5c8e8','#d4c8e8','#e8d4b5','#e8c8b5','#c8e8b5'];
+const PALETA = ['#b5d8cc','#b5c8e8','#d4c8e8','#e8d4b5','#e8c8b5','#c8e8b5'];
 const PALETA_COLORES = ['#b5d8cc','#b5c8e8','#d4c8e8','#e8d4b5','#e8c8b5','#c8e8b5','#f5b5c0','#c0d4f5'];
 let todosLosCursos: any[] = [];
 
@@ -282,7 +282,7 @@ function renderizarCursos(filtro: string) {
     grupos.get(key)!.push(c);
   }
 
-  let idxGlobal = 0;
+
   grupos.forEach((cursos, pack) => {
     const section = document.createElement('div');
     section.className = 'pack-section';
@@ -365,8 +365,7 @@ function renderizarCursos(filtro: string) {
     const grid = document.createElement('div');
     grid.className = 'cursos-cards';
     cursos.forEach((c: any) => {
-      const acento = c.color || c.pack_color || packColor || acentos[idxGlobal % acentos.length];
-      idxGlobal++;
+      const acento = c.color || c.pack_color || packColor || PALETA[Number(c.id) % PALETA.length];
       const card = document.createElement('div');
       card.className = 'curso-card';
       card.innerHTML = `
@@ -463,17 +462,16 @@ function renderizarCursos(filtro: string) {
     section.appendChild(gridWrap);
     contenido.appendChild(section);
 
-    // Si no hay cabecera (filtro específico), mostrar directamente
-    if (!headerEl) {
-      gridWrap.classList.add('abierto');
-    }
+    // Siempre empezar expandido
+    gridWrap.classList.add('abierto');
 
-    // Click en cabecera para expandir/colapsar (packs e individuales)
+    // Click en cabecera para expandir/colapsar
     if (headerEl) {
+      const chevron = headerEl.querySelector<HTMLElement>('.pack-chevron');
+      if (chevron) chevron.style.transform = 'rotate(90deg)';
       headerEl.addEventListener('click', (e) => {
         if ((e.target as HTMLElement).closest('button')) return;
         const isOpen = gridWrap.classList.toggle('abierto');
-        const chevron = headerEl!.querySelector<HTMLElement>('.pack-chevron');
         if (chevron) chevron.style.transform = isOpen ? 'rotate(90deg)' : 'rotate(0deg)';
       });
     }

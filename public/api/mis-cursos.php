@@ -5,6 +5,8 @@
 // ─────────────────────────────────────────────────────────────
 
 header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store, no-cache, must-revalidate');
+header('Pragma: no-cache');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
@@ -27,9 +29,18 @@ if (!$usuarioId) {
 require_once __DIR__ . '/db-connect.php';
 $pdo = obtenerPDO();
 
-// Auto-migración: columnas descripcion en cursos y temas
-try { $pdo->exec("ALTER TABLE cursos ADD COLUMN IF NOT EXISTS descripcion TEXT DEFAULT NULL"); } catch (\Throwable $e) {}
-try { $pdo->exec("ALTER TABLE temas   ADD COLUMN IF NOT EXISTS descripcion TEXT DEFAULT NULL"); } catch (\Throwable $e) {}
+// Auto-migración: columnas opcionales (compatible con MySQL antiguo)
+$migraciones = [
+    "ALTER TABLE cursos ADD COLUMN descripcion TEXT DEFAULT NULL",
+    "ALTER TABLE cursos ADD COLUMN color VARCHAR(20) DEFAULT NULL",
+    "ALTER TABLE cursos ADD COLUMN pack_color VARCHAR(20) DEFAULT NULL",
+    "ALTER TABLE temas ADD COLUMN descripcion TEXT DEFAULT NULL",
+    "ALTER TABLE temas ADD COLUMN color VARCHAR(20) DEFAULT NULL",
+    "ALTER TABLE temas ADD COLUMN duracion VARCHAR(50) NOT NULL DEFAULT ''",
+];
+foreach ($migraciones as $sql) {
+    try { $pdo->exec($sql); } catch (\Throwable $e) { /* columna ya existe */ }
+}
 
 // Cursos asignados al alumno (activos)
 $stmtCursos = $pdo->prepare(
@@ -97,5 +108,6 @@ foreach ($temasRows as $t) {
 foreach ($cursos as &$c) {
     $c['temas'] = $temasPorCurso[$c['id']] ?? [];
 }
+unset($c);
 
 echo json_encode(['ok' => true, 'cursos' => $cursos]);

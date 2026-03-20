@@ -19,8 +19,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$temaId = (int)($_POST['tema_id'] ?? 0);
-$tipo   = $_POST['tipo'] ?? '';
+$temaId   = (int)($_POST['tema_id'] ?? 0);
+$tipo     = $_POST['tipo'] ?? '';
+$duracion = isset($_POST['duracion']) ? (int)$_POST['duracion'] : null;
 
 if (!$temaId || !in_array($tipo, ['video', 'documento'])) {
     http_response_code(400);
@@ -102,6 +103,12 @@ $stmt->execute([
 ]);
 
 $materialId = $pdo->lastInsertId();
+
+// Si es un vídeo y se proporcionó duración, actualizarla en el tema
+if ($tipo === 'video' && $duracion !== null && $duracion > 0) {
+    $stmtDur = $pdo->prepare('UPDATE temas SET duracion = :dur WHERE id = :id');
+    $stmtDur->execute([':dur' => $duracion, ':id' => $temaId]);
+}
 
 echo json_encode([
     'ok'       => true,

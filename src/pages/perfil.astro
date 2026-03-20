@@ -131,13 +131,14 @@ async function cargarFoto() {
 
 function mostrarFoto(url: string) {
   pfSvg.style.display = 'none';
-  let img = pfAvatar.querySelector('img');
+  let img = pfAvatar.querySelector('img') as HTMLImageElement | null;
   if (!img) {
     img = document.createElement('img');
     img.alt = 'Foto de perfil';
+    img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;';
     pfAvatar.insertBefore(img, pfAvatar.firstChild);
   }
-  (img as HTMLImageElement).src = url;
+  img.src = url;
 }
 
 cargarFoto();

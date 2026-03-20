@@ -24,7 +24,7 @@ if ($metodo === 'GET') {
     try { $pdo->exec('ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS fecha_baja DATE DEFAULT NULL'); } catch (PDOException $e) {}
 
     $stmt = $pdo->query(
-        'SELECT u.id, u.nombre, u.apellidos, u.email, u.fecha_alta, u.fecha_baja, u.activo,
+        'SELECT u.id, u.nombre, u.apellidos, u.email, u.fecha_alta, u.fecha_baja, u.activo, u.foto_perfil,
                 SUM(CASE WHEN c.activo = 1 THEN 1 ELSE 0 END) AS num_cursos
          FROM usuarios u
          LEFT JOIN usuarios_cursos uc ON uc.usuario_id = u.id

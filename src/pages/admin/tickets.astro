@@ -1,0 +1,612 @@
+---
+import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
+---
+
+<PlantillaAdmin titulo="Soporte" paginaActual="tickets">
+
+  <div class="tk-wrap">
+
+    <!-- Filtros / tabs -->
+    <div class="tk-tabs" id="tkTabs">
+      <button class="tk-tab activo" data-filtro="todos">Todos <span class="tk-count" id="cntTodos">—</span></button>
+      <button class="tk-tab" data-filtro="abierto">Abiertos <span class="tk-count" id="cntAbiertos">—</span></button>
+      <button class="tk-tab" data-filtro="respondido">Respondidos <span class="tk-count" id="cntRespondidos">—</span></button>
+      <button class="tk-tab" data-filtro="cerrado">Cerrados <span class="tk-count" id="cntCerrados">—</span></button>
+    </div>
+
+    <!-- Lista -->
+    <div id="listaAdmin">
+      <div class="tk-cargando" id="tkCargando">Cargando consultas…</div>
+    </div>
+
+  </div>
+
+</PlantillaAdmin>
+
+<script>
+const s = (() => {
+  try { return JSON.parse(sessionStorage.getItem('umme_session') || '{}'); } catch { return {}; }
+})();
+
+const adminId = parseInt(s.userId) || 0;
+
+let todosLosTickets: any[] = [];
+let filtroActual = 'todos';
+
+const listaAdmin  = document.getElementById('listaAdmin') as HTMLElement;
+const tkCargando  = document.getElementById('tkCargando') as HTMLElement;
+
+// ── Cargar tickets ────────────────────────────────────────────────────────────
+async function cargarTickets() {
+  try {
+    const res  = await fetch('/api/tickets.php?admin=1');
+    const data = await res.json();
+    tkCargando.style.display = 'none';
+
+    if (!data.ok) {
+      listaAdmin.innerHTML = '<div class="tk-cargando">Error al cargar los tickets.</div>';
+      return;
+    }
+
+    todosLosTickets = data.tickets || [];
+    actualizarContadores();
+    renderizarLista();
+  } catch {
+    tkCargando.textContent = 'Error de conexión.';
+  }
+}
+
+function actualizarContadores() {
+  const total      = todosLosTickets.length;
+  const abiertos   = todosLosTickets.filter(t => t.estado === 'abierto').length;
+  const respondidos = todosLosTickets.filter(t => t.estado === 'respondido').length;
+  const cerrados   = todosLosTickets.filter(t => t.estado === 'cerrado').length;
+
+  (document.getElementById('cntTodos')      as HTMLElement).textContent = String(total);
+  (document.getElementById('cntAbiertos')   as HTMLElement).textContent = String(abiertos);
+  (document.getElementById('cntRespondidos') as HTMLElement).textContent = String(respondidos);
+  (document.getElementById('cntCerrados')   as HTMLElement).textContent = String(cerrados);
+}
+
+function renderizarLista() {
+  const filtrados = filtroActual === 'todos'
+    ? todosLosTickets
+    : todosLosTickets.filter(t => t.estado === filtroActual);
+
+  listaAdmin.innerHTML = '';
+
+  if (filtrados.length === 0) {
+    listaAdmin.innerHTML = `
+      <div class="tk-vacio">
+        <svg viewBox="0 0 48 48" fill="none" width="44" height="44">
+          <circle cx="24" cy="24" r="20" stroke="#c8dcd3" stroke-width="2"/>
+          <path d="M16 20h16M16 27h10" stroke="#c8dcd3" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <p>No hay consultas en este estado</p>
+      </div>`;
+    return;
+  }
+
+  filtrados.forEach(ticket => {
+    listaAdmin.appendChild(crearFilaTicket(ticket));
+  });
+}
+
+// ── Fila ticket ───────────────────────────────────────────────────────────────
+function crearFilaTicket(ticket: any): HTMLElement {
+  const div = document.createElement('div');
+  div.className = 'tk-ticket';
+  div.dataset.id = ticket.id;
+
+  const numResp    = ticket.respuestas ? ticket.respuestas.length : 0;
+  const fechaStr   = formatearFecha(ticket.creado_en);
+  const badgeClass = claseBadge(ticket.estado);
+  const badgeTxt   = textoEstado(ticket.estado);
+
+  div.innerHTML = `
+    <div class="tk-fila-cabecera" data-toggle="${ticket.id}">
+      <div class="tk-alumno">
+        <span class="tk-alumno-nombre">${escHtml(ticket.alumno_nombre || 'Alumno')}</span>
+        <span class="tk-alumno-email">${escHtml(ticket.alumno_email || '')}</span>
+      </div>
+      <div class="tk-asunto">${escHtml(ticket.asunto)}</div>
+      <div class="tk-meta">
+        <span class="tk-badge ${badgeClass}">${badgeTxt}</span>
+        <span class="tk-fecha">${fechaStr}</span>
+        <span class="tk-resp-count">${numResp} resp.</span>
+      </div>
+      <svg class="tk-chevron" viewBox="0 0 16 16" fill="none" width="16" height="16">
+        <path d="M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <div class="tk-fila-detalle" id="tkDetalle-${ticket.id}">
+      <!-- Mensaje original -->
+      <div class="tk-seccion">
+        <p class="tk-seccion-label">Mensaje del alumno</p>
+        <div class="tk-mensaje-original">
+          <p class="tk-msg-texto">${escHtml(ticket.mensaje)}</p>
+        </div>
+      </div>
+
+      <!-- Respuestas existentes -->
+      ${numResp > 0 ? `
+        <div class="tk-seccion">
+          <p class="tk-seccion-label">Respuestas anteriores</p>
+          <div class="tk-respuestas-lista">
+            ${ticket.respuestas.map((r: any) => `
+              <div class="tk-respuesta-item">
+                <div class="tk-resp-meta">
+                  <span class="tk-resp-admin">${escHtml(r.admin_nombre || 'Admin')}</span>
+                  <span class="tk-resp-fecha">${formatearFecha(r.creado_en)}</span>
+                </div>
+                <p class="tk-msg-texto">${escHtml(r.mensaje)}</p>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
+
+      <!-- Formulario de respuesta -->
+      ${ticket.estado !== 'cerrado' ? `
+        <div class="tk-seccion">
+          <p class="tk-seccion-label">Responder</p>
+          <div class="tk-form-respuesta">
+            <textarea class="tk-textarea" id="tkMsg-${ticket.id}" rows="4" placeholder="Escribe tu respuesta…"></textarea>
+            <div class="tk-form-acciones">
+              <div class="tk-estado-select-wrap">
+                <label class="tk-select-label" for="tkEstado-${ticket.id}">Estado tras responder</label>
+                <select class="tk-select" id="tkEstado-${ticket.id}">
+                  <option value="respondido" ${ticket.estado === 'respondido' ? 'selected' : ''}>Respondido</option>
+                  <option value="cerrado">Cerrado</option>
+                </select>
+              </div>
+              <button class="tk-btn-responder" data-id="${ticket.id}">
+                Enviar respuesta
+              </button>
+            </div>
+            <p class="tk-form-msg" id="tkFormMsg-${ticket.id}"></p>
+          </div>
+        </div>
+      ` : `
+        <div class="tk-seccion">
+          <p class="tk-badge badge-cerrado" style="display:inline-flex;">Esta consulta está cerrada</p>
+        </div>
+      `}
+    </div>
+  `;
+
+  // Toggle expandir
+  const cabecera = div.querySelector(`[data-toggle="${ticket.id}"]`) as HTMLElement;
+  const detalle  = div.querySelector(`#tkDetalle-${ticket.id}`) as HTMLElement;
+  const chevron  = div.querySelector('.tk-chevron') as HTMLElement;
+
+  cabecera.addEventListener('click', () => {
+    const abierto = detalle.classList.toggle('abierto');
+    chevron.classList.toggle('girado', abierto);
+  });
+
+  // Enviar respuesta
+  const btnResp = div.querySelector('.tk-btn-responder');
+  if (btnResp) {
+    btnResp.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const btn     = e.currentTarget as HTMLButtonElement;
+      const tid     = parseInt(btn.dataset.id || '0');
+      const txtArea = document.getElementById(`tkMsg-${tid}`) as HTMLTextAreaElement;
+      const selEst  = document.getElementById(`tkEstado-${tid}`) as HTMLSelectElement;
+      const msgEl   = document.getElementById(`tkFormMsg-${tid}`) as HTMLElement;
+      const mensaje  = txtArea.value.trim();
+
+      msgEl.textContent = '';
+      msgEl.style.color = '#c33';
+
+      if (!mensaje) { msgEl.textContent = 'El mensaje no puede estar vacío.'; return; }
+
+      btn.disabled = true;
+      btn.textContent = 'Enviando…';
+
+      try {
+        const res  = await fetch('/api/tickets.php', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ticket_id: tid,
+            admin_id: adminId,
+            mensaje,
+            estado: selEst.value,
+          }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          cargarTickets();
+        } else {
+          msgEl.textContent = data.error || 'Error al enviar la respuesta.';
+          btn.disabled = false;
+          btn.textContent = 'Enviar respuesta';
+        }
+      } catch {
+        msgEl.textContent = 'Error de conexión.';
+        btn.disabled = false;
+        btn.textContent = 'Enviar respuesta';
+      }
+    });
+  }
+
+  return div;
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+document.getElementById('tkTabs')!.addEventListener('click', (e) => {
+  const tab = (e.target as HTMLElement).closest('.tk-tab') as HTMLButtonElement | null;
+  if (!tab) return;
+  document.querySelectorAll('.tk-tab').forEach(t => t.classList.remove('activo'));
+  tab.classList.add('activo');
+  filtroActual = tab.dataset.filtro || 'todos';
+  renderizarLista();
+});
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function escHtml(str: string): string {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function formatearFecha(fechaStr: string): string {
+  try {
+    const d = new Date(fechaStr.replace(' ', 'T'));
+    return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+  } catch { return fechaStr; }
+}
+
+function claseBadge(estado: string): string {
+  if (estado === 'abierto')    return 'badge-abierto';
+  if (estado === 'respondido') return 'badge-respondido';
+  if (estado === 'cerrado')    return 'badge-cerrado';
+  return '';
+}
+
+function textoEstado(estado: string): string {
+  if (estado === 'abierto')    return 'Abierto';
+  if (estado === 'respondido') return 'Respondido';
+  if (estado === 'cerrado')    return 'Cerrado';
+  return estado;
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+cargarTickets();
+</script>
+
+<style is:global>
+/* ── Wrap ────────────────────────────────────────────────────────────────────*/
+.tk-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ── Tabs ────────────────────────────────────────────────────────────────────*/
+.tk-tabs {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.tk-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 1rem;
+  border: 1px solid #d8e4df;
+  border-radius: 8px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.tk-tab:hover { background: #f4f7f6; }
+.tk-tab.activo {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+.tk-tab.activo .tk-count { background: rgba(255,255,255,0.25); color: #fff; }
+
+.tk-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 5px;
+  background: #edf2ef;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+/* ── Cargando / vacío ────────────────────────────────────────────────────────*/
+.tk-cargando {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.tk-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 3rem 1rem;
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+}
+.tk-vacio p { margin: 0; }
+
+/* ── Ticket card ─────────────────────────────────────────────────────────────*/
+.tk-ticket {
+  background: #fff;
+  border: 1px solid #e8eeec;
+  border-radius: 12px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+
+.tk-fila-cabecera {
+  display: grid;
+  grid-template-columns: 180px 1fr auto auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.12s;
+}
+.tk-fila-cabecera:hover { background: #f9fbfa; }
+
+.tk-alumno {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+.tk-alumno-nombre {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tk-alumno-email {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tk-asunto {
+  font-size: 0.85rem;
+  color: var(--color-text);
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tk-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-shrink: 0;
+}
+
+.tk-fecha,
+.tk-resp-count {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* ── Badges ──────────────────────────────────────────────────────────────────*/
+.tk-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.badge-abierto    { background: #fff3e6; color: #b25a00; }
+.badge-respondido { background: #e6f0fb; color: #1a5fa8; }
+.badge-cerrado    { background: #f0f2f0; color: #7a8a82; }
+
+/* ── Chevron ─────────────────────────────────────────────────────────────────*/
+.tk-chevron {
+  flex-shrink: 0;
+  color: #b5bfbb;
+  transition: transform 0.2s;
+}
+.tk-chevron.girado { transform: rotate(180deg); }
+
+/* ── Detalle ─────────────────────────────────────────────────────────────────*/
+.tk-fila-detalle {
+  display: none;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.25rem;
+  border-top: 1px solid #edf2ef;
+  background: #fafcfb;
+}
+.tk-fila-detalle.abierto { display: flex; }
+
+.tk-seccion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.tk-seccion-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #b5bfbb;
+  margin: 0;
+}
+
+.tk-mensaje-original {
+  background: #fff;
+  border: 1px solid #e8eeec;
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
+}
+
+.tk-msg-texto {
+  font-size: 0.86rem;
+  color: var(--color-text);
+  line-height: 1.65;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+/* ── Respuestas anteriores ───────────────────────────────────────────────────*/
+.tk-respuestas-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.tk-respuesta-item {
+  background: #edf7f2;
+  border-left: 3px solid var(--color-primary);
+  border-radius: 0 8px 8px 0;
+  padding: 0.8rem 1rem;
+}
+
+.tk-resp-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.35rem;
+}
+.tk-resp-admin {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+.tk-resp-fecha {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+}
+
+/* ── Formulario respuesta ────────────────────────────────────────────────────*/
+.tk-form-respuesta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.tk-textarea {
+  padding: 0.65rem 0.9rem;
+  border: 1px solid #d8e4df;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.86rem;
+  color: var(--color-text);
+  background: #fff;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.tk-textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(66,178,134,0.12);
+}
+
+.tk-form-acciones {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.tk-estado-select-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.tk-select-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #b5bfbb;
+}
+
+.tk-select {
+  padding: 0.5rem 0.8rem;
+  border: 1px solid #d8e4df;
+  border-radius: 7px;
+  font-family: inherit;
+  font-size: 0.82rem;
+  color: var(--color-text);
+  background: #fff;
+  outline: none;
+  cursor: pointer;
+}
+.tk-select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(66,178,134,0.12);
+}
+
+.tk-btn-responder {
+  padding: 0.52rem 1.2rem;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.83rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.14s;
+  white-space: nowrap;
+}
+.tk-btn-responder:hover { opacity: 0.87; }
+.tk-btn-responder:disabled { opacity: 0.5; cursor: default; }
+
+.tk-form-msg {
+  font-size: 0.8rem;
+  color: #c33;
+  min-height: 1em;
+  margin: 0;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────────*/
+@media (max-width: 768px) {
+  .tk-fila-cabecera {
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+  }
+  .tk-alumno { grid-column: 1; }
+  .tk-asunto { grid-column: 1 / -1; font-size: 0.82rem; white-space: normal; }
+  .tk-meta   { grid-column: 1; }
+  .tk-chevron { grid-row: 1; grid-column: 2; }
+  .tk-form-acciones { flex-direction: column; align-items: stretch; }
+  .tk-btn-responder { text-align: center; }
+}
+</style>

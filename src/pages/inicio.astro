@@ -91,6 +91,7 @@ const filtrosWrap      = document.getElementById('filtros')!;
 const descCursos       = document.getElementById('desc-cursos')!;
 const detalleTit       = document.getElementById('detalleTitulo')!;
 const listaTemas       = document.getElementById('listaTemas')!;
+const panelSubtemas    = document.getElementById('panelSubtemas') as HTMLElement;
 const btnVolver        = document.getElementById('btnVolver')!;
 const leccionTit       = document.getElementById('leccionTitulo')!;
 const leccionDesc      = document.getElementById('leccionDescripcion')!;
@@ -104,8 +105,9 @@ const introDesc        = document.getElementById('introDescripcion')!;
 const introTemaLista   = document.getElementById('introTemaLista')!;
 
 let todosCursos: any[] = [];
-const acentos = ['c1','c2','c3','c4'];
-const acentosHex = ['#b3e8da','#fff8b7','#ffb5a7','#d4c9f7'];
+let visitedIds: Set<number> = new Set();
+const PALETA = ['#b5d8cc','#b5c8e8','#d4c8e8','#e8d4b5','#e8c8b5','#c8e8b5'];
+function colorCurso(c: any) { return c.color || c.pack_color || PALETA[Number(c.id) % PALETA.length]; }
 
 // ── Cargar cursos desde la BD ─────────────────────────────────
 const sesion = JSON.parse(sessionStorage.getItem('umme_session') || '{}');
@@ -130,22 +132,104 @@ if (marcaAgua && sesion.email) {
 videoPlayer.addEventListener('contextmenu', e => e.preventDefault());
 videoPlayer.addEventListener('dragstart', e => e.preventDefault());
 
+// Mostrar duración real del vídeo en el sidebar cuando carga
+function actualizarDurSidebar() {
+  const dur = videoPlayer.duration;
+  if (!isFinite(dur) || dur <= 0) return;
+  const totalSec = Math.round(dur);
+  const h    = Math.floor(totalSec / 3600);
+  const mins = Math.floor((totalSec % 3600) / 60);
+  const secs = totalSec % 60;
+  const durStr = h > 0
+    ? `${h}h ${mins}min`
+    : secs > 0 ? `${mins}min ${secs}s` : `${mins} min`;
+  const activoBtn = listaTemas.querySelector('.tema-btn.activo');
+  if (!activoBtn) return;
+  let durSpan = activoBtn.querySelector('.tema-dur') as HTMLElement | null;
+  if (!durSpan) {
+    durSpan = document.createElement('span');
+    durSpan.className = 'tema-dur';
+    activoBtn.querySelector('.tema-info')!.appendChild(durSpan);
+  }
+  durSpan.textContent = durStr;
+}
+videoPlayer.addEventListener('loadedmetadata', actualizarDurSidebar);
+videoPlayer.addEventListener('durationchange',  actualizarDurSidebar);
+
 // Registrar progreso cuando el video termina
 let temaActualId: number | null = null;
-videoPlayer.addEventListener('ended', () => {
-  if (sesion.userId && temaActualId) {
-    fetch('/api/progreso.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ usuario_id: sesion.userId, tema_id: temaActualId }),
-    }).catch(() => {});
+let cursoActivo: any = null;
+
+function actualizarProgresoUI() {
+  if (!cursoActivo) return;
+  const temas = cursoActivo.temas ?? [];
+  const total = temas.length;
+  const completados = temas.filter((t: any) => visitedIds.has(Number(t.id))).length;
+  const pct = total > 0 ? Math.round(completados / total * 100) : 0;
+  const color = colorCurso(cursoActivo);
+
+  // Panel de detalle
+  document.getElementById('temasCompletados')!.textContent = String(completados);
+  const fillEl = document.getElementById('progresoFill');
+  const pctEl  = document.getElementById('progresoPct');
+  if (fillEl) fillEl.style.width = pct + '%';
+  if (pctEl)  pctEl.textContent  = pct + '%';
+
+  // Tarjeta en la lista de cursos
+  const article = document.querySelector<HTMLElement>(`.curso[data-curso-id="${cursoActivo.id}"]`);
+  if (article) {
+    const fill    = article.querySelector<HTMLElement>('.curso-prog-fill');
+    const pctSpan = article.querySelector<HTMLElement>('.curso-pct-span');
+    if (fill)    fill.style.width = pct + '%';
+    if (pctSpan) {
+      pctSpan.textContent    = pct + '%';
+      pctSpan.style.color    = pct === 100 ? '#1d7a52' : pct > 0 ? color : '#b5bfbb';
+      pctSpan.style.fontWeight = pct > 0 ? '600' : '400';
+    }
   }
+
+  // Marcar tema como completado en el sidebar (clase + icono check)
+  const temaBtn = listaTemas.querySelector<HTMLElement>('.tema-btn.activo');
+  if (temaBtn) {
+    temaBtn.classList.add('completado');
+    const circle = temaBtn.querySelector('svg circle');
+    const oldIcon = temaBtn.querySelector('svg polygon, svg line, svg path[d*="M5 8"]');
+    if (circle && !temaBtn.querySelector('svg path[d*="M5 8"]')) {
+      const check = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      check.setAttribute('d', 'M5 8l2 2 4-4');
+      check.setAttribute('stroke', 'currentColor');
+      check.setAttribute('stroke-width', '1.5');
+      check.setAttribute('stroke-linecap', 'round');
+      check.setAttribute('stroke-linejoin', 'round');
+      if (oldIcon) oldIcon.replaceWith(check);
+      else circle.parentElement!.appendChild(check);
+    }
+  }
+}
+
+videoPlayer.addEventListener('ended', () => {
+  if (!sesion.userId || !temaActualId) return;
+  fetch('/api/progreso.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ usuario_id: sesion.userId, tema_id: temaActualId }),
+  }).then(r => r.json()).then(data => {
+    if (!data.ok) return;
+    visitedIds.add(temaActualId!);
+    actualizarProgresoUI();
+  }).catch(() => {});
 });
 
 async function cargarCursos() {
   try {
-    const res  = await fetch(`/api/mis-cursos.php?usuario_id=${sesion.userId}`);
-    const data = await res.json();
+    const [resCursos, resProgreso] = await Promise.all([
+      fetch(`/api/mis-cursos.php?usuario_id=${sesion.userId}`),
+      fetch(`/api/progreso.php?usuario_id=${sesion.userId}`),
+    ]);
+    const data     = await resCursos.json();
+    const dataProg = await resProgreso.json();
+
+    if (dataProg.ok) visitedIds = new Set((dataProg.vistos as number[]).map(Number));
 
     if (!data.ok) {
       listaCursos.innerHTML = '<p style="padding:2rem; color:#aaa; font-size:0.85rem;">Error al cargar los cursos.</p>';
@@ -209,19 +293,19 @@ function renderCursos(cursos: any[]) {
     header.classList.add('abierto');
 
     listaCursosPack.forEach((curso: any) => {
-      const i = todosCursos.indexOf(curso);
-      const colorPersonal = curso.color || curso.pack_color || null;
-      const acentoAttr = colorPersonal
-        ? `style="background:${colorPersonal}"`
-        : `class="${acentos[i % acentos.length]}"`;
       const numTemas = curso.temas?.length ?? 0;
       const durTotal = calcularDuracionTotal(curso.temas ?? []);
 
+      const completados = (curso.temas ?? []).filter((t: any) => visitedIds.has(Number(t.id))).length;
+      const pct = numTemas > 0 ? Math.round(completados / numTemas * 100) : 0;
+      const color = colorCurso(curso);
+
       const article = document.createElement('article');
       article.className = 'curso';
+      article.dataset.cursoId = String(curso.id);
       article.innerHTML = `
         <button class="curso-fila">
-          <div class="curso-acento" ${acentoAttr}></div>
+          <div class="curso-acento" style="background:${color}"></div>
           <div class="curso-info">
             <h2>${curso.titulo}</h2>
             ${curso.descripcion?.trim() ? `<p class="curso-desc-preview">${curso.descripcion.trim()}</p>` : ''}
@@ -230,12 +314,14 @@ function renderCursos(cursos: any[]) {
               ${durTotal ? `<span>·</span><span>${durTotal}</span>` : ''}
               <span>·</span>
               <span>${curso.nivel}</span>
+              ${numTemas > 0 ? `<span>·</span><span class="curso-pct-span" style="color:${pct === 100 ? '#1d7a52' : pct > 0 ? color : '#b5bfbb'}; font-weight:${pct > 0 ? 600 : 400}">${pct}%</span>` : ''}
             </div>
           </div>
           <svg class="chevron-fila" viewBox="0 0 16 16" fill="none">
             <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </button>
+        ${numTemas > 0 ? `<div class="curso-prog-bar"><div class="curso-prog-fill" style="width:${pct}%; background:${color}"></div></div>` : ''}
       `;
       article.querySelector('.curso-fila')!.addEventListener('click', () => abrirCurso(curso, article));
       packBody.appendChild(article);
@@ -267,14 +353,22 @@ function calcularDuracionTotal(temas: any[]): string {
 
 // ── Abrir panel de detalle ────────────────────────────────────
 function abrirCurso(curso: any, articleEl: HTMLElement) {
+  cursoActivo = curso;
+  const totalTemas = curso.temas?.length ?? 0;
+  const completadosTemas = (curso.temas ?? []).filter((t: any) => visitedIds.has(Number(t.id))).length;
+  const pctDetalle = totalTemas > 0 ? Math.round(completadosTemas / totalTemas * 100) : 0;
+
   detalleTit.textContent = curso.titulo;
-  document.getElementById('temasTotal')!.textContent       = String(curso.temas?.length ?? 0);
-  document.getElementById('temasCompletados')!.textContent = '0';
+  document.getElementById('temasTotal')!.textContent       = String(totalTemas);
+  document.getElementById('temasCompletados')!.textContent = String(completadosTemas);
+  const fillEl = document.getElementById('progresoFill');
+  const pctEl  = document.getElementById('progresoPct');
+  if (fillEl) fillEl.style.width = pctDetalle + '%';
+  if (pctEl)  pctEl.textContent  = pctDetalle + '%';
 
   // Color del curso para CSS custom property
-  const i = todosCursos.indexOf(curso);
-  const colorCurso = curso.color || curso.pack_color || acentosHex[i % acentosHex.length];
-  document.getElementById('colDetalle')!.style.setProperty('--curso-color', colorCurso);
+  const color = colorCurso(curso);
+  document.getElementById('colDetalle')!.style.setProperty('--curso-color', color);
 
   // ── Lista de temas en sidebar ────────────────────────────
   listaTemas.innerHTML = '';
@@ -282,23 +376,28 @@ function abrirCurso(curso: any, articleEl: HTMLElement) {
     const li = document.createElement('li');
     li.className = 'tema-item';
     const tieneVideo = tema.materiales?.some((m: any) => m.tipo === 'video');
+    const yaVisto = visitedIds.has(Number(tema.id));
     li.innerHTML = `
       <button class="tema-btn">
-        <span class="tema-icono" style="--curso-color:${colorCurso}">
+        <span class="tema-icono" style="--curso-color:${color}">
           <svg viewBox="0 0 16 16" fill="none" width="14" height="14" style="display:block">
             <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3"/>
-            ${tieneVideo
-              ? '<polygon points="6.5,5 11.5,8 6.5,11" fill="currentColor"/>'
-              : '<line x1="5" y1="8" x2="11" y2="8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>'}
+            ${yaVisto
+              ? '<path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>'
+              : tieneVideo
+                ? '<polygon points="6.5,5 11.5,8 6.5,11" fill="currentColor"/>'
+                : '<line x1="5" y1="8" x2="11" y2="8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>'}
           </svg>
         </span>
         <span class="tema-info">
           <span class="tema-texto">${idx + 1}. ${tema.titulo}</span>
-          <span class="tema-dur">${tema.duracion ? tema.duracion + ' min' : '—'}</span>
+          ${tema.duracion ? `<span class="tema-dur">${tema.duracion} min</span>` : ''}
         </span>
       </button>
     `;
-    li.querySelector('.tema-btn')!.addEventListener('click', () => seleccionarTema(tema, li));
+    const btn = li.querySelector('.tema-btn')!;
+    if (visitedIds.has(Number(tema.id))) btn.classList.add('completado');
+    btn.addEventListener('click', () => seleccionarTema(tema, li));
     listaTemas.appendChild(li);
   });
 
@@ -316,7 +415,7 @@ function abrirCurso(curso: any, articleEl: HTMLElement) {
     btn.className = 'intro-tema-item';
     const tieneVideo = tema.materiales?.some((m: any) => m.tipo === 'video');
     btn.innerHTML = `
-      <span class="intro-tema-num" style="background:${colorCurso}">${idx + 1}</span>
+      <span class="intro-tema-num" style="background:${color}">${idx + 1}</span>
       <span class="intro-tema-info">
         <span class="intro-tema-titulo">${tema.titulo}</span>
         ${tema.descripcion?.trim() ? `<span class="intro-tema-desc">${tema.descripcion.trim()}</span>` : ''}
@@ -336,8 +435,10 @@ function abrirCurso(curso: any, articleEl: HTMLElement) {
     introTemaLista.appendChild(btn);
   });
 
-  // Mostrar intro, ocultar tabs/video
-  panelIntro.style.display = 'flex';
+  // Mostrar intro, ocultar sidebar y tabs/video
+  panelSubtemas.style.flex    = '0 0 0';
+  panelSubtemas.style.opacity = '0';
+  panelIntro.style.display     = 'flex';
   panelContenido.style.display = 'none';
 
   document.querySelectorAll('.curso').forEach(c => c.classList.remove('activo'));
@@ -347,8 +448,10 @@ function abrirCurso(curso: any, articleEl: HTMLElement) {
 
 // ── Seleccionar tema: reproducir vídeo + materiales ───────────
 function seleccionarTema(tema: any, liEl: HTMLElement) {
-  // Pasar de intro a panel de contenido
-  panelIntro.style.display    = 'none';
+  // Pasar de intro a panel de contenido (mostrar sidebar)
+  panelSubtemas.style.flex    = '0 0 250px';
+  panelSubtemas.style.opacity = '1';
+  panelIntro.style.display     = 'none';
   panelContenido.style.display = 'flex';
 
   listaTemas.querySelectorAll('.tema-btn').forEach(b => b.classList.remove('activo'));
@@ -408,6 +511,8 @@ btnVolver.addEventListener('click', () => {
   videoPlayer.style.display      = 'none';
   videoPlaceholder.style.display = 'flex';
   videoTitulo.textContent        = 'Selecciona un tema';
+  panelSubtemas.style.flex    = '0 0 0';
+  panelSubtemas.style.opacity = '0';
   panelIntro.style.display       = 'none';
   panelContenido.style.display   = 'flex';
 });
