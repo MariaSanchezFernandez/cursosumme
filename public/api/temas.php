@@ -1,0 +1,128 @@
+<?php
+// ─────────────────────────────────────────────────────────────
+// api/temas.php  —  CRUD de temas de un curso
+// GET    ?curso_id=X  → lista temas con número de materiales
+// POST              → crea tema  { curso_id, titulo, duracion }
+// PUT               → actualiza  { id, titulo, duracion, orden }
+// DELETE ?id=X      → elimina tema (en cascada sus materiales)
+// ─────────────────────────────────────────────────────────────
+
+header('Content-Type: application/json; charset=utf-8');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
+
+require_once __DIR__ . '/db-connect.php';
+$pdo = obtenerPDO();
+
+$metodo = $_SERVER['REQUEST_METHOD'];
+
+// ── GET ──────────────────────────────────────────────────────
+if ($metodo === 'GET') {
+    // Migración automática: añadir columnas si no existen
+    try { $pdo->exec('ALTER TABLE temas ADD COLUMN IF NOT EXISTS color VARCHAR(20) DEFAULT NULL'); } catch (PDOException $e) {}
+    try { $pdo->exec('ALTER TABLE temas ADD COLUMN IF NOT EXISTS descripcion TEXT DEFAULT NULL'); } catch (PDOException $e) {}
+
+    $cursoId = isset($_GET['curso_id']) ? (int)$_GET['curso_id'] : 0;
+    if (!$cursoId) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'mensaje' => 'Falta curso_id']);
+        exit;
+    }
+    $stmt = $pdo->prepare(
+        'SELECT t.id, t.titulo, t.descripcion, t.duracion, t.orden, t.color,
+                COUNT(m.id) AS num_materiales
+         FROM temas t
+         LEFT JOIN materiales m ON m.tema_id = t.id
+         WHERE t.curso_id = :curso_id
+         GROUP BY t.id
+         ORDER BY t.orden ASC, t.id ASC'
+    );
+    $stmt->execute([':curso_id' => $cursoId]);
+    echo json_encode(['ok' => true, 'temas' => $stmt->fetchAll()]);
+    exit;
+}
+
+// ── POST ─────────────────────────────────────────────────────
+if ($metodo === 'POST') {
+    $body = json_decode(file_get_contents('php://input'), true);
+    if (empty($body['curso_id']) || empty($body['titulo'])) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'mensaje' => 'Faltan campos obligatorios']);
+        exit;
+    }
+    // Calcular el siguiente orden
+    $stmtOrden = $pdo->prepare('SELECT COALESCE(MAX(orden), 0) + 1 AS siguiente FROM temas WHERE curso_id = :curso_id');
+    $stmtOrden->execute([':curso_id' => (int)$body['curso_id']]);
+    $orden = $stmtOrden->fetchColumn();
+
+    $stmt = $pdo->prepare(
+        'INSERT INTO temas (curso_id, titulo, descripcion, duracion, orden, color) VALUES (:curso_id, :titulo, :descripcion, :duracion, :orden, :color)'
+    );
+    $stmt->execute([
+        ':curso_id'    => (int)$body['curso_id'],
+        ':titulo'      => trim($body['titulo']),
+        ':descripcion' => !empty($body['descripcion']) ? trim($body['descripcion']) : null,
+        ':duracion'    => trim($body['duracion'] ?? ''),
+        ':orden'       => $orden,
+        ':color'       => null,
+    ]);
+    echo json_encode(['ok' => true, 'id' => $pdo->lastInsertId(), 'orden' => $orden]);
+    exit;
+}
+
+// ── PUT ──────────────────────────────────────────────────────
+if ($metodo === 'PUT') {
+    $body = json_decode(file_get_contents('php://input'), true);
+    if (empty($body['id'])) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'mensaje' => 'Falta el id del tema']);
+        exit;
+    }
+    $stmt = $pdo->prepare(
+        'UPDATE temas SET titulo=:titulo, descripcion=:descripcion, duracion=:duracion, orden=:orden, color=:color WHERE id=:id'
+    );
+    $stmt->execute([
+        ':titulo'      => trim($body['titulo'] ?? ''),
+        ':descripcion' => isset($body['descripcion']) ? trim($body['descripcion']) : null,
+        ':duracion'    => trim($body['duracion'] ?? ''),
+        ':orden'       => (int)($body['orden'] ?? 0),
+        ':color'       => !empty($body['color']) ? trim($body['color']) : null,
+        ':id'          => (int)$body['id'],
+    ]);
+    echo json_encode(['ok' => true]);
+    exit;
+}
+
+// ── DELETE ───────────────────────────────────────────────────
+if ($metodo === 'DELETE') {
+    $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+    if (!$id) {
+        $body = json_decode(file_get_contents('php://input'), true);
+        $id = (int)($body['id'] ?? 0);
+    }
+    if (!$id) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'mensaje' => 'Falta el id del tema']);
+        exit;
+    }
+    // Eliminar archivos físicos de los materiales del tema
+    $stmtMat = $pdo->prepare('SELECT ruta FROM materiales WHERE tema_id = :tema_id');
+    $stmtMat->execute([':tema_id' => $id]);
+    $materiales = $stmtMat->fetchAll();
+    $docRoot = rtrim($_SERVER['DOCUMENT_ROOT'], '/');
+    foreach ($materiales as $mat) {
+        $ruta = $docRoot . $mat['ruta'];
+        if (file_exists($ruta)) { @unlink($ruta); }
+    }
+    // El FK CASCADE eliminará los materiales en BD
+    $stmt = $pdo->prepare('DELETE FROM temas WHERE id = :id');
+    $stmt->execute([':id' => $id]);
+    echo json_encode(['ok' => true]);
+    exit;
+}
+
+http_response_code(405);
+echo json_encode(['ok' => false, 'mensaje' => 'Método no permitido']);

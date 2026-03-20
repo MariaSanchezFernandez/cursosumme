@@ -1,10 +1,5 @@
 ---
 import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
-import { getAlumnos } from '../../../data/usuarios';
-import { cursos } from '../../../data/cursos';
-
-const alumnos = getAlumnos();
-const cursoMap = Object.fromEntries(cursos.map(c => [c.id, c.titulo]));
 ---
 
 <PlantillaAdmin titulo="Alumnos" paginaActual="alumnos">
@@ -12,47 +7,102 @@ const cursoMap = Object.fromEntries(cursos.map(c => [c.id, c.titulo]));
   <div class="tabla-wrap">
     <div class="tabla-header">
       <span class="tabla-titulo">Todos los alumnos</span>
-      <a href="/admin/alumnos/nuevo" class="btn-admin primario">
+      <a href="/admin/alumnos/crear-alumno" class="btn-admin primario">
         <svg viewBox="0 0 16 16" fill="none">
           <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
         </svg>
         Nuevo alumno
       </a>
     </div>
-    <table>
+
+    <div id="estado-carga" style="padding:2rem 1.5rem; color:#aaa; font-size:0.85rem;">
+      Cargando alumnos…
+    </div>
+
+    <table id="tabla-alumnos" style="display:none;">
       <thead>
         <tr>
           <th>Nombre</th>
           <th>Email</th>
-          <th>Módulos</th>
+          <th>Cursos</th>
           <th>Alta</th>
+          <th>Acceso hasta</th>
           <th></th>
         </tr>
       </thead>
-      <tbody>
-        {alumnos.map(alumno => (
-          <tr>
-            <td class="td-nombre">{alumno.nombre} {alumno.apellidos}</td>
-            <td class="td-email">{alumno.email}</td>
-            <td>
-              {alumno.modulosAsignados.length === 0
-                ? <span class="badge-modulos vacio">—</span>
-                : <span class="badge-modulos">{alumno.modulosAsignados.length}</span>
-              }
-            </td>
-            <td>{alumno.fechaAlta}</td>
-            <td>
-              <a href={`/admin/alumnos/${alumno.id}`} class="btn-admin">
-                Ver detalle
-                <svg viewBox="0 0 16 16" fill="none">
-                  <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </a>
-            </td>
-          </tr>
-        ))}
-      </tbody>
+      <tbody id="tbody-alumnos"></tbody>
     </table>
+
+    <div id="estado-vacio" style="display:none; padding:2rem 1.5rem; color:#aaa; font-size:0.85rem;">
+      No hay alumnos todavía.
+      <a href="/admin/alumnos/crear-alumno" style="color:inherit; font-weight:600;">Crear el primero →</a>
+    </div>
   </div>
 
 </PlantillaAdmin>
+
+<script>
+const estadoCarga = document.getElementById('estado-carga')!;
+const tabla       = document.getElementById('tabla-alumnos')!;
+const tbody       = document.getElementById('tbody-alumnos')!;
+const estadoVacio = document.getElementById('estado-vacio')!;
+
+async function cargarAlumnos() {
+  try {
+    const res  = await fetch('/api/alumnos.php');
+    const data = await res.json();
+    estadoCarga.style.display = 'none';
+
+    if (!data.ok || data.alumnos.length === 0) {
+      estadoVacio.style.display = 'block';
+      return;
+    }
+
+    tabla.style.display = 'table';
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+    tbody.innerHTML = data.alumnos.map((a: any) => {
+      const fechaAlta = a.fecha_alta ? new Date(a.fecha_alta).toLocaleDateString('es-ES') : '—';
+
+      let badgeBaja = '—';
+      if (a.fecha_baja) {
+        const fin  = new Date(a.fecha_baja + 'T00:00:00');
+        const dias = Math.round((fin.getTime() - hoy.getTime()) / 86400000);
+        const fechaStr = fin.toLocaleDateString('es-ES');
+        if (dias < 0) {
+          badgeBaja = `<span style="font-size:0.72rem;font-weight:700;padding:0.2rem 0.55rem;border-radius:12px;background:#fdf0f0;color:#c33;">Expirada</span>`;
+        } else if (dias <= 30) {
+          badgeBaja = `<span style="font-size:0.72rem;font-weight:700;padding:0.2rem 0.55rem;border-radius:12px;background:#fff8e6;color:#a06010;" title="${fechaStr}">${dias}d restantes</span>`;
+        } else {
+          badgeBaja = `<span style="font-size:0.72rem;color:#888;">${fechaStr}</span>`;
+        }
+      }
+
+      return `
+        <tr>
+          <td class="td-nombre">${a.nombre} ${a.apellidos}</td>
+          <td class="td-email">${a.email}</td>
+          <td>
+            ${a.num_cursos > 0
+              ? `<span class="badge-modulos">${a.num_cursos}</span>`
+              : `<span class="badge-modulos vacio">—</span>`}
+          </td>
+          <td>${fechaAlta}</td>
+          <td>${badgeBaja}</td>
+          <td>
+            <a href="/admin/alumnos/detalle?id=${a.id}" class="btn-admin">
+              Ver detalle
+              <svg viewBox="0 0 16 16" fill="none">
+                <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </a>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  } catch {
+    estadoCarga.textContent = 'Error al cargar los alumnos.';
+  }
+}
+
+cargarAlumnos();
+</script>

@@ -5,6 +5,7 @@
   transition: flex 0.35s ease, opacity 0.3s ease;
   display: flex;
   flex-direction: column;
+  background: #fff;
 }
 
 .vista.con-detalle .col-detalle {
@@ -18,7 +19,7 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 0.75rem 1.5rem;
+  padding: 0.9rem 1.5rem;
   border-bottom: 1px solid #e8eeec;
   background: #fff;
   flex-shrink: 0;
@@ -29,22 +30,24 @@
   display: flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.3rem 0.7rem;
-  border: 1px solid #e8eeec;
-  border-radius: 6px;
-  background: #fff;
+  padding: 0.35rem 0.8rem;
+  border: 1px solid #e4ede9;
+  border-radius: 8px;
+  background: #f4f7f6;
   font-family: inherit;
   font-size: 0.78rem;
+  font-weight: 500;
   color: var(--color-text-muted);
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.12s, border-color 0.12s;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
   flex-shrink: 0;
 }
 
 .btn-volver:hover {
-  background: var(--color-light);
+  background: #e9f4ef;
   border-color: var(--color-primary);
+  color: var(--color-text);
 }
 
 .btn-volver svg {
@@ -54,11 +57,12 @@
 
 .detalle-titulo-curso {
   flex: 1;
-  font-size: 0.88rem;
-  font-weight: 600;
+  font-size: 0.9rem;
+  font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: var(--color-text);
 }
 
 /* ── Barra de progreso del curso ── */
@@ -66,11 +70,11 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 0.7rem 1.5rem;
-  background: #fafcfb;
+  padding: 0.65rem 1.5rem;
+  background: #f8fbfa;
   border-bottom: 1px solid #e8eeec;
   flex-shrink: 0;
-  opacity: 0.55;
+  opacity: 0.5;
   pointer-events: none;
   user-select: none;
 }
@@ -83,7 +87,7 @@
 }
 
 .curso-progreso-titulo {
-  font-size: 0.67rem;
+  font-size: 0.65rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -91,14 +95,14 @@
 }
 
 .curso-progreso-dato {
-  font-size: 0.75rem;
+  font-size: 0.73rem;
   color: var(--color-text-muted);
 }
 
 .curso-progreso-barra {
   flex: 1;
-  height: 8px;
-  background: #e8eeec;
+  height: 6px;
+  background: #e2ebe7;
   border-radius: 10px;
   overflow: hidden;
 }
@@ -111,7 +115,7 @@
 }
 
 .curso-progreso-pct {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 700;
   color: var(--color-text-muted);
   flex-shrink: 0;
@@ -128,20 +132,23 @@
 
 /* ── Panel de subtemas ── */
 .panel-subtemas {
-  flex: 0 0 260px;
+  flex: 0 0 250px;
   border-right: 1px solid #e8eeec;
   overflow-y: auto;
-  padding: 1.25rem 0 1rem;
-  background: #fff;
+  padding: 1.25rem 0 1.5rem;
+  background: #f9fbfa;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
 .subtemas-label {
-  font-size: 0.67rem;
+  font-size: 0.63rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #bbb;
-  padding: 0 1.25rem 0.75rem;
+  color: #b5bfbb;
+  padding: 0 1.1rem 0.9rem;
 }
 
 #listaTemas {
@@ -151,50 +158,48 @@
 }
 
 .tema-item {
-  padding: 0 0.75rem;
+  padding: 0 0.6rem;
 }
 
 .tema-btn {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
+  gap: 0.7rem;
+  padding: 0.65rem 0.75rem;
   background: none;
   border: none;
-  border-radius: 8px;
-  border-left: 3px solid transparent;
+  border-radius: 9px;
   cursor: pointer;
   font-family: inherit;
   text-align: left;
-  transition: background 0.15s;
+  transition: background 0.14s;
 }
 
 .tema-btn:hover {
-  background: #f4faf8;
+  background: #eef4f1;
 }
 
 .tema-btn.activo {
-  background: var(--color-light);
-  border-left-color: var(--color-primary);
+  background: color-mix(in srgb, var(--curso-color, var(--color-primary)) 12%, white);
+}
+
+.tema-btn.activo .tema-icono {
+  background: var(--curso-color, var(--color-primary));
+  color: #fff;
 }
 
 .tema-icono {
   flex-shrink: 0;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  background: #f0f5f3;
+  background: #e8efed;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #aaa;
+  color: #6b8078;
   transition: background 0.15s, color 0.15s;
-}
-
-.tema-btn.activo .tema-icono {
-  background: var(--color-primary);
-  color: var(--color-text);
 }
 
 .tema-info {
@@ -202,22 +207,27 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 0.12rem;
 }
 
 .tema-texto {
-  font-size: 0.8rem;
+  font-size: 0.79rem;
   font-weight: 500;
   color: var(--color-text);
-  line-height: 1.35;
+  line-height: 1.4;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.tema-btn.activo .tema-texto {
+  font-weight: 600;
+  color: #1a4a35;
+}
+
 .tema-dur {
-  font-size: 0.7rem;
-  color: #bbb;
+  font-size: 0.68rem;
+  color: #c0cbc7;
 }
 
 /* ── Panel de contenido ── */
@@ -228,29 +238,31 @@
   flex-direction: column;
   padding: 1.5rem;
   gap: 1rem;
+  background: #fff;
 }
 
 /* ── Tabs ── */
 .tabs {
   display: flex;
-  gap: 0.25rem;
-  border-bottom: 1px solid #e8eeec;
+  gap: 0;
+  border-bottom: 2px solid #e8eeec;
   flex-shrink: 0;
 }
 
 .tab {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 1rem;
+  gap: 0.45rem;
+  padding: 0.55rem 1.1rem;
   border: none;
   border-bottom: 2px solid transparent;
   background: none;
   font-family: inherit;
   font-size: 0.82rem;
-  color: var(--color-text-muted);
+  font-weight: 500;
+  color: #a0b0ab;
   cursor: pointer;
-  margin-bottom: -1px;
+  margin-bottom: -2px;
   transition: color 0.12s, border-color 0.12s;
 }
 
@@ -265,8 +277,8 @@
 
 .tab.activo {
   color: var(--color-text);
-  font-weight: 600;
-  border-bottom-color: var(--color-text);
+  font-weight: 700;
+  border-bottom-color: var(--color-primary);
 }
 
 /* ── Tab panels ── */
@@ -282,12 +294,22 @@
 
 /* ── Video ── */
 .video-box {
+  position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
-  background: #1a1a2e;
-  border-radius: 10px;
+  background: #111a17;
+  border-radius: 12px;
   overflow: hidden;
   flex-shrink: 0;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.video-marca-agua {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  user-select: none;
+  z-index: 10;
 }
 
 .video-inner {
@@ -297,27 +319,41 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
+  gap: 0.85rem;
 }
 
 .video-inner svg {
-  width: 64px;
-  height: 64px;
-  opacity: 0.7;
+  width: 60px;
+  height: 60px;
+  opacity: 0.6;
 }
 
 .video-titulo-overlay {
   font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.45);
   text-align: center;
   padding: 0 1rem;
-  max-width: 320px;
+  max-width: 300px;
 }
 
 /* ── Texto lección ── */
 .leccion-titulo {
   font-size: 1rem;
   font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.4;
+}
+
+.leccion-descripcion {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  line-height: 1.7;
+  margin-top: 0.35rem;
+  white-space: pre-line;
+}
+
+.leccion-descripcion:empty {
+  display: none;
 }
 
 .leccion-texto p {
@@ -330,39 +366,196 @@
 .materiales-lista {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.55rem;
 }
 
 .material-item {
   display: flex;
   align-items: center;
   gap: 0.9rem;
-  padding: 0.85rem 1rem;
+  padding: 0.9rem 1.1rem;
   border: 1px solid #e8eeec;
-  border-radius: 8px;
-  background: #fff;
+  border-radius: 10px;
+  background: #fafcfb;
   cursor: pointer;
-  transition: background 0.12s, border-color 0.12s;
+  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
+  text-decoration: none;
+  color: inherit;
 }
 
 .material-item:hover {
-  background: #f7faf9;
+  background: #f0f8f4;
   border-color: var(--color-primary);
+  box-shadow: 0 2px 10px rgba(66,178,134,0.12);
 }
 
 .material-item svg {
   width: 28px;
   height: 28px;
   flex-shrink: 0;
+  color: var(--color-primary);
 }
 
 .material-nombre {
   font-size: 0.83rem;
   font-weight: 600;
   margin-bottom: 0.1rem;
+  color: var(--color-text);
 }
 
 .material-meta {
+  font-size: 0.71rem;
+  color: #b5bfbb;
+}
+
+/* ── Panel Intro (descripción del curso antes de seleccionar tema) ── */
+#panelIntro {
+  display: none;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.intro-desc {
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+  line-height: 1.8;
+  white-space: pre-line;
+}
+
+.intro-desc:empty::before {
+  content: 'Este curso no tiene descripción.';
+  color: #ccc;
+  font-style: italic;
+}
+
+.intro-temas-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #b5bfbb;
+  margin-bottom: 0.75rem;
+}
+
+.intro-temas-lista {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.intro-tema-item {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e8eeec;
+  border-radius: 10px;
+  background: #fafcfb;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+  font-family: inherit;
+  text-align: left;
+  width: 100%;
+  color: inherit;
+}
+
+.intro-tema-item:hover {
+  background: #f0f8f4;
+  border-color: var(--color-primary);
+}
+
+.intro-tema-num {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--curso-color, var(--color-primary));
+  color: #fff;
   font-size: 0.72rem;
-  color: #bbb;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.intro-tema-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.intro-tema-titulo {
+  font-size: 0.83rem;
+  font-weight: 500;
+  color: var(--color-text);
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.intro-tema-desc {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  display: block;
+  margin-top: 0.1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.intro-tema-dur {
+  font-size: 0.71rem;
+  color: #b5bfbb;
+  display: block;
+  margin-top: 0.1rem;
+}
+
+/* ════════════════════════════════════════════
+   RESPONSIVE MÓVIL
+   ════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .detalle-top {
+    padding: 0.65rem 1rem;
+  }
+
+  .curso-progreso {
+    padding: 0.5rem 1rem;
+    gap: 0.5rem;
+  }
+
+  .curso-progreso-info { display: none; }
+
+  /* Cuerpo: apilar subtemas arriba + contenido abajo */
+  .detalle-cuerpo {
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .panel-subtemas {
+    flex: 0 0 auto;
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #e8eeec;
+    padding: 0.75rem 0;
+    max-height: 220px;
+    overflow-y: auto;
+  }
+
+  .panel-contenido {
+    padding: 1rem;
+    overflow-y: visible;
+  }
+
+  .btn-volver {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .detalle-titulo-curso {
+    font-size: 0.82rem;
+  }
 }

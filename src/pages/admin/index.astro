@@ -1,84 +1,183 @@
 ---
 import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
-import { getAlumnos } from '../../data/usuarios';
-import { cursos } from '../../data/cursos';
-
-const alumnos = getAlumnos();
-const totalAlumnos = alumnos.length;
-const totalCursos = cursos.length;
-const alumnosConCursos = alumnos.filter(a => a.modulosAsignados.length > 0).length;
-
-// Últimos 4 alumnos por fecha de alta
-const ultimosAlumnos = [...alumnos]
-  .sort((a, b) => b.fechaAlta.localeCompare(a.fechaAlta))
-  .slice(0, 4);
-
-// Mapa id → título de curso
-const cursoMap = Object.fromEntries(cursos.map(c => [c.id, c.titulo]));
 ---
 
 <PlantillaAdmin titulo="Dashboard" paginaActual="dashboard">
 
   <!-- Stats -->
-  <div class="stats-grid">
+  <div class="stats-grid" id="stats-grid">
     <div class="stat-card">
       <p class="stat-card-label">Alumnos</p>
-      <p class="stat-card-valor">{totalAlumnos}</p>
+      <p class="stat-card-valor" id="stat-alumnos">—</p>
       <p class="stat-card-sub">registrados</p>
     </div>
     <div class="stat-card">
-      <p class="stat-card-label">Cursos</p>
-      <p class="stat-card-valor">{totalCursos}</p>
+      <p class="stat-card-label">Cursos activos</p>
+      <p class="stat-card-valor" id="stat-cursos">—</p>
       <p class="stat-card-sub">disponibles</p>
     </div>
     <div class="stat-card">
-      <p class="stat-card-label">Con módulos</p>
-      <p class="stat-card-valor">{alumnosConCursos}</p>
-      <p class="stat-card-sub">de {totalAlumnos} alumnos</p>
+      <p class="stat-card-label">Packs</p>
+      <p class="stat-card-valor" id="stat-packs">—</p>
+      <p class="stat-card-sub">grupos de cursos</p>
     </div>
     <div class="stat-card">
-      <p class="stat-card-label">Sin módulos</p>
-      <p class="stat-card-valor">{totalAlumnos - alumnosConCursos}</p>
-      <p class="stat-card-sub">pendientes de asignar</p>
+      <p class="stat-card-label">Sin asignar</p>
+      <p class="stat-card-valor" id="stat-sin-cursos">—</p>
+      <p class="stat-card-sub">alumnos pendientes</p>
     </div>
   </div>
 
-  <!-- Últimas altas -->
-  <div class="tabla-wrap">
-    <div class="tabla-header">
-      <span class="tabla-titulo">Últimas altas</span>
-      <a href="/admin/alumnos" class="btn-admin">
-        Ver todos
-        <svg viewBox="0 0 16 16" fill="none">
-          <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </a>
-    </div>
-    <table>
-      <thead>
-        <tr>
-          <th>Nombre</th>
-          <th>Email</th>
-          <th>Módulos asignados</th>
-          <th>Alta</th>
-        </tr>
-      </thead>
-      <tbody>
-        {ultimosAlumnos.map(alumno => (
+  <!-- Dos columnas: alumnos + cursos -->
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; align-items:start;">
+
+    <!-- Últimas altas -->
+    <div class="tabla-wrap">
+      <div class="tabla-header">
+        <span class="tabla-titulo">Últimas altas</span>
+        <a href="/admin/alumnos" class="btn-admin" style="font-size:0.75rem;">
+          Ver todos
+          <svg viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+      <div id="dash-carga" style="padding:2rem 1.5rem; color:#aaa; font-size:0.85rem;">Cargando…</div>
+      <table id="dash-tabla" style="display:none;">
+        <thead>
           <tr>
-            <td class="td-nombre">{alumno.nombre} {alumno.apellidos}</td>
-            <td class="td-email">{alumno.email}</td>
-            <td>
-              {alumno.modulosAsignados.length === 0
-                ? <span class="badge-modulos vacio">—</span>
-                : <span class="badge-modulos">{alumno.modulosAsignados.length}</span>
-              }
-            </td>
-            <td>{alumno.fechaAlta}</td>
+            <th>Nombre</th>
+            <th>Cursos</th>
+            <th></th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody id="dash-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- Cursos del campus -->
+    <div class="tabla-wrap">
+      <div class="tabla-header">
+        <span class="tabla-titulo">Cursos del campus</span>
+        <a href="/admin/cursos" class="btn-admin" style="font-size:0.75rem;">
+          Gestionar
+          <svg viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+      <div id="cursos-carga" style="padding:2rem 1.5rem; color:#aaa; font-size:0.85rem;">Cargando…</div>
+      <div id="cursos-lista" style="display:none; padding:0.5rem 0 0.75rem;"></div>
+    </div>
+
   </div>
 
 </PlantillaAdmin>
+
+<script>
+const acentos = ['#b5d8cc','#b5c8e8','#d4c8e8','#e8d4b5','#e8c8b5','#c8e8b5'];
+
+async function cargarDashboard() {
+  try {
+    const [resAlumnos, resCursos] = await Promise.all([
+      fetch('/api/alumnos.php'),
+      fetch('/api/cursos.php'),
+    ]);
+    const [dataAlumnos, dataCursos] = await Promise.all([
+      resAlumnos.json(),
+      resCursos.json(),
+    ]);
+
+    const alumnos    = dataAlumnos.alumnos ?? [];
+    const todosCursos = dataCursos.cursos ?? [];
+    const cursos     = todosCursos.filter((c: any) => c.activo == 1);
+    const packs      = [...new Set(cursos.map((c: any) => c.pack).filter(Boolean))];
+    const sinAsignar = alumnos.filter((a: any) => !a.num_cursos || a.num_cursos == 0).length;
+
+    (document.getElementById('stat-alumnos')    as HTMLElement).textContent = String(alumnos.length);
+    (document.getElementById('stat-cursos')     as HTMLElement).textContent = String(cursos.length);
+    (document.getElementById('stat-packs')      as HTMLElement).textContent = String(packs.length);
+    (document.getElementById('stat-sin-cursos') as HTMLElement).textContent = String(sinAsignar);
+
+    // ── Tabla alumnos ──
+    const carga = document.getElementById('dash-carga')!;
+    const tabla = document.getElementById('dash-tabla')!;
+    const tbody = document.getElementById('dash-tbody')!;
+    carga.style.display = 'none';
+
+    if (alumnos.length === 0) {
+      carga.textContent   = 'No hay alumnos registrados aún.';
+      carga.style.display = 'block';
+    } else {
+      tabla.style.display = 'table';
+      const ultimos = [...alumnos]
+        .sort((a: any, b: any) => (b.fecha_alta ?? '').localeCompare(a.fecha_alta ?? ''))
+        .slice(0, 6);
+      tbody.innerHTML = ultimos.map((a: any) => `
+        <tr>
+          <td class="td-nombre">${a.nombre} ${a.apellidos}<br>
+            <span style="font-size:0.72rem; color:#aaa; font-weight:400;">${a.email}</span>
+          </td>
+          <td>${a.num_cursos > 0
+            ? `<span class="badge-modulos">${a.num_cursos}</span>`
+            : `<span class="badge-modulos vacio">—</span>`}
+          </td>
+          <td><a href="/admin/alumnos/detalle?id=${a.id}" class="btn-admin" style="font-size:0.72rem; padding:0.25rem 0.6rem; height:auto;">Ver</a></td>
+        </tr>
+      `).join('');
+    }
+
+    // ── Lista cursos por pack ──
+    const cursosEl = document.getElementById('cursos-lista')!;
+    const cursosLoad = document.getElementById('cursos-carga')!;
+    cursosLoad.style.display = 'none';
+
+    if (cursos.length === 0) {
+      cursosLoad.textContent   = 'No hay cursos activos.';
+      cursosLoad.style.display = 'block';
+      return;
+    }
+
+    cursosEl.style.display = 'block';
+    const grupos = new Map<string, any[]>();
+    for (const c of cursos) {
+      const k = c.pack || '__solo__';
+      if (!grupos.has(k)) grupos.set(k, []);
+      grupos.get(k)!.push(c);
+    }
+
+    let idx = 0;
+    grupos.forEach((lista, pack) => {
+      if (pack !== '__solo__') {
+        const hdr = document.createElement('div');
+        hdr.style.cssText = 'display:flex; align-items:center; gap:0.5rem; padding:0.6rem 1.25rem 0.4rem;';
+        hdr.innerHTML = `
+          <svg viewBox="0 0 18 18" fill="none" style="width:13px;height:13px;flex-shrink:0;">
+            <rect x="1" y="5" width="16" height="11" rx="2" stroke="var(--color-primary)" stroke-width="1.6"/>
+            <path d="M6 5V4a3 3 0 016 0v1" stroke="var(--color-primary)" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+          <span style="font-size:0.72rem; font-weight:800; color:var(--color-text);">${pack}</span>
+          <span style="font-size:0.68rem; color:#bbb;">${lista.length} curso${lista.length !== 1 ? 's' : ''}</span>
+        `;
+        cursosEl.appendChild(hdr);
+      }
+      lista.forEach(c => {
+        const acento = acentos[idx++ % acentos.length];
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex; align-items:center; gap:0.6rem; padding:0.5rem 1.25rem; border-top:1px solid #f7faf9;';
+        row.innerHTML = `
+          <div style="width:3px; height:28px; border-radius:2px; background:${acento}; flex-shrink:0;"></div>
+          <div style="flex:1; min-width:0;">
+            <p style="font-size:0.83rem; font-weight:600; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${c.titulo}</p>
+            <p style="font-size:0.7rem; color:#aaa; margin:0;">${c.etiqueta} · ${c.nivel}${c.duracion ? ' · ' + c.duracion : ''}</p>
+          </div>
+          <span style="font-size:0.68rem; color:#aaa; flex-shrink:0;">${c.num_temas} tema${c.num_temas != 1 ? 's' : ''}</span>
+          <a href="/admin/cursos/editar?id=${c.id}" class="btn-admin" style="font-size:0.7rem; padding:0.2rem 0.55rem; height:auto; flex-shrink:0;">Editar</a>
+        `;
+        cursosEl.appendChild(row);
+      });
+    });
+
+  } catch {
+    (document.getElementById('dash-carga') as HTMLElement).textContent = 'Error al cargar el dashboard.';
+  }
+}
+
+cargarDashboard();
+</script>

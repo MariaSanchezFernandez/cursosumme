@@ -8,12 +8,15 @@
     "preview": "astro preview",
     "astro": "astro",
     "deploy": "node scripts/deploy.mjs",
-    "hash-password": "node scripts/hash-password.mjs"
+    "hash-password": "node scripts/hash-password.mjs",
+    "migrar": "node scripts/migrar.mjs"
   },
   "dependencies": {
     "astro": "^5.17.1"
   },
   "devDependencies": {
+    "dotenv": "^17.3.1",
+    "mysql2": "^3.20.0",
     "ssh2-sftp-client": "^12.1.0"
   }
 }

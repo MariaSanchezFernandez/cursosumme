@@ -2,13 +2,24 @@
 import Plantilla from '../layouts/Plantilla.astro';
 import CabeceraApp from '../components/CabeceraApp.astro';
 import PiePagina from '../components/PiePagina.astro';
-import TarjetaCurso from '../components/TarjetaCurso.astro';
 import PanelDetalle from '../components/PanelDetalle.astro';
 import '../styles/inicio.css';
+import '../styles/TarjetaCurso.css';
 ---
 
 <Plantilla>
   <CabeceraApp />
+
+  <div id="banner-vista-admin" style="display:none; background:#fff8e6; border-bottom:2px solid #f0c040; padding:0.55rem 2.5rem; font-size:0.8rem; font-weight:600; color:#7a5500; align-items:center; gap:0.75rem;">
+    <svg viewBox="0 0 16 16" fill="none" width="14" height="14" style="flex-shrink:0;">
+      <path d="M8 2a6 6 0 100 12A6 6 0 008 2z" stroke="currentColor" stroke-width="1.4"/>
+      <path d="M8 7v4M8 5.5v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    Estás viendo la plataforma como alumno (modo vista de administrador).
+    <button onclick="window.close()" style="margin-left:auto; background:none; border:1px solid #c8a020; border-radius:5px; padding:0.2rem 0.6rem; font-size:0.75rem; font-weight:700; color:#7a5500; cursor:pointer;">
+      Cerrar
+    </button>
+  </div>
 
   <main class="main">
     <div class="vista" id="vista">
@@ -17,101 +28,16 @@ import '../styles/inicio.css';
       <div class="col-lista">
         <div class="seccion-header">
           <div>
-            <h1>Todos los cursos</h1>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+            <h1>Mis cursos</h1>
+            <p id="desc-cursos" style="color:var(--color-text-muted); font-size:0.88rem;"> </p>
           </div>
-          <div class="filtros">
-            <button class="filtro activo">Todos</button>
-            <button class="filtro">Categoria A</button>
-            <button class="filtro">Categoria B</button>
-            <button class="filtro">Categoria C</button>
+          <div class="filtros" id="filtros">
+            <button class="filtro activo" data-filtro="todos">Todos</button>
           </div>
         </div>
 
-        <section class="lista">
-          <TarjetaCurso
-            titulo="Lorem ipsum dolor sit amet consectetur"
-            etiqueta="Categoria A"
-            subtemas={4}
-            duracion="4 h 30 min"
-            nivel="Nivel basico"
-            acento="c1"
-            temas={[
-              { titulo: "Lorem ipsum dolor sit amet", duracion: "45 min" },
-              { titulo: "Consectetur adipiscing elit sed", duracion: "30 min" },
-              { titulo: "Ut enim ad minim veniam quis", duracion: "1 h 10 min" },
-              { titulo: "Duis aute irure dolor reprehenderit", duracion: "55 min" }
-            ]}
-          />
-          <TarjetaCurso
-            titulo="Consectetur adipiscing elit sed do eiusmod"
-            etiqueta="Categoria B"
-            subtemas={3}
-            duracion="2 h 15 min"
-            nivel="Nivel intermedio"
-            acento="c2"
-            temas={[
-              { titulo: "Excepteur sint occaecat cupidatat", duracion: "40 min" },
-              { titulo: "Non proident sunt in culpa officia", duracion: "50 min" },
-              { titulo: "Deserunt mollit anim id est laborum", duracion: "45 min" }
-            ]}
-          />
-          <TarjetaCurso
-            titulo="Sed do eiusmod tempor incididunt ut labore"
-            etiqueta="Categoria A"
-            subtemas={6}
-            duracion="8 h 00 min"
-            nivel="Nivel avanzado"
-            acento="c3"
-            temas={[
-              { titulo: "Lorem ipsum dolor sit amet", duracion: "1 h 20 min" },
-              { titulo: "Consectetur adipiscing elit do", duracion: "1 h 00 min" },
-              { titulo: "Sed eiusmod tempor incididunt", duracion: "1 h 30 min" },
-              { titulo: "Ut labore et dolore magna aliqua", duracion: "1 h 10 min" },
-              { titulo: "Quis nostrud exercitation ullamco", duracion: "1 h 00 min" },
-              { titulo: "Laboris nisi ut aliquip commodo", duracion: "1 h 00 min" }
-            ]}
-          />
-          <TarjetaCurso
-            titulo="Incididunt ut labore et dolore magna aliqua"
-            etiqueta="Categoria C"
-            subtemas={2}
-            duracion="1 h 45 min"
-            nivel="Nivel basico"
-            acento="c4"
-            temas={[
-              { titulo: "Duis aute irure dolor reprehenderit", duracion: "50 min" },
-              { titulo: "Voluptate velit esse cillum dolore", duracion: "55 min" }
-            ]}
-          />
-          <TarjetaCurso
-            titulo="Quis nostrud exercitation ullamco laboris"
-            etiqueta="Categoria B"
-            subtemas={5}
-            duracion="5 h 20 min"
-            nivel="Nivel intermedio"
-            acento="c1"
-            temas={[
-              { titulo: "Lorem ipsum dolor sit amet", duracion: "1 h 00 min" },
-              { titulo: "Ut enim ad minim veniam quis", duracion: "1 h 00 min" },
-              { titulo: "Nostrud exercitation ullamco laboris", duracion: "1 h 10 min" },
-              { titulo: "Nisi ut aliquip ex ea commodo", duracion: "1 h 00 min" },
-              { titulo: "Consequat duis aute irure dolor", duracion: "1 h 10 min" }
-            ]}
-          />
-          <TarjetaCurso
-            titulo="Dolore magna aliqua ut enim ad minim"
-            etiqueta="Categoria C"
-            subtemas={3}
-            duracion="3 h 10 min"
-            nivel="Nivel avanzado"
-            acento="c2"
-            temas={[
-              { titulo: "Excepteur sint occaecat cupidatat", duracion: "1 h 00 min" },
-              { titulo: "Non proident sunt in culpa qui", duracion: "1 h 05 min" },
-              { titulo: "Officia deserunt mollit anim laborum", duracion: "1 h 05 min" }
-            ]}
-          />
+        <section class="lista" id="lista-cursos">
+          <div style="padding:2rem; color:#aaa; font-size:0.85rem;">Cargando tus cursos…</div>
         </section>
       </div>
 
@@ -124,81 +50,22 @@ import '../styles/inicio.css';
   <PiePagina />
 </Plantilla>
 
-<script>
-  const vista      = document.getElementById('vista')!;
-  const detalleTit = document.getElementById('detalleTitulo')!;
-  const listaTemas = document.getElementById('listaTemas')!;
-  const btnVolver  = document.getElementById('btnVolver')!;
-  const leccionTit = document.getElementById('leccionTitulo')!;
-  const videoTit   = document.getElementById('videoTitulo')!;
-
-  // Abrir panel al pulsar un curso
-  document.querySelectorAll<HTMLElement>('.curso').forEach((curso) => {
-    curso.querySelector('.curso-fila')!.addEventListener('click', () => {
-      const titulo = curso.dataset.titulo ?? '';
-      const temas: { titulo: string; duracion: string }[] = JSON.parse(curso.dataset.temas ?? '[]');
-
-      detalleTit.textContent = titulo;
-
-      listaTemas.innerHTML = temas.map((t) => `
-        <li class="tema-item" data-titulo="${t.titulo}">
-          <button class="tema-btn">
-            <span class="tema-icono">
-              <svg viewBox="0 0 16 16" fill="none" width="14" height="14" style="display:block">
-                <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3"/>
-                <polygon points="6.5,5 11.5,8 6.5,11" fill="currentColor"/>
-              </svg>
-            </span>
-            <span class="tema-info">
-              <span class="tema-texto">${t.titulo}</span>
-              <span class="tema-dur">${t.duracion}</span>
-            </span>
-          </button>
-        </li>
-      `).join('');
-
-      const primero = listaTemas.querySelector<HTMLButtonElement>('.tema-btn');
-      if (primero) seleccionarTema(primero);
-
-      document.querySelectorAll('.curso').forEach(c => c.classList.remove('activo'));
-      curso.classList.add('activo');
-      vista.classList.add('con-detalle');
-
-      listaTemas.querySelectorAll<HTMLButtonElement>('.tema-btn').forEach((btn) => {
-        btn.addEventListener('click', () => seleccionarTema(btn));
-      });
-    });
-  });
-
-  function seleccionarTema(btn: HTMLButtonElement) {
-    listaTemas.querySelectorAll('.tema-btn').forEach(b => b.classList.remove('activo'));
-    btn.classList.add('activo');
-    const titulo = btn.closest<HTMLElement>('.tema-item')?.dataset.titulo ?? '';
-    leccionTit.textContent = titulo;
-    videoTit.textContent = titulo;
-  }
-
-  // Cerrar panel
-  btnVolver.addEventListener('click', () => {
-    vista.classList.remove('con-detalle');
-    document.querySelectorAll('.curso').forEach(c => c.classList.remove('activo'));
-  });
-
-  // Tabs
-  document.querySelectorAll<HTMLButtonElement>('.tab').forEach((tab) => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('activo'));
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('activo'));
-      tab.classList.add('activo');
-      document.getElementById(`tab-${tab.dataset.tab}`)!.classList.add('activo');
-    });
-  });
-</script>
-
-<!-- GUARDIA DE RUTA: redirige al login si no hay sesión activa -->
+<!-- GUARDIA DE RUTA -->
 <script is:inline>
   (function () {
     try {
+      // Modo vista-admin: cargar sesión temporal desde localStorage
+      if (new URLSearchParams(window.location.search).get('vista-admin')) {
+        const raw = localStorage.getItem('umme_vista_admin');
+        if (raw) {
+          const s = JSON.parse(raw);
+          s.exp = Date.now() + 4 * 60 * 60 * 1000;
+          sessionStorage.setItem('umme_session', JSON.stringify(s));
+          localStorage.removeItem('umme_vista_admin');
+          // Limpiar el parámetro de la URL
+          history.replaceState(null, '', '/inicio');
+        }
+      }
       const raw = sessionStorage.getItem('umme_session');
       if (!raw) { window.location.replace('/'); return; }
       const s = JSON.parse(raw);
@@ -206,9 +73,366 @@ import '../styles/inicio.css';
         sessionStorage.removeItem('umme_session');
         window.location.replace('/');
       }
-    } catch {
-      window.location.replace('/');
-    }
+    } catch { window.location.replace('/'); }
   })();
 </script>
 
+<script>
+// Banner modo vista admin
+try {
+  const s = JSON.parse(sessionStorage.getItem('umme_session') || '{}');
+  if (s.esVistaAdmin) document.getElementById('banner-vista-admin')!.style.display = 'flex';
+} catch {}
+
+// ── Referencias DOM ───────────────────────────────────────────
+const vista            = document.getElementById('vista')!;
+const listaCursos      = document.getElementById('lista-cursos')!;
+const filtrosWrap      = document.getElementById('filtros')!;
+const descCursos       = document.getElementById('desc-cursos')!;
+const detalleTit       = document.getElementById('detalleTitulo')!;
+const listaTemas       = document.getElementById('listaTemas')!;
+const btnVolver        = document.getElementById('btnVolver')!;
+const leccionTit       = document.getElementById('leccionTitulo')!;
+const leccionDesc      = document.getElementById('leccionDescripcion')!;
+const videoPlayer      = document.getElementById('videoPlayer') as HTMLVideoElement;
+const videoPlaceholder = document.getElementById('videoPlaceholder')!;
+const videoTitulo      = document.getElementById('videoTitulo')!;
+const materialesLista  = document.getElementById('materialesLista')!;
+const panelIntro       = document.getElementById('panelIntro')!;
+const panelContenido   = document.getElementById('panelContenido')!;
+const introDesc        = document.getElementById('introDescripcion')!;
+const introTemaLista   = document.getElementById('introTemaLista')!;
+
+let todosCursos: any[] = [];
+const acentos = ['c1','c2','c3','c4'];
+const acentosHex = ['#b3e8da','#fff8b7','#ffb5a7','#d4c9f7'];
+
+// ── Cargar cursos desde la BD ─────────────────────────────────
+const sesion = JSON.parse(sessionStorage.getItem('umme_session') || '{}');
+
+// Marca de agua repetida con email del alumno (patrón sobre todo el video)
+const marcaAgua = document.getElementById('videoMarcaAgua') as HTMLElement;
+if (marcaAgua && sesion.email) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="280" height="120">
+    <text x="50%" y="55%" font-size="13" fill="rgba(255,255,255,0.13)"
+      text-anchor="middle" dominant-baseline="middle"
+      transform="rotate(-22, 140, 60)" font-family="sans-serif" font-weight="600">
+      ${sesion.email}
+    </text>
+  </svg>`;
+  const url = 'data:image/svg+xml,' + encodeURIComponent(svg);
+  marcaAgua.style.backgroundImage = `url("${url}")`;
+  marcaAgua.style.backgroundRepeat = 'repeat';
+  marcaAgua.style.backgroundSize = '280px 120px';
+}
+
+// Bloquear clic derecho y arrastre en el video
+videoPlayer.addEventListener('contextmenu', e => e.preventDefault());
+videoPlayer.addEventListener('dragstart', e => e.preventDefault());
+
+// Registrar progreso cuando el video termina
+let temaActualId: number | null = null;
+videoPlayer.addEventListener('ended', () => {
+  if (sesion.userId && temaActualId) {
+    fetch('/api/progreso.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ usuario_id: sesion.userId, tema_id: temaActualId }),
+    }).catch(() => {});
+  }
+});
+
+async function cargarCursos() {
+  try {
+    const res  = await fetch(`/api/mis-cursos.php?usuario_id=${sesion.userId}`);
+    const data = await res.json();
+
+    if (!data.ok) {
+      listaCursos.innerHTML = '<p style="padding:2rem; color:#aaa; font-size:0.85rem;">Error al cargar los cursos.</p>';
+      return;
+    }
+
+    todosCursos = data.cursos;
+
+    if (todosCursos.length === 0) {
+      listaCursos.innerHTML = '<p style="padding:2rem; color:#aaa; font-size:0.85rem;">No tienes cursos asignados todavía.</p>';
+      return;
+    }
+
+    descCursos.textContent = `${todosCursos.length} curso${todosCursos.length !== 1 ? 's' : ''} disponible${todosCursos.length !== 1 ? 's' : ''}`;
+
+    // Filtros dinámicos según etiquetas
+    const etiquetas = [...new Set(todosCursos.map((c: any) => c.etiqueta))] as string[];
+    etiquetas.forEach(etiqueta => {
+      const btn = document.createElement('button');
+      btn.className          = 'filtro';
+      btn.dataset.filtro     = etiqueta;
+      btn.textContent        = etiqueta;
+      filtrosWrap.appendChild(btn);
+    });
+
+    renderCursos(todosCursos);
+    setupFiltros();
+  } catch {
+    listaCursos.innerHTML = '<p style="padding:2rem; color:#aaa; font-size:0.85rem;">Error de conexión.</p>';
+  }
+}
+
+// ── Renderizar tarjetas agrupadas por pack/etiqueta ──────────
+function renderCursos(cursos: any[]) {
+  listaCursos.innerHTML = '';
+
+  // Agrupar por etiqueta
+  const grupos = new Map<string, any[]>();
+  cursos.forEach((curso: any) => {
+    const key = curso.etiqueta || 'Sin categoría';
+    if (!grupos.has(key)) grupos.set(key, []);
+    grupos.get(key)!.push(curso);
+  });
+
+  grupos.forEach((listaCursosPack, etiqueta) => {
+    const section = document.createElement('section');
+    section.className = 'pack-grupo';
+
+    const header = document.createElement('button');
+    header.className = 'pack-header';
+    header.innerHTML = `
+      <span class="pack-nombre">${etiqueta}</span>
+      <span class="pack-badge">${listaCursosPack.length} curso${listaCursosPack.length !== 1 ? 's' : ''}</span>
+      <svg class="pack-chevron" viewBox="0 0 16 16" fill="none" width="14" height="14">
+        <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `;
+
+    const packBody = document.createElement('div');
+    packBody.className = 'pack-cursos expandido';
+    header.classList.add('abierto');
+
+    listaCursosPack.forEach((curso: any) => {
+      const i = todosCursos.indexOf(curso);
+      const colorPersonal = curso.color || curso.pack_color || null;
+      const acentoAttr = colorPersonal
+        ? `style="background:${colorPersonal}"`
+        : `class="${acentos[i % acentos.length]}"`;
+      const numTemas = curso.temas?.length ?? 0;
+      const durTotal = calcularDuracionTotal(curso.temas ?? []);
+
+      const article = document.createElement('article');
+      article.className = 'curso';
+      article.innerHTML = `
+        <button class="curso-fila">
+          <div class="curso-acento" ${acentoAttr}></div>
+          <div class="curso-info">
+            <h2>${curso.titulo}</h2>
+            ${curso.descripcion?.trim() ? `<p class="curso-desc-preview">${curso.descripcion.trim()}</p>` : ''}
+            <div class="curso-meta">
+              <span>${numTemas} tema${numTemas !== 1 ? 's' : ''}</span>
+              ${durTotal ? `<span>·</span><span>${durTotal}</span>` : ''}
+              <span>·</span>
+              <span>${curso.nivel}</span>
+            </div>
+          </div>
+          <svg class="chevron-fila" viewBox="0 0 16 16" fill="none">
+            <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      `;
+      article.querySelector('.curso-fila')!.addEventListener('click', () => abrirCurso(curso, article));
+      packBody.appendChild(article);
+    });
+
+    header.addEventListener('click', () => {
+      const expandido = packBody.classList.toggle('expandido');
+      header.classList.toggle('abierto', expandido);
+    });
+
+    section.appendChild(header);
+    section.appendChild(packBody);
+    listaCursos.appendChild(section);
+  });
+}
+
+// ── Duración total del curso (suma de minutos de temas) ───────
+function calcularDuracionTotal(temas: any[]): string {
+  let totalMin = 0;
+  for (const t of temas) {
+    const num = parseInt(t.duracion);
+    if (!isNaN(num)) totalMin += num;
+  }
+  if (!totalMin) return '';
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return h > 0 ? (m > 0 ? `${h}h ${m}min` : `${h}h`) : `${m} min`;
+}
+
+// ── Abrir panel de detalle ────────────────────────────────────
+function abrirCurso(curso: any, articleEl: HTMLElement) {
+  detalleTit.textContent = curso.titulo;
+  document.getElementById('temasTotal')!.textContent       = String(curso.temas?.length ?? 0);
+  document.getElementById('temasCompletados')!.textContent = '0';
+
+  // Color del curso para CSS custom property
+  const i = todosCursos.indexOf(curso);
+  const colorCurso = curso.color || curso.pack_color || acentosHex[i % acentosHex.length];
+  document.getElementById('colDetalle')!.style.setProperty('--curso-color', colorCurso);
+
+  // ── Lista de temas en sidebar ────────────────────────────
+  listaTemas.innerHTML = '';
+  (curso.temas ?? []).forEach((tema: any, idx: number) => {
+    const li = document.createElement('li');
+    li.className = 'tema-item';
+    const tieneVideo = tema.materiales?.some((m: any) => m.tipo === 'video');
+    li.innerHTML = `
+      <button class="tema-btn">
+        <span class="tema-icono" style="--curso-color:${colorCurso}">
+          <svg viewBox="0 0 16 16" fill="none" width="14" height="14" style="display:block">
+            <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3"/>
+            ${tieneVideo
+              ? '<polygon points="6.5,5 11.5,8 6.5,11" fill="currentColor"/>'
+              : '<line x1="5" y1="8" x2="11" y2="8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>'}
+          </svg>
+        </span>
+        <span class="tema-info">
+          <span class="tema-texto">${idx + 1}. ${tema.titulo}</span>
+          <span class="tema-dur">${tema.duracion ? tema.duracion + ' min' : '—'}</span>
+        </span>
+      </button>
+    `;
+    li.querySelector('.tema-btn')!.addEventListener('click', () => seleccionarTema(tema, li));
+    listaTemas.appendChild(li);
+  });
+
+  // ── Panel intro: descripción + índice de temas ───────────
+  if (curso.descripcion?.trim()) {
+    introDesc.textContent   = curso.descripcion.trim();
+    introDesc.style.display = '';
+  } else {
+    introDesc.innerHTML    = '';
+    introDesc.style.display = 'none';
+  }
+  introTemaLista.innerHTML = '';
+  (curso.temas ?? []).forEach((tema: any, idx: number) => {
+    const btn = document.createElement('button');
+    btn.className = 'intro-tema-item';
+    const tieneVideo = tema.materiales?.some((m: any) => m.tipo === 'video');
+    btn.innerHTML = `
+      <span class="intro-tema-num" style="background:${colorCurso}">${idx + 1}</span>
+      <span class="intro-tema-info">
+        <span class="intro-tema-titulo">${tema.titulo}</span>
+        ${tema.descripcion?.trim() ? `<span class="intro-tema-desc">${tema.descripcion.trim()}</span>` : ''}
+        <span class="intro-tema-dur">
+          ${tieneVideo ? '▶ Video · ' : ''}${tema.duracion ? tema.duracion + ' min' : ''}
+        </span>
+      </span>
+      <svg viewBox="0 0 16 16" fill="none" width="14" height="14" style="flex-shrink:0;color:#ccc">
+        <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `;
+    // Al clicar en intro, ir directamente al tema
+    btn.addEventListener('click', () => {
+      const li = listaTemas.querySelectorAll<HTMLElement>('.tema-item')[idx];
+      if (li) li.querySelector<HTMLButtonElement>('.tema-btn')!.click();
+    });
+    introTemaLista.appendChild(btn);
+  });
+
+  // Mostrar intro, ocultar tabs/video
+  panelIntro.style.display = 'flex';
+  panelContenido.style.display = 'none';
+
+  document.querySelectorAll('.curso').forEach(c => c.classList.remove('activo'));
+  articleEl.classList.add('activo');
+  vista.classList.add('con-detalle');
+}
+
+// ── Seleccionar tema: reproducir vídeo + materiales ───────────
+function seleccionarTema(tema: any, liEl: HTMLElement) {
+  // Pasar de intro a panel de contenido
+  panelIntro.style.display    = 'none';
+  panelContenido.style.display = 'flex';
+
+  listaTemas.querySelectorAll('.tema-btn').forEach(b => b.classList.remove('activo'));
+  liEl.querySelector('.tema-btn')!.classList.add('activo');
+  leccionTit.textContent  = tema.titulo;
+  leccionDesc.textContent = tema.descripcion || '';
+  temaActualId = tema.id ?? null;
+
+  const videoMat = (tema.materiales ?? []).find((m: any) => m.tipo === 'video');
+  if (videoMat) {
+    videoPlayer.src                = `/api/video.php?material_id=${videoMat.id}&usuario_id=${sesion.userId}`;
+    videoPlayer.style.display      = 'block';
+    videoPlaceholder.style.display = 'none';
+  } else {
+    videoPlayer.pause();
+    videoPlayer.src                = '';
+    videoPlayer.style.display      = 'none';
+    videoPlaceholder.style.display = 'flex';
+    videoTitulo.textContent        = 'Sin vídeo en este tema';
+  }
+
+  const docs = (tema.materiales ?? []).filter((m: any) => m.tipo === 'documento');
+  materialesLista.innerHTML = '';
+
+  if (docs.length === 0) {
+    materialesLista.innerHTML = '<p style="font-size:0.85rem; color:#aaa; padding:0.5rem 0;">No hay materiales en este tema.</p>';
+  } else {
+    docs.forEach((mat: any) => {
+      const kb  = mat.tamano_kb > 1024 ? `${(mat.tamano_kb / 1024).toFixed(1)} MB` : `${mat.tamano_kb} KB`;
+      const ext = mat.nombre.split('.').pop()?.toUpperCase() ?? 'DOC';
+      const a   = document.createElement('a');
+      a.className = 'material-item';
+      a.href      = mat.ruta;
+      a.target    = '_blank';
+      a.rel       = 'noopener';
+      a.innerHTML = `
+        <svg viewBox="0 0 20 20" fill="none">
+          <path d="M5 3h8l4 4v10a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1z" stroke="currentColor" stroke-width="1.4"/>
+          <path d="M13 3v4h4" stroke="currentColor" stroke-width="1.4"/>
+        </svg>
+        <div>
+          <p class="material-nombre">${mat.nombre}</p>
+          <p class="material-meta">${ext} · ${kb}</p>
+        </div>
+      `;
+      materialesLista.appendChild(a);
+    });
+  }
+}
+
+// ── Cerrar panel ──────────────────────────────────────────────
+btnVolver.addEventListener('click', () => {
+  vista.classList.remove('con-detalle');
+  document.querySelectorAll('.curso').forEach(c => c.classList.remove('activo'));
+  videoPlayer.pause();
+  videoPlayer.src                = '';
+  videoPlayer.style.display      = 'none';
+  videoPlaceholder.style.display = 'flex';
+  videoTitulo.textContent        = 'Selecciona un tema';
+  panelIntro.style.display       = 'none';
+  panelContenido.style.display   = 'flex';
+});
+
+// ── Filtros ───────────────────────────────────────────────────
+function setupFiltros() {
+  filtrosWrap.querySelectorAll('.filtro').forEach(btn => {
+    btn.addEventListener('click', () => {
+      filtrosWrap.querySelectorAll('.filtro').forEach(b => b.classList.remove('activo'));
+      btn.classList.add('activo');
+      const filtro = (btn as HTMLElement).dataset.filtro;
+      renderCursos(filtro === 'todos' ? todosCursos : todosCursos.filter((c: any) => c.etiqueta === filtro));
+    });
+  });
+}
+
+// ── Tabs ──────────────────────────────────────────────────────
+document.querySelectorAll<HTMLButtonElement>('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('activo'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('activo'));
+    tab.classList.add('activo');
+    document.getElementById(`tab-${tab.dataset.tab}`)!.classList.add('activo');
+  });
+});
+
+cargarCursos();
+</script>

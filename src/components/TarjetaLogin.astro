@@ -81,6 +81,7 @@ import '../styles/TarjetaLogin.css';
         userId: datos.id,
         rol: datos.rol,
         email: datos.email,
+        nombre: datos.nombre,
         exp: Date.now() + 8 * 60 * 60 * 1000,
       };
       sessionStorage.setItem('umme_session', JSON.stringify(sesion));

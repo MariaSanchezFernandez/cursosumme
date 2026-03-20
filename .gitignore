@@ -4,3 +4,4 @@ dist/
 .env
 .env.*
 public/api/db-config.php
+public/uploads/

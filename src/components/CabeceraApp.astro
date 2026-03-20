@@ -9,40 +9,82 @@ import '../styles/CabeceraApp.css';
   </span>
 
   <div class="usuario">
-    <button class="avatar-btn" id="avatarBtn" aria-haspopup="true" aria-expanded="false">
-      <span class="avatar-circulo">
-        <svg viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="8" r="4" fill="#555"/>
-          <path d="M4 20c0-4.418 3.582-8 8-8s8 3.582 8 8" fill="#555"/>
-        </svg>
-      </span>
-      <span class="avatar-nombre">Usuario</span>
-      <svg class="avatar-chevron" viewBox="0 0 16 16" fill="none">
-        <path d="M4 6l4 4 4-4" stroke="#999" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <span class="avatar-circulo" id="avatarBtn" title="Cambiar foto de perfil">
+      <svg id="avatarSvg" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="8" r="4" fill="#555"/>
+        <path d="M4 20c0-4.418 3.582-8 8-8s8 3.582 8 8" fill="#555"/>
       </svg>
+    </span>
+    <input type="file" id="avatar-file-input" accept="image/jpeg,image/png,image/webp,image/gif" />
+    <a class="avatar-nombre" id="nombreUsuario" href="/perfil" title="Mi perfil">—</a>
+    <button class="btn-salir" id="btnSalir">
+      <svg viewBox="0 0 16 16" fill="none">
+        <path d="M10 8H3M3 8l2.5-2.5M3 8l2.5 2.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M8 4V3a1 1 0 011-1h3a1 1 0 011 1v10a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+      </svg>
+      Salir
     </button>
-
-    <ul class="submenu" id="submenu" role="menu">
-      <li role="menuitem"><a href="#">Configuracion</a></li>
-      <li role="menuitem"><a href="#">Alumnos</a></li>
-      <li role="menuitem"><a href="#">Cursos</a></li>
-    </ul>
   </div>
 </header>
 
 <script>
-  const btn  = document.getElementById('avatarBtn')!;
-  const menu = document.getElementById('submenu')!;
+  const s = (() => { try { return JSON.parse(sessionStorage.getItem('umme_session') || '{}'); } catch { return {}; } })();
 
-  btn.addEventListener('click', () => {
-    const open = menu.classList.toggle('open');
-    btn.setAttribute('aria-expanded', String(open));
+  // Nombre
+  if (s.email) {
+    document.getElementById('nombreUsuario')!.textContent = s.nombre || s.email.split('@')[0];
+  }
+
+  // Cargar foto actual
+  const avatarBtn = document.getElementById('avatarBtn') as HTMLElement;
+  const avatarSvg = document.getElementById('avatarSvg') as HTMLElement;
+  const fileInput = document.getElementById('avatar-file-input') as HTMLInputElement;
+
+  async function cargarFoto() {
+    if (!s.userId) return;
+    try {
+      const res  = await fetch(`/api/foto-perfil.php?usuario_id=${s.userId}`);
+      const data = await res.json();
+      if (data.ok && data.url) mostrarFoto(data.url);
+    } catch {}
+  }
+
+  function mostrarFoto(url: string) {
+    avatarSvg.style.display = 'none';
+    let img = avatarBtn.querySelector('img');
+    if (!img) {
+      img = document.createElement('img');
+      img.alt = 'Foto de perfil';
+      avatarBtn.appendChild(img);
+    }
+    img.src = url;
+  }
+
+  cargarFoto();
+
+  // Abrir selector de archivo al clicar el avatar
+  avatarBtn.addEventListener('click', () => fileInput.click());
+
+  fileInput.addEventListener('change', async () => {
+    const archivo = fileInput.files?.[0];
+    if (!archivo || !s.userId) return;
+
+    const fd = new FormData();
+    fd.append('archivo', archivo);
+    fd.append('usuario_id', String(s.userId));
+
+    try {
+      const res  = await fetch('/api/foto-perfil.php', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.ok) mostrarFoto(data.url);
+    } catch {}
+
+    fileInput.value = '';
   });
 
-  document.addEventListener('click', (e) => {
-    if (!btn.contains(e.target as Node) && !menu.contains(e.target as Node)) {
-      menu.classList.remove('open');
-      btn.setAttribute('aria-expanded', 'false');
-    }
+  // Cerrar sesión
+  document.getElementById('btnSalir')!.addEventListener('click', () => {
+    sessionStorage.removeItem('umme_session');
+    window.location.replace('/');
   });
 </script>

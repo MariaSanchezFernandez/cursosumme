@@ -1,0 +1,439 @@
+---
+import Plantilla from '../layouts/Plantilla.astro';
+import PiePagina from '../components/PiePagina.astro';
+import '../styles/global.css';
+---
+
+<Plantilla>
+  <!-- Header simple -->
+  <header class="pf-header">
+    <a href="/inicio" class="pf-volver">
+      <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
+        <path d="M10 4l-4 4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Mis cursos
+    </a>
+    <span class="pf-logo">
+      <span style="font-weight:400; color:var(--color-text-muted)">Cursos</span><span style="font-weight:800">Umme</span>
+    </span>
+    <button class="pf-salir" id="btnSalirPerfil">
+      <svg viewBox="0 0 16 16" fill="none" width="14" height="14">
+        <path d="M10 8H3M3 8l2.5-2.5M3 8l2.5 2.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M8 4V3a1 1 0 011-1h3a1 1 0 011 1v10a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+      </svg>
+      Salir
+    </button>
+  </header>
+
+  <main class="pf-main">
+    <div class="pf-card">
+
+      <!-- Avatar -->
+      <div class="pf-avatar-wrap">
+        <button class="pf-avatar" id="pfAvatar" title="Cambiar foto de perfil">
+          <svg id="pfAvatarSvg" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="8" r="4" fill="#555"/>
+            <path d="M4 20c0-4.418 3.582-8 8-8s8 3.582 8 8" fill="#555"/>
+          </svg>
+          <div class="pf-avatar-overlay">
+            <svg viewBox="0 0 20 20" fill="none" width="18" height="18">
+              <path d="M10 3a7 7 0 100 14A7 7 0 0010 3z" stroke="white" stroke-width="1.4"/>
+              <path d="M10 7v6M7 10h6" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </button>
+        <input type="file" id="pfFileInput" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none" />
+        <p class="pf-avatar-hint">Haz clic para cambiar tu foto</p>
+      </div>
+
+      <!-- Datos -->
+      <div class="pf-datos">
+        <div class="pf-dato-group">
+          <label class="pf-label">Nombre</label>
+          <p class="pf-valor" id="pfNombre">—</p>
+        </div>
+        <div class="pf-dato-group">
+          <label class="pf-label">Correo electrónico</label>
+          <p class="pf-valor" id="pfEmail">—</p>
+        </div>
+      </div>
+
+      <hr class="pf-divider" />
+
+      <!-- Cambiar contraseña -->
+      <div class="pf-seccion">
+        <h2 class="pf-seccion-titulo">Cambiar contraseña</h2>
+        <p class="pf-seccion-desc">
+          Tu administrador te asignó una contraseña inicial. Puedes cambiarla aquí cuando quieras.
+        </p>
+
+        <div class="pf-form">
+          <div class="pf-field">
+            <label class="pf-label" for="pfPwdNueva">Nueva contraseña</label>
+            <input class="pf-input" type="password" id="pfPwdNueva" placeholder="Mínimo 6 caracteres" />
+          </div>
+          <div class="pf-field">
+            <label class="pf-label" for="pfPwdConfirm">Confirmar contraseña</label>
+            <input class="pf-input" type="password" id="pfPwdConfirm" placeholder="Repite la contraseña" />
+          </div>
+          <button class="pf-btn-guardar" id="pfBtnPwd">Guardar contraseña</button>
+          <p class="pf-msg" id="pfMsgPwd"></p>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <PiePagina />
+</Plantilla>
+
+<!-- Guardia de ruta -->
+<script is:inline>
+  (function () {
+    try {
+      const raw = sessionStorage.getItem('umme_session');
+      if (!raw) { window.location.replace('/'); return; }
+      const s = JSON.parse(raw);
+      if (!s || Date.now() > s.exp) {
+        sessionStorage.removeItem('umme_session');
+        window.location.replace('/');
+      }
+    } catch { window.location.replace('/'); }
+  })();
+</script>
+
+<script>
+const s = (() => { try { return JSON.parse(sessionStorage.getItem('umme_session') || '{}'); } catch { return {}; } })();
+
+// Rellenar datos
+document.getElementById('pfNombre')!.textContent = s.nombre || '—';
+document.getElementById('pfEmail')!.textContent  = s.email  || '—';
+
+// Salir
+document.getElementById('btnSalirPerfil')!.addEventListener('click', () => {
+  sessionStorage.removeItem('umme_session');
+  window.location.replace('/');
+});
+
+// ── Avatar ─────────────────────────────────────────
+const pfAvatar   = document.getElementById('pfAvatar') as HTMLButtonElement;
+const pfSvg      = document.getElementById('pfAvatarSvg') as HTMLElement;
+const pfFile     = document.getElementById('pfFileInput') as HTMLInputElement;
+
+async function cargarFoto() {
+  if (!s.userId) return;
+  try {
+    const res  = await fetch(`/api/foto-perfil.php?usuario_id=${s.userId}`);
+    const data = await res.json();
+    if (data.ok && data.url) mostrarFoto(data.url);
+  } catch {}
+}
+
+function mostrarFoto(url: string) {
+  pfSvg.style.display = 'none';
+  let img = pfAvatar.querySelector('img');
+  if (!img) {
+    img = document.createElement('img');
+    img.alt = 'Foto de perfil';
+    pfAvatar.insertBefore(img, pfAvatar.firstChild);
+  }
+  (img as HTMLImageElement).src = url;
+}
+
+cargarFoto();
+
+pfAvatar.addEventListener('click', () => pfFile.click());
+
+pfFile.addEventListener('change', async () => {
+  const archivo = pfFile.files?.[0];
+  if (!archivo || !s.userId) return;
+  const fd = new FormData();
+  fd.append('archivo', archivo);
+  fd.append('usuario_id', String(s.userId));
+  try {
+    const res  = await fetch('/api/foto-perfil.php', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.ok) mostrarFoto(data.url);
+  } catch {}
+  pfFile.value = '';
+});
+
+// ── Cambiar contraseña ────────────────────────────
+const btnPwd  = document.getElementById('pfBtnPwd') as HTMLButtonElement;
+const msgPwd  = document.getElementById('pfMsgPwd') as HTMLElement;
+
+btnPwd.addEventListener('click', async () => {
+  const nueva   = (document.getElementById('pfPwdNueva') as HTMLInputElement).value.trim();
+  const confirm = (document.getElementById('pfPwdConfirm') as HTMLInputElement).value.trim();
+
+  msgPwd.style.color = '#c33';
+  if (nueva.length < 6) { msgPwd.textContent = 'La contraseña debe tener al menos 6 caracteres.'; return; }
+  if (nueva !== confirm) { msgPwd.textContent = 'Las contraseñas no coinciden.'; return; }
+
+  btnPwd.disabled = true;
+  btnPwd.textContent = 'Guardando…';
+
+  try {
+    const res  = await fetch('/api/cambiar-password.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ usuario_id: s.userId, password_nueva: nueva }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      msgPwd.style.color = '#1d7a52';
+      msgPwd.textContent = '✓ Contraseña actualizada correctamente.';
+      (document.getElementById('pfPwdNueva') as HTMLInputElement).value = '';
+      (document.getElementById('pfPwdConfirm') as HTMLInputElement).value = '';
+    } else {
+      msgPwd.textContent = data.mensaje || 'Error al actualizar la contraseña.';
+    }
+  } catch {
+    msgPwd.textContent = 'Error de conexión.';
+  }
+
+  btnPwd.disabled = false;
+  btnPwd.textContent = 'Guardar contraseña';
+});
+</script>
+
+<style>
+.pf-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2.5rem;
+  height: 56px;
+  background: #fff;
+  border-bottom: 1px solid #e8eeec;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
+.pf-logo {
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+}
+
+.pf-volver {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  padding: 0.35rem 0.8rem;
+  border: 1px solid #e4ede9;
+  border-radius: 8px;
+  background: #f4f7f6;
+  transition: background 0.12s, color 0.12s;
+}
+.pf-volver:hover { background: #e9f4ef; color: var(--color-text); }
+
+.pf-salir {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.8rem;
+  border: 1px solid #e8eeec;
+  border-radius: 6px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.pf-salir:hover { background: #fdf0f0; border-color: #f5c6c6; color: #c33; }
+
+/* ── Main ── */
+.pf-main {
+  min-height: calc(100vh - 56px);
+  background: #f4f7f6;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2.5rem 1.5rem 4rem;
+}
+
+.pf-card {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #e8eeec;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ── Avatar ── */
+.pf-avatar-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.pf-avatar {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  border: 3px solid var(--color-primary);
+  overflow: hidden;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: opacity 0.15s;
+}
+.pf-avatar:hover { opacity: 0.9; }
+.pf-avatar:hover .pf-avatar-overlay { opacity: 1; }
+
+.pf-avatar svg:first-child {
+  width: 50px;
+  height: 50px;
+}
+
+.pf-avatar img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.pf-avatar-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s;
+  border-radius: 50%;
+}
+
+.pf-avatar-hint {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+/* ── Datos ── */
+.pf-datos {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.pf-dato-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.pf-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #b5bfbb;
+}
+
+.pf-valor {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.pf-divider {
+  border: none;
+  border-top: 1px solid #e8eeec;
+  margin: 0;
+}
+
+/* ── Sección contraseña ── */
+.pf-seccion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.pf-seccion-titulo {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.pf-seccion-desc {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.pf-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.pf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.pf-input {
+  padding: 0.6rem 0.85rem;
+  border: 1px solid #d8e4df;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.87rem;
+  color: var(--color-text);
+  background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+}
+.pf-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(66,178,134,0.12);
+}
+
+.pf-btn-guardar {
+  align-self: flex-start;
+  padding: 0.55rem 1.4rem;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.14s, opacity 0.14s;
+}
+.pf-btn-guardar:hover { opacity: 0.88; }
+.pf-btn-guardar:disabled { opacity: 0.5; cursor: default; }
+
+.pf-msg {
+  font-size: 0.82rem;
+  min-height: 1.2em;
+}
+
+@media (max-width: 600px) {
+  .pf-header { padding: 0 1rem; }
+  .pf-logo { display: none; }
+  .pf-card { padding: 1.5rem 1.25rem; }
+}
+</style>

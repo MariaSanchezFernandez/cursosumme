@@ -1,0 +1,625 @@
+---
+import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
+---
+
+<PlantillaAdmin titulo="Nuevo curso" paginaActual="cursos">
+
+  <!-- Mensaje global -->
+  <div id="msg-global" style="display:none; padding:0.75rem 1rem; border-radius:7px;
+    font-size:0.82rem; margin-bottom:1.25rem; max-width:1100px;"></div>
+
+  <div style="max-width:1100px;">
+
+    <!-- ── PASO 1: Datos básicos ──────────────────────────────── -->
+    <div class="form-admin" id="form-basico-wrap" style="margin-bottom:1.75rem;">
+      <p class="seccion-titulo" style="margin-bottom:1.25rem;">Datos del curso</p>
+      <form id="form-nuevo-curso">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+          <div class="form-grupo" style="grid-column:1/-1;">
+            <label class="form-label" for="titulo">Título del curso</label>
+            <input class="form-input" type="text" id="titulo" placeholder="Ej. Formación en Igualdad" required />
+          </div>
+          <div class="form-grupo" style="grid-column:1/-1;">
+            <label class="form-label" for="descripcion">Descripción del curso <span style="font-weight:400; color:#aaa;">(opcional)</span></label>
+            <textarea class="form-input" id="descripcion" rows="3" placeholder="Breve descripción del curso…" style="resize:vertical;"></textarea>
+          </div>
+          <div class="form-grupo">
+            <label class="form-label" for="etiqueta">Categoría</label>
+            <input class="form-input" type="text" id="etiqueta" placeholder="Ej. Derechos, Salud…" required />
+          </div>
+          <div class="form-grupo">
+            <label class="form-label" for="nivel">Nivel</label>
+            <select class="form-input" id="nivel" required>
+              <option value="" disabled selected>Selecciona un nivel…</option>
+              <option value="Básico">Básico</option>
+              <option value="Intermedio">Intermedio</option>
+              <option value="Avanzado">Avanzado</option>
+              <option value="Todos los niveles">Todos los niveles</option>
+            </select>
+          </div>
+          <div class="form-grupo">
+            <label class="form-label">Estado</label>
+            <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-size:0.85rem; margin-top:0.35rem;">
+              <input type="checkbox" id="activo" checked style="width:16px; height:16px;" />
+              Curso activo (visible para alumnos)
+            </label>
+          </div>
+        </div>
+
+        <div id="msg-error" style="display:none; padding:0.75rem 1rem; background:#fdf0f0;
+          border:1px solid #f5c6c6; border-radius:7px; font-size:0.82rem; color:#a33; margin-bottom:1rem;"></div>
+
+        <div style="display:flex; gap:0.75rem; margin-top:0.5rem;">
+          <button type="submit" id="btn-crear" class="btn-admin primario">
+            Crear curso y añadir temas →
+          </button>
+          <a href="/admin/cursos" class="btn-admin">Cancelar</a>
+        </div>
+      </form>
+    </div>
+
+    <!-- ── PASO 2: Temas (aparece tras crear) ─────────────────── -->
+    <div id="temas-seccion" style="display:none;">
+
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
+        <p class="seccion-titulo" style="margin:0;">Temas del curso</p>
+        <div style="display:flex; gap:0.5rem;">
+          <button id="btn-mostrar-nuevo-tema" class="btn-admin primario" style="font-size:0.78rem;">
+            <svg viewBox="0 0 16 16" fill="none">
+              <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+            Añadir tema
+          </button>
+          <a href="/admin/cursos" class="btn-admin" style="font-size:0.78rem;">Ir a la lista →</a>
+        </div>
+      </div>
+
+      <!-- Formulario nuevo tema -->
+      <div id="form-nuevo-tema-wrap" style="display:none; background:#fff; border:2px dashed #b5d8cc;
+        border-radius:10px; padding:1.25rem; margin-bottom:1rem;">
+        <p style="font-size:0.8rem; font-weight:700; color:#2e7d55; margin:0 0 1rem;">Nuevo tema</p>
+        <form id="form-nuevo-tema" style="display:flex; gap:0.75rem; align-items:flex-end; flex-wrap:wrap;">
+          <div class="form-grupo" style="flex:2; min-width:200px; margin:0;">
+            <label class="form-label" for="tema-titulo">Título del tema</label>
+            <input class="form-input" type="text" id="tema-titulo" placeholder="Ej. Introducción" required />
+          </div>
+          <button type="submit" id="btn-crear-tema" class="btn-admin primario" style="height:38px;">Añadir tema</button>
+          <button type="button" id="btn-cancelar-tema" class="btn-admin" style="height:38px;">Cancelar</button>
+        </form>
+      </div>
+
+      <div id="temas-vacio" style="padding:1.5rem; text-align:center; background:#fff;
+        border:1px dashed #ddd; border-radius:10px; color:#aaa; font-size:0.85rem;">
+        Aún no hay temas. Pulsa "Añadir tema" para empezar.
+      </div>
+      <div id="temas-lista"></div>
+
+    </div>
+  </div>
+
+</PlantillaAdmin>
+
+<style is:global>
+/* ── Tarjeta de tema ── */
+.tema-card {
+  background: #fff;
+  border: 1px solid #e4ede9;
+  border-radius: 14px;
+  margin-bottom: 1rem;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+.tema-card-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: #fafcfb;
+  border-bottom: 1px solid #f0f4f2;
+}
+.tema-badge {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  background: var(--color-light);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.7rem; font-weight: 800;
+  color: var(--color-text); flex-shrink: 0;
+}
+.tema-titulo-txt { flex: 1; font-size: 0.88rem; font-weight: 700; }
+.tema-dur-pill {
+  font-size: 0.7rem; padding: 0.18rem 0.65rem;
+  border-radius: 20px; background: #f0f4f2;
+  color: #6a8a7d; font-weight: 600;
+}
+.tema-acciones { display: flex; gap: 0.35rem; }
+.btn-tema-accion {
+  width: 32px; height: 32px; border-radius: 7px;
+  border: 1px solid #e4ede9; background: #fff;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: #888; transition: all 0.12s; padding: 0;
+}
+.btn-tema-accion:hover          { background: var(--color-light); border-color: var(--color-primary); color: var(--color-text); }
+.btn-tema-accion.danger:hover   { background: #fdf0f0; border-color: #f5c6c6; color: #c33; }
+
+/* ── Cuerpo del tema ── */
+.tema-card-cuerpo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  background: #f7faf9;
+}
+.upload-zona {
+  background: #fff;
+  border-right: 1px solid #f0f4f2;
+  display: flex; flex-direction: column;
+}
+.upload-zona:last-child { border-right: none; }
+.upload-zona-header {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.8rem 1.1rem;
+  border-bottom: 1px solid #f2f6f4;
+  background: #fafcfb;
+}
+.upload-zona-icono {
+  width: 28px; height: 28px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; flex-shrink: 0;
+}
+.upload-zona-icono.video { background: #e6f4ee; }
+.upload-zona-icono.doc   { background: #e6edf5; }
+.upload-zona-label { font-size: 0.78rem; font-weight: 700; color: var(--color-text); flex: 1; }
+.upload-zona-body  { padding: 0.85rem 1.1rem; flex: 1; display: flex; flex-direction: column; }
+
+/* Materiales */
+.mat-lista { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.75rem; }
+.mat-fila  {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.4rem 0.6rem; background: #f7faf9;
+  border: 1px solid #e8eeec; border-radius: 7px; font-size: 0.78rem;
+}
+.mat-icono { font-size: 0.85rem; flex-shrink: 0; }
+.mat-nombre {
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--color-text); text-decoration: none; font-weight: 600;
+}
+.mat-nombre:hover { text-decoration: underline; }
+.mat-tam { font-size: 0.68rem; color: #bbb; flex-shrink: 0; }
+.mat-del {
+  width: 22px; height: 22px; border-radius: 5px;
+  border: 1px solid #f5c6c6; background: #fff;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: #c33; font-size: 0.65rem; flex-shrink: 0; padding: 0;
+}
+.mat-del:hover { background: #fdf0f0; }
+
+/* Zona de subida */
+.upload-row {
+  display: flex; gap: 0.5rem; align-items: center;
+  background: #f2f8f5; border: 1.5px dashed #c4d9d2;
+  border-radius: 8px; padding: 0.55rem 0.75rem;
+  margin-top: auto;
+}
+.upload-row input[type="file"] { flex: 1; font-size: 0.76rem; min-width: 0; color: #666; }
+.btn-upload { font-size: 0.74rem !important; padding: 0.28rem 0.7rem !important; height: auto !important; white-space: nowrap; flex-shrink: 0; }
+.subiendo-msg { font-size: 0.73rem; color: #88a; display: none; font-style: italic; }
+
+/* Formulario editar tema inline */
+.tema-editar-inline {
+  display: flex; gap: 0.6rem; align-items: flex-end; flex-wrap: wrap;
+  padding: 0.9rem 1.25rem; border-top: 1px solid #f0f4f2; background: #f7faf9;
+}
+
+/* Estado vacío temas */
+#temas-vacio {
+  padding: 2rem; text-align: center;
+  background: #fff; border: 1.5px dashed #d4e8e0;
+  border-radius: 12px; color: #aaa; font-size: 0.85rem;
+}
+</style>
+
+<script>
+let cursoId = 0;
+
+const msgGlobal = document.getElementById('msg-global') as HTMLDivElement;
+function mostrarMsg(texto: string, tipo: 'ok' | 'error') {
+  msgGlobal.textContent      = texto;
+  msgGlobal.style.display    = 'block';
+  msgGlobal.style.background = tipo === 'ok' ? '#f0faf5' : '#fdf0f0';
+  msgGlobal.style.border     = `1px solid ${tipo === 'ok' ? '#b6e0cc' : '#f5c6c6'}`;
+  msgGlobal.style.color      = tipo === 'ok' ? '#2e7d55' : '#a33';
+  setTimeout(() => { msgGlobal.style.display = 'none'; }, 5000);
+}
+
+// ── Crear curso ────────────────────────────────────────────────
+const form     = document.getElementById('form-nuevo-curso') as HTMLFormElement;
+const btnCrear = document.getElementById('btn-crear') as HTMLButtonElement;
+const msgError = document.getElementById('msg-error') as HTMLDivElement;
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  btnCrear.disabled    = true;
+  btnCrear.textContent = 'Creando…';
+  msgError.style.display = 'none';
+
+  try {
+    const res  = await fetch('/api/cursos.php', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        titulo:      (document.getElementById('titulo')      as HTMLInputElement).value.trim(),
+        descripcion: (document.getElementById('descripcion') as HTMLTextAreaElement).value.trim(),
+        etiqueta:    (document.getElementById('etiqueta')    as HTMLInputElement).value.trim(),
+        nivel:       (document.getElementById('nivel')       as HTMLSelectElement).value,
+        activo:      (document.getElementById('activo')      as HTMLInputElement).checked ? 1 : 0,
+      }),
+    });
+    const data = await res.json();
+
+    if (!data.ok) {
+      msgError.textContent   = data.mensaje || 'Error al crear el curso';
+      msgError.style.display = 'block';
+      btnCrear.disabled      = false;
+      btnCrear.textContent   = 'Crear curso y añadir temas →';
+      return;
+    }
+
+    cursoId = Number(data.id);
+
+    // Transformar la cabecera y mostrar la sección de temas
+    document.querySelector('.admin-header-titulo')!.textContent =
+      (document.getElementById('titulo') as HTMLInputElement).value.trim();
+
+    // Hacer el form de datos básicos colapsable / solo lectura
+    const wrap = document.getElementById('form-basico-wrap')!;
+    wrap.style.borderColor  = '#b6e0cc';
+    wrap.style.background   = '#f6fcf9';
+    btnCrear.style.display  = 'none';
+    form.querySelectorAll('input, select').forEach(el => (el as HTMLInputElement).disabled = true);
+
+    const ok = document.createElement('p');
+    ok.style.cssText = 'font-size:0.82rem; color:#2e7d55; margin:0.5rem 0 0; font-weight:600;';
+    ok.textContent   = '✓ Curso creado. Ahora añade los temas y sube los vídeos.';
+    wrap.appendChild(ok);
+
+    document.getElementById('temas-seccion')!.style.display = 'block';
+    document.getElementById('temas-seccion')!.scrollIntoView({ behavior: 'smooth' });
+
+  } catch {
+    msgError.textContent   = 'Error de conexión.';
+    msgError.style.display = 'block';
+    btnCrear.disabled      = false;
+    btnCrear.textContent   = 'Crear curso y añadir temas →';
+  }
+});
+
+// ── Duración total ─────────────────────────────────────────────
+function calcularDuracionTotal(): string {
+  let total = 0;
+  document.querySelectorAll<HTMLInputElement>('.input-dur-tema').forEach(inp => {
+    const n = parseInt(inp.value);
+    if (!isNaN(n) && n > 0) total += n;
+  });
+  if (!total) return '';
+  const h = Math.floor(total / 60), m = total % 60;
+  return h > 0 ? (m > 0 ? `${h}h ${m}min` : `${h}h`) : `${m} min`;
+}
+
+async function guardarDuracionCurso() {
+  if (!cursoId) return;
+  const dur = calcularDuracionTotal();
+  const res = await fetch('/api/cursos.php');
+  const data = await res.json();
+  const c = data.cursos?.find((x: any) => x.id == cursoId);
+  if (!c) return;
+  await fetch('/api/cursos.php', {
+    method: 'PUT', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ id: cursoId, titulo: c.titulo, etiqueta: c.etiqueta, nivel: c.nivel, duracion: dur, activo: c.activo }),
+  });
+}
+
+// ── Temas ──────────────────────────────────────────────────────
+const temasLista = document.getElementById('temas-lista')!;
+const temasVacio = document.getElementById('temas-vacio')!;
+
+const btnNuevo   = document.getElementById('btn-mostrar-nuevo-tema') as HTMLButtonElement;
+const nuevoWrap  = document.getElementById('form-nuevo-tema-wrap')!;
+const formNuevo  = document.getElementById('form-nuevo-tema') as HTMLFormElement;
+const btnCancelar = document.getElementById('btn-cancelar-tema') as HTMLButtonElement;
+const btnCrearTema = document.getElementById('btn-crear-tema') as HTMLButtonElement;
+
+btnNuevo.addEventListener('click', () => {
+  nuevoWrap.style.display = nuevoWrap.style.display === 'none' ? 'block' : 'none';
+  if (nuevoWrap.style.display === 'block') (document.getElementById('tema-titulo') as HTMLInputElement).focus();
+});
+btnCancelar.addEventListener('click', () => { nuevoWrap.style.display = 'none'; });
+
+formNuevo.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!cursoId) return;
+  btnCrearTema.disabled    = true;
+  btnCrearTema.textContent = 'Añadiendo…';
+
+  const titulo = (document.getElementById('tema-titulo') as HTMLInputElement).value.trim();
+  const res    = await fetch('/api/temas.php', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ curso_id: cursoId, titulo, duracion: '' }),
+  });
+  const data = await res.json();
+
+  btnCrearTema.disabled    = false;
+  btnCrearTema.textContent = 'Añadir tema';
+
+  if (!data.ok) { mostrarMsg(data.mensaje || 'Error al crear el tema', 'error'); return; }
+
+  const nuevoTema = { id: data.id, titulo, duracion: '', orden: data.orden };
+  temasVacio.style.display = 'none';
+  const card = await crearTemaCard(nuevoTema);
+  temasLista.appendChild(card);
+  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  (document.getElementById('tema-titulo') as HTMLInputElement).value = '';
+  nuevoWrap.style.display = 'none';
+  mostrarMsg('✓ Tema añadido. Sube el vídeo y los materiales.', 'ok');
+});
+
+// ── Card de tema ───────────────────────────────────────────────
+async function crearTemaCard(tema: any): Promise<HTMLElement> {
+  const card = document.createElement('div');
+  card.className      = 'tema-card';
+  card.dataset.temaId = tema.id;
+
+  const colorBadge = 'var(--color-light)';
+  card.innerHTML = `
+    <div class="tema-card-cabecera">
+      <div class="tema-badge" id="tema-badge-${tema.id}" style="background:${colorBadge}">${String(tema.orden).padStart(2,'0')}</div>
+      <span class="tema-titulo-txt">${tema.titulo}</span>
+      ${tema.duracion ? `<span class="tema-dur-pill" id="dur-label-${tema.id}">${tema.duracion} min</span>` : `<span class="tema-dur-pill" id="dur-label-${tema.id}" style="display:none;"></span>`}
+      <div class="tema-acciones">
+        <button class="btn-tema-accion btn-editar-tema" title="Editar tema">
+          <svg viewBox="0 0 14 14" fill="none" width="15" height="15">
+            <path d="M9.5 2.5l2 2-7 7H2.5v-2l7-7z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <button class="btn-tema-accion danger btn-del-tema" title="Eliminar tema">
+          <svg viewBox="0 0 14 14" fill="none" width="15" height="15">
+            <path d="M2 4h10M5 4V2.5h4V4M5.5 6.5v4M8.5 6.5v4M3 4l.75 7.5h6.5L11 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="tema-editar-inline" id="editar-wrap-${tema.id}" style="display:none; flex-direction:column; gap:0.6rem;">
+      <div style="display:flex; gap:0.6rem; flex-wrap:wrap; align-items:flex-end;">
+        <div class="form-grupo" style="flex:2; min-width:160px; margin:0;">
+          <label class="form-label">Título del tema</label>
+          <input class="form-input input-titulo-tema" type="text" value="${tema.titulo}" required />
+        </div>
+        <div class="form-grupo" style="flex:1; min-width:100px; margin:0;">
+          <label class="form-label">Duración (min)</label>
+          <input class="form-input input-dur-tema" type="number" min="0" value="${tema.duracion || ''}" placeholder="Ej. 45" />
+        </div>
+      </div>
+      <div class="form-grupo" style="margin:0;">
+        <label class="form-label">Descripción del tema <span style="font-weight:400; color:#aaa;">(opcional)</span></label>
+        <textarea class="form-input input-desc-tema" rows="2" placeholder="Breve descripción de este tema…" style="resize:vertical;">${tema.descripcion || ''}</textarea>
+      </div>
+      <div style="display:flex; gap:0.5rem;">
+        <button type="button" class="btn-admin primario btn-guardar-tema" style="height:38px;">Guardar</button>
+        <button type="button" class="btn-admin btn-cancelar-editar" style="height:38px;">Cancelar</button>
+      </div>
+    </div>
+
+    <div class="tema-card-cuerpo">
+      <div class="upload-zona">
+        <div class="upload-zona-header">
+          <div class="upload-zona-icono video">🎬</div>
+          <span class="upload-zona-label">Vídeo del tema</span>
+        </div>
+        <div class="upload-zona-body">
+          <div class="mat-lista mat-lista-video-${tema.id}"></div>
+          <form class="form-upload-video">
+            <div class="upload-row">
+              <input type="file" class="input-video" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" />
+              <button type="submit" class="btn-admin primario btn-upload">Subir vídeo</button>
+            </div>
+            <span class="subiendo-msg" style="margin-top:0.4rem; display:none;">Subiendo vídeo, espera…</span>
+          </form>
+        </div>
+      </div>
+      <div class="upload-zona">
+        <div class="upload-zona-header">
+          <div class="upload-zona-icono doc">📄</div>
+          <span class="upload-zona-label">Documentos y materiales</span>
+        </div>
+        <div class="upload-zona-body">
+          <div class="mat-lista mat-lista-doc-${tema.id}"></div>
+          <form class="form-upload-doc">
+            <div class="upload-row">
+              <input type="file" class="input-doc" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.jpg,.jpeg,.png" />
+              <button type="submit" class="btn-admin primario btn-upload">Subir archivo</button>
+            </div>
+            <span class="subiendo-msg" style="margin-top:0.4rem; display:none;">Subiendo, espera…</span>
+          </form>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Editar/eliminar
+  const editWrap   = card.querySelector(`#editar-wrap-${tema.id}`) as HTMLElement;
+  const btnEditar  = card.querySelector('.btn-editar-tema') as HTMLButtonElement;
+  const btnCancel  = card.querySelector('.btn-cancelar-editar') as HTMLButtonElement;
+  btnEditar.addEventListener('click', () => { editWrap.style.display = editWrap.style.display === 'none' ? 'flex' : 'none'; });
+  btnCancel.addEventListener('click', () => { editWrap.style.display = 'none'; });
+
+  card.querySelector('.btn-guardar-tema')!.addEventListener('click', async () => {
+    const titulo      = (card.querySelector('.input-titulo-tema') as HTMLInputElement).value.trim();
+    const duracion    = (card.querySelector('.input-dur-tema')    as HTMLInputElement).value.trim();
+    const descripcion = (card.querySelector('.input-desc-tema')   as HTMLTextAreaElement).value.trim();
+    const res = await fetch('/api/temas.php', {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ id: tema.id, titulo, descripcion, duracion, orden: tema.orden, color: tema.color || null }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      tema.titulo = titulo; tema.duracion = duracion; tema.descripcion = descripcion;
+      (card.querySelector('.tema-titulo-txt') as HTMLElement).textContent = titulo;
+      document.getElementById(`dur-label-${tema.id}`)!.textContent = duracion ? duracion + ' min' : '';
+      editWrap.style.display = 'none';
+      await guardarDuracionCurso();
+      mostrarMsg('✓ Tema actualizado.', 'ok');
+    } else mostrarMsg(data.mensaje || 'Error', 'error');
+  });
+
+  card.querySelector('.btn-del-tema')!.addEventListener('click', async () => {
+    if (!confirm(`¿Eliminar "${tema.titulo}" y todos sus archivos?`)) return;
+    const res  = await fetch(`/api/temas.php?id=${tema.id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.ok) {
+      card.remove();
+      if (!temasLista.children.length) temasVacio.style.display = 'block';
+      mostrarMsg('✓ Tema eliminado.', 'ok');
+    } else mostrarMsg(data.mensaje || 'Error', 'error');
+  });
+
+  // Upload vídeo
+  const formVideo = card.querySelector('.form-upload-video') as HTMLFormElement;
+  const msgVideo  = card.querySelector('.form-upload-video .subiendo-msg') as HTMLElement;
+  formVideo.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = card.querySelector('.input-video') as HTMLInputElement;
+    if (!input.files?.length) return;
+    msgVideo.style.display = 'inline';
+    (formVideo.querySelector('button') as HTMLButtonElement).disabled = true;
+    await subirArchivo(card, tema, input.files[0], 'video');
+    msgVideo.style.display = 'none';
+    (formVideo.querySelector('button') as HTMLButtonElement).disabled = false;
+    input.value = '';
+  });
+
+  // Upload doc
+  const formDoc = card.querySelector('.form-upload-doc') as HTMLFormElement;
+  const msgDoc  = card.querySelector('.form-upload-doc .subiendo-msg') as HTMLElement;
+  formDoc.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = card.querySelector('.input-doc') as HTMLInputElement;
+    if (!input.files?.length) return;
+    msgDoc.style.display = 'inline';
+    (formDoc.querySelector('button') as HTMLButtonElement).disabled = true;
+    await subirArchivo(card, tema, input.files[0], 'documento');
+    msgDoc.style.display = 'none';
+    (formDoc.querySelector('button') as HTMLButtonElement).disabled = false;
+    input.value = '';
+  });
+
+  return card;
+}
+
+function crearFilaMat(mat: any): HTMLElement {
+  const kb    = mat.tamano_kb > 1024 ? `${(mat.tamano_kb/1024).toFixed(1)} MB` : `${mat.tamano_kb} KB`;
+  const icono = mat.tipo === 'video' ? '🎬' : '📄';
+  const div   = document.createElement('div');
+  div.className = 'mat-fila';
+
+  function renderNormal() {
+    div.innerHTML = `
+      <span class="mat-icono">${icono}</span>
+      <a href="${mat.ruta}" target="_blank" class="mat-nombre" title="${mat.nombre}">${mat.nombre}</a>
+      <span class="mat-tam">${kb}</span>
+      <button class="mat-rename" title="Renombrar">
+        <svg viewBox="0 0 14 14" fill="none" width="13" height="13">
+          <path d="M9.5 2.5l2 2-7 7H2.5v-2l7-7z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <button class="mat-del" title="Eliminar">✕</button>
+    `;
+    div.querySelector('.mat-rename')!.addEventListener('click', renderEditar);
+    div.querySelector('.mat-del')!.addEventListener('click', async () => {
+      if (!confirm(`¿Eliminar "${mat.nombre}"?`)) return;
+      const res  = await fetch(`/api/materiales.php?id=${mat.id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.ok) div.remove(); else mostrarMsg('Error al eliminar', 'error');
+    });
+  }
+
+  function renderEditar() {
+    div.innerHTML = `
+      <span class="mat-icono">${icono}</span>
+      <input type="text" class="mat-nombre-input" value="${mat.nombre}" />
+      <button class="mat-save" title="Guardar">✓</button>
+      <button class="mat-cancelar-rename" title="Cancelar">✕</button>
+    `;
+    const input = div.querySelector('.mat-nombre-input') as HTMLInputElement;
+    input.focus(); input.select();
+
+    async function guardar() {
+      const nuevoNombre = input.value.trim();
+      if (!nuevoNombre) return;
+      const res  = await fetch('/api/materiales.php', {
+        method: 'PUT', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ id: mat.id, nombre: nuevoNombre }),
+      });
+      const data = await res.json();
+      if (data.ok) { mat.nombre = nuevoNombre; renderNormal(); }
+      else mostrarMsg('Error al renombrar', 'error');
+    }
+    div.querySelector('.mat-save')!.addEventListener('click', guardar);
+    div.querySelector('.mat-cancelar-rename')!.addEventListener('click', renderNormal);
+    input.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Enter') guardar();
+      if (e.key === 'Escape') renderNormal();
+    });
+  }
+
+  renderNormal();
+  return div;
+}
+
+function leerDuracionVideo(archivo: File): Promise<number> {
+  return new Promise(resolve => {
+    const url = URL.createObjectURL(archivo);
+    const v   = document.createElement('video');
+    v.preload  = 'metadata';
+    v.onloadedmetadata = () => { URL.revokeObjectURL(url); resolve(v.duration); };
+    v.onerror          = () => { URL.revokeObjectURL(url); resolve(0); };
+    v.src = url;
+  });
+}
+
+async function subirArchivo(card: HTMLElement, tema: any, archivo: File, tipo: string) {
+  let durMin = 0;
+  if (tipo === 'video') {
+    const seg = await leerDuracionVideo(archivo);
+    durMin = seg > 0 ? Math.ceil(seg / 60) : 0;
+  }
+  const fd = new FormData();
+  fd.append('archivo', archivo);
+  fd.append('tema_id', String(tema.id));
+  fd.append('tipo',    tipo);
+
+  try {
+    const res  = await fetch('/api/upload.php', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!data.ok) { mostrarMsg(data.mensaje || 'Error al subir', 'error'); return; }
+
+    const lista = card.querySelector(tipo === 'video' ? `.mat-lista-video-${tema.id}` : `.mat-lista-doc-${tema.id}`) as HTMLElement;
+    lista.appendChild(crearFilaMat(data.material));
+
+    if (tipo === 'video' && durMin > 0) {
+      const inputDur = card.querySelector('.input-dur-tema') as HTMLInputElement;
+      if (!inputDur.value || inputDur.value === '0') {
+        inputDur.value = String(durMin);
+        const durLabel = document.getElementById(`dur-label-${tema.id}`);
+        if (durLabel) { durLabel.textContent = durMin + ' min'; durLabel.style.display = ''; }
+        await fetch('/api/temas.php', {
+          method: 'PUT', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ id: tema.id, titulo: tema.titulo, duracion: String(durMin), orden: tema.orden }),
+        });
+        await guardarDuracionCurso();
+      }
+    }
+    mostrarMsg(`✓ ${tipo === 'video' ? 'Vídeo' : 'Archivo'} subido.`, 'ok');
+  } catch {
+    mostrarMsg('Error de conexión al subir.', 'error');
+  }
+}
+</script>
