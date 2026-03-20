@@ -20,12 +20,6 @@ $metodo = $_SERVER['REQUEST_METHOD'];
 
 // ── GET ──────────────────────────────────────────────────────
 if ($metodo === 'GET') {
-    // Migraciones automáticas
-    try { $pdo->exec('ALTER TABLE cursos ADD COLUMN IF NOT EXISTS pack VARCHAR(120) DEFAULT NULL'); } catch (PDOException $e) {}
-    try { $pdo->exec('ALTER TABLE cursos ADD COLUMN IF NOT EXISTS pack_color VARCHAR(20) DEFAULT NULL'); } catch (PDOException $e) {}
-    try { $pdo->exec('ALTER TABLE cursos ADD COLUMN IF NOT EXISTS color VARCHAR(20) DEFAULT NULL'); } catch (PDOException $e) {}
-    try { $pdo->exec('ALTER TABLE cursos ADD COLUMN IF NOT EXISTS descripcion TEXT DEFAULT NULL'); } catch (PDOException $e) {}
-
     $stmt = $pdo->query(
         'SELECT c.id, c.titulo, c.descripcion, c.etiqueta, c.nivel, c.duracion, c.pack, c.pack_color, c.color, c.activo, c.creado_en,
                 COUNT(t.id) AS num_temas

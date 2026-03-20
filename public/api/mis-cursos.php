@@ -29,18 +29,6 @@ if (!$usuarioId) {
 require_once __DIR__ . '/db-connect.php';
 $pdo = obtenerPDO();
 
-// Auto-migración: columnas opcionales (compatible con MySQL antiguo)
-$migraciones = [
-    "ALTER TABLE cursos ADD COLUMN descripcion TEXT DEFAULT NULL",
-    "ALTER TABLE cursos ADD COLUMN color VARCHAR(20) DEFAULT NULL",
-    "ALTER TABLE cursos ADD COLUMN pack_color VARCHAR(20) DEFAULT NULL",
-    "ALTER TABLE temas ADD COLUMN descripcion TEXT DEFAULT NULL",
-    "ALTER TABLE temas ADD COLUMN color VARCHAR(20) DEFAULT NULL",
-    "ALTER TABLE temas ADD COLUMN duracion VARCHAR(50) NOT NULL DEFAULT ''",
-];
-foreach ($migraciones as $sql) {
-    try { $pdo->exec($sql); } catch (\Throwable $e) { /* columna ya existe */ }
-}
 
 // Cursos asignados al alumno (activos)
 $stmtCursos = $pdo->prepare(

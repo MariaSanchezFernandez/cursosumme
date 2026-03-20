@@ -1,7 +1,7 @@
 <?php
 // ─────────────────────────────────────────────────────────────
-// api/setup.php  —  Migraciones incrementales de la BD
-// Visitar una vez tras cada despliegue que añada columnas.
+// api/setup.php  —  Migraciones e índices de la BD
+// Visitar una vez tras cada despliegue que modifique la BD.
 // Seguro: usa IF NOT EXISTS, no destruye datos.
 // ─────────────────────────────────────────────────────────────
 
@@ -10,14 +10,62 @@ header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/db-connect.php';
 $pdo = obtenerPDO();
 
-$migraciones = [];
+$resultados = [];
 
-// v2: columna pack en cursos
-try {
-    $pdo->exec('ALTER TABLE cursos ADD COLUMN IF NOT EXISTS pack VARCHAR(120) DEFAULT NULL');
-    $migraciones[] = 'pack en cursos: OK';
-} catch (Exception $e) {
-    $migraciones[] = 'pack en cursos: ' . $e->getMessage();
+function ejecutar(PDO $pdo, string $sql, string $descripcion, array &$log): void {
+    try {
+        $pdo->exec($sql);
+        $log[] = ['ok' => true, 'msg' => $descripcion];
+    } catch (Exception $e) {
+        $log[] = ['ok' => false, 'msg' => $descripcion . ': ' . $e->getMessage()];
+    }
 }
 
-echo json_encode(['ok' => true, 'migraciones' => $migraciones]);
+// ── Columnas ──────────────────────────────────────────────────
+ejecutar($pdo, 'ALTER TABLE cursos ADD COLUMN IF NOT EXISTS pack        VARCHAR(120) DEFAULT NULL', 'pack en cursos', $resultados);
+ejecutar($pdo, 'ALTER TABLE cursos ADD COLUMN IF NOT EXISTS pack_color  VARCHAR(20)  DEFAULT NULL', 'pack_color en cursos', $resultados);
+ejecutar($pdo, 'ALTER TABLE cursos ADD COLUMN IF NOT EXISTS color       VARCHAR(20)  DEFAULT NULL', 'color en cursos', $resultados);
+ejecutar($pdo, 'ALTER TABLE cursos ADD COLUMN IF NOT EXISTS descripcion TEXT         DEFAULT NULL', 'descripcion en cursos', $resultados);
+ejecutar($pdo, 'ALTER TABLE temas  ADD COLUMN IF NOT EXISTS descripcion TEXT         DEFAULT NULL', 'descripcion en temas', $resultados);
+ejecutar($pdo, 'ALTER TABLE temas  ADD COLUMN IF NOT EXISTS color       VARCHAR(20)  DEFAULT NULL', 'color en temas', $resultados);
+ejecutar($pdo, 'ALTER TABLE temas  ADD COLUMN IF NOT EXISTS duracion    VARCHAR(50)  NOT NULL DEFAULT \'\'', 'duracion en temas', $resultados);
+ejecutar($pdo, 'ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS fecha_baja DATE DEFAULT NULL', 'fecha_baja en usuarios', $resultados);
+ejecutar($pdo, 'ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS foto_perfil VARCHAR(255) DEFAULT NULL', 'foto_perfil en usuarios', $resultados);
+
+// ── Tabla progresos ───────────────────────────────────────────
+ejecutar($pdo, "CREATE TABLE IF NOT EXISTS progresos (
+    usuario_id INT NOT NULL,
+    tema_id    INT NOT NULL,
+    visto_en   DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (usuario_id, tema_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", 'tabla progresos', $resultados);
+
+// ── Tablas de tickets ─────────────────────────────────────────
+ejecutar($pdo, "CREATE TABLE IF NOT EXISTS tickets (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    asunto     VARCHAR(255) NOT NULL,
+    mensaje    TEXT NOT NULL,
+    estado     ENUM('abierto','respondido','cerrado') NOT NULL DEFAULT 'abierto',
+    creado_en  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", 'tabla tickets', $resultados);
+
+ejecutar($pdo, "CREATE TABLE IF NOT EXISTS ticket_respuestas (
+    id        INT AUTO_INCREMENT PRIMARY KEY,
+    ticket_id INT NOT NULL,
+    admin_id  INT NOT NULL,
+    mensaje   TEXT NOT NULL,
+    creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_tr_ticket FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", 'tabla ticket_respuestas', $resultados);
+
+// ── Índices (mejoran rendimiento en JOINs y filtros frecuentes) ──
+ejecutar($pdo, 'ALTER TABLE usuarios_cursos ADD INDEX IF NOT EXISTS idx_uc_usuario (usuario_id)', 'índice usuarios_cursos.usuario_id', $resultados);
+ejecutar($pdo, 'ALTER TABLE usuarios_cursos ADD INDEX IF NOT EXISTS idx_uc_curso   (curso_id)',   'índice usuarios_cursos.curso_id', $resultados);
+ejecutar($pdo, 'ALTER TABLE temas           ADD INDEX IF NOT EXISTS idx_temas_curso (curso_id)',  'índice temas.curso_id', $resultados);
+ejecutar($pdo, 'ALTER TABLE materiales      ADD INDEX IF NOT EXISTS idx_mat_tema    (tema_id)',   'índice materiales.tema_id', $resultados);
+ejecutar($pdo, 'ALTER TABLE progresos       ADD INDEX IF NOT EXISTS idx_prog_usuario (usuario_id)', 'índice progresos.usuario_id', $resultados);
+ejecutar($pdo, 'ALTER TABLE tickets         ADD INDEX IF NOT EXISTS idx_tick_usuario (usuario_id)', 'índice tickets.usuario_id', $resultados);
+ejecutar($pdo, 'ALTER TABLE tickets         ADD INDEX IF NOT EXISTS idx_tick_estado  (estado)',     'índice tickets.estado', $resultados);
+
+echo json_encode(['ok' => true, 'resultados' => $resultados], JSON_PRETTY_PRINT);
