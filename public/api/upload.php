@@ -46,7 +46,7 @@ if (!isset($_FILES['archivo']) || $_FILES['archivo']['error'] !== UPLOAD_ERR_OK)
 // Extensiones permitidas por tipo
 $ext_permitidas = [
     'video'     => ['mp4', 'webm', 'mov', 'avi', 'm4v'],
-    'documento' => ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'],
+    'documento' => ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'mp3', 'm4a', 'wav', 'ogg', 'aac'],
 ];
 
 $nombreOriginal = $_FILES['archivo']['name'];

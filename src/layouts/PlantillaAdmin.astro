@@ -4,7 +4,7 @@ import '../styles/PlantillaAdmin.css';
 
 interface Props {
   titulo: string;
-  paginaActual: 'dashboard' | 'alumnos' | 'cursos' | 'tickets';
+  paginaActual: 'dashboard' | 'alumnos' | 'cursos' | 'tickets' | 'perfil' | 'logs' | 'errores';
 }
 
 const { titulo, paginaActual } = Astro.props;
@@ -17,6 +17,40 @@ const { titulo, paginaActual } = Astro.props;
     <title>{titulo} — Cursos Umme Admin</title>
   </head>
   <body>
+    <!-- Captura global de errores JS -->
+    <script is:inline>
+    (function () {
+      var _enviados = {};
+      function enviar(tipo, msg, url, linea, col, stack) {
+        var clave = tipo + '|' + msg + '|' + (linea || '');
+        if (_enviados[clave]) return;
+        _enviados[clave] = true;
+        try {
+          var s = JSON.parse(sessionStorage.getItem('umme_session') || '{}');
+          fetch('/api/log-error.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              tipo: 'admin_' + tipo, mensaje: String(msg).slice(0, 1000),
+              url: String(url || location.href).slice(0, 500),
+              linea: linea || null, columna: col || null,
+              stack: String(stack || '').slice(0, 3000),
+              usuario_id: s.userId || null, usuario_email: s.email || null,
+            }),
+          }).catch(function(){});
+        } catch(e) {}
+      }
+      window.onerror = function(msg, src, linea, col, err) {
+        enviar('js', msg, src, linea, col, err && err.stack);
+        return false;
+      };
+      window.addEventListener('unhandledrejection', function(e) {
+        var err = e.reason;
+        enviar('promise', err && err.message ? err.message : String(err), location.href, null, null, err && err.stack);
+      });
+    })();
+    </script>
+
     <div class="admin-layout">
 
       <!-- Sidebar -->
@@ -76,11 +110,29 @@ const { titulo, paginaActual } = Astro.props;
                 <span id="adminTicketsBadge" style="display:none; position:absolute; top:6px; right:10px; width:8px; height:8px; background:#e53; border-radius:50%; border:1.5px solid #fff;"></span>
               </a>
             </li>
+            <li>
+              <a href="/admin/logs" class={paginaActual === 'logs' ? 'activo' : ''}>
+                <svg viewBox="0 0 16 16" fill="none">
+                  <path d="M3 3h10M3 6h10M3 9h6M3 12h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                </svg>
+                Log de cambios
+              </a>
+            </li>
+            <li>
+              <a href="/admin/errores" id="linkErrores" class={paginaActual === 'errores' ? 'activo' : ''} style="position:relative;">
+                <svg viewBox="0 0 16 16" fill="none">
+                  <path d="M8 2l6 11H2L8 2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+                  <path d="M8 7v3M8 11.5v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                </svg>
+                Errores
+                <span id="erroresBadge" style="display:none; position:absolute; top:6px; right:10px; min-width:16px; height:16px; background:#e53; border-radius:8px; border:1.5px solid #fff; font-size:0.6rem; font-weight:800; color:#fff; display:none; align-items:center; justify-content:center; padding:0 3px;"></span>
+              </a>
+            </li>
           </ul>
         </div>
 
-        <!-- Footer del sidebar: info de Rocío -->
-        <div class="sidebar-footer">
+        <!-- Footer del sidebar: perfil admin -->
+        <a href="/admin/perfil" class="sidebar-footer" style="text-decoration:none; cursor:pointer;" title="Mi perfil">
           <div class="sidebar-avatar">
             <svg viewBox="0 0 24 24" fill="none">
               <circle cx="12" cy="8" r="4" fill="#555"/>
@@ -88,10 +140,10 @@ const { titulo, paginaActual } = Astro.props;
             </svg>
           </div>
           <div class="sidebar-usuario-info">
-            <span class="sidebar-usuario-nombre">Umme</span>
+            <span class="sidebar-usuario-nombre" id="sidebarNombreAdmin">—</span>
             <span class="sidebar-usuario-rol">Administradora</span>
           </div>
-        </div>
+        </a>
       </aside>
 
       <!-- Contenido -->
@@ -115,78 +167,45 @@ const { titulo, paginaActual } = Astro.props;
 
     </div>
 
-  <!-- Capa anti-captura -->
-  <div id="pantalla-negra" aria-hidden="true" style="display:none;position:fixed;inset:0;background:#000;z-index:99999;pointer-events:none;"></div>
-
-  <!-- GUARDIA DE RUTA: solo admin puede acceder -->
   <script is:inline>
-    (function () {
-      var overlay = document.getElementById('pantalla-negra');
-      var timer = null;
-      function mostrar() {
-        overlay.style.display = 'block';
-        clearTimeout(timer);
-        timer = setTimeout(function () { overlay.style.display = 'none'; }, 2000);
-      }
-      document.addEventListener('keydown', function (e) {
-        var k = e.key || '';
-        if (k === 'PrintScreen') { mostrar(); return; }
-        if (e.altKey && k === 'PrintScreen') { mostrar(); return; }
-        if (e.metaKey && e.shiftKey && (k === 's' || k === 'S')) { mostrar(); return; }
-        if (e.metaKey && e.shiftKey && (k === '3' || k === '4' || k === '5' || k === '6')) { mostrar(); return; }
-        if (e.metaKey && e.ctrlKey && e.shiftKey && (k === '3' || k === '4')) { mostrar(); return; }
-      });
-      window.addEventListener('blur', function () { mostrar(); });
-      document.addEventListener('visibilitychange', function () {
-        if (document.hidden) mostrar();
-        else overlay.style.display = 'none';
-      });
-      document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
-    })();
-  </script>
-
-  <script is:inline>
-    (function () {
-      try {
-        var raw = sessionStorage.getItem('umme_session');
-        if (!raw) { window.location.replace('/'); return; }
-        var s = JSON.parse(raw);
-        if (!s || Date.now() > s.exp) {
+    var _s = {};
+    try {
+      var _raw = sessionStorage.getItem('umme_session');
+      if (!_raw) { window.location.replace('/'); }
+      else {
+        _s = JSON.parse(_raw);
+        if (!_s || Date.now() > _s.exp) {
           sessionStorage.removeItem('umme_session');
           window.location.replace('/');
-          return;
-        }
-        if (s.rol !== 'admin') {
+        } else if (_s.rol !== 'admin') {
           window.location.replace('/inicio');
-          return;
         }
-      } catch (e) {
-        window.location.replace('/');
       }
-    })();
+    } catch (e) { window.location.replace('/'); }
 
-    // Logout: borra la sesión y redirige al login
+    // Nombre del admin en el sidebar
+    var _nombreEl = document.getElementById('sidebarNombreAdmin');
+    if (_nombreEl && _s.nombre) _nombreEl.textContent = _s.nombre;
+
+    // Logout
     document.getElementById('btn-logout').addEventListener('click', function () {
       sessionStorage.removeItem('umme_session');
       sessionStorage.removeItem('umme_admin_badge');
       window.location.replace('/');
     });
 
-    // Badge de tickets abiertos sin responder (siempre en tiempo real)
-    (function () {
-      var s = {};
-      try { s = JSON.parse(sessionStorage.getItem('umme_session') || '{}'); } catch {}
-      if (!s.userId) return;
-      var badge = document.getElementById('adminTicketsBadge');
-      fetch('/api/tickets.php?admin=1&usuario_id=' + s.userId)
+    // Badge tickets abiertos (tiempo real)
+    if (_s.userId) {
+      var _badge = document.getElementById('adminTicketsBadge');
+      fetch('/api/tickets.php?admin=1&usuario_id=' + _s.userId)
         .then(function (r) { return r.json(); })
         .then(function (data) {
           if (!data.ok) return;
           var hayAbiertos = (data.tickets || []).some(function (t) { return t.estado === 'abierto'; });
-          if (hayAbiertos) badge.style.display = 'block';
+          if (hayAbiertos && _badge) _badge.style.display = 'block';
         })
         .catch(function () {});
-    })();
+    }
   </script>
   </body>
 </html>

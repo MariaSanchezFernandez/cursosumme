@@ -2,12 +2,11 @@
  * auth.ts
  * -------------------------------------------------------
  * Módulo de autenticación para el cliente (browser).
- *
- * - Las sesiones se guardan en sessionStorage (se borran al cerrar
- *   el navegador o la pestaña).
- * - Las contraseñas se comparan siempre como hashes SHA-256;
- *   nunca se almacena ni se envía la contraseña en texto plano.
- * - Duración de sesión: 8 horas desde el inicio de sesión.
+ * - Sesiones en sessionStorage (8h, se borran al cerrar pestaña).
+ * - Contraseñas enviadas en texto plano por HTTPS; el servidor
+ *   verifica con bcrypt.
+ * - Cada sesión incluye un token aleatorio generado por el servidor
+ *   que se envía en cada petición como Authorization: Bearer <token>.
  * -------------------------------------------------------
  */
 
@@ -17,28 +16,29 @@ const SESSION_DURATION_MS = 8 * 60 * 60 * 1000; // 8 horas
 export interface Sesion {
   userId: string;
   rol: 'admin' | 'alumno';
+  nombre: string;
   email: string;
-  exp: number; // timestamp de expiración
-}
-
-// ── Hash SHA-256 usando Web Crypto API ───────────────────────────────────────
-export async function hashPassword(password: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  token: string;  // token de servidor para autorización
+  exp: number;
 }
 
 // ── Crear y guardar sesión ───────────────────────────────────────────────────
-export function crearSesion(userId: string, rol: 'admin' | 'alumno', email: string): void {
+export function crearSesion(userId: string, rol: 'admin' | 'alumno', nombre: string, email: string, token: string): void {
   const sesion: Sesion = {
-    userId,
-    rol,
-    email,
+    userId, rol, nombre, email, token,
     exp: Date.now() + SESSION_DURATION_MS,
   };
   sessionStorage.setItem(SESSION_KEY, JSON.stringify(sesion));
+}
+
+// ── Cabeceras de autorización para fetch() ───────────────────────────────────
+export function authHeaders(): HeadersInit {
+  try {
+    const s: Sesion = JSON.parse(sessionStorage.getItem(SESSION_KEY) || '{}');
+    return s.token
+      ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${s.token}` }
+      : { 'Content-Type': 'application/json' };
+  } catch { return { 'Content-Type': 'application/json' }; }
 }
 
 // ── Obtener sesión activa (null si no existe o expiró) ───────────────────────

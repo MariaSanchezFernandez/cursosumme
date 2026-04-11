@@ -10,6 +10,40 @@ import '../styles/global.css';
     <title>Cursos Umme</title>
   </head>
   <body>
+    <!-- Captura global de errores JS -->
+    <script is:inline>
+    (function () {
+      var _enviados = {};
+      function enviar(tipo, msg, url, linea, col, stack) {
+        var clave = tipo + '|' + msg + '|' + (linea || '');
+        if (_enviados[clave]) return;
+        _enviados[clave] = true;
+        try {
+          var s = JSON.parse(sessionStorage.getItem('umme_session') || '{}');
+          fetch('/api/log-error.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              tipo: tipo, mensaje: String(msg).slice(0, 1000),
+              url: String(url || location.href).slice(0, 500),
+              linea: linea || null, columna: col || null,
+              stack: String(stack || '').slice(0, 3000),
+              usuario_id: s.userId || null, usuario_email: s.email || null,
+            }),
+          }).catch(function(){});
+        } catch(e) {}
+      }
+      window.onerror = function(msg, src, linea, col, err) {
+        enviar('js', msg, src, linea, col, err && err.stack);
+        return false;
+      };
+      window.addEventListener('unhandledrejection', function(e) {
+        var err = e.reason;
+        enviar('promise', err && err.message ? err.message : String(err), location.href, null, null, err && err.stack);
+      });
+    })();
+    </script>
+
     <slot />
     <!-- Firma de marca: aparece en todas las páginas, esquina inferior izquierda -->
     <span class="firma">cursos umme</span>

@@ -1,0 +1,193 @@
+---
+import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
+---
+
+<PlantillaAdmin titulo="Errores" paginaActual="errores">
+
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem; flex-wrap:wrap; gap:0.75rem;">
+    <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+      <select id="sel-tipo" style="font-size:0.78rem; padding:0.3rem 0.6rem; border:1px solid #e0ece6; border-radius:7px; background:#fafcfb; font-family:inherit; color:var(--color-text-muted);">
+        <option value="">Todos los tipos</option>
+        <option value="js">JS (alumno)</option>
+        <option value="promise">Promise (alumno)</option>
+        <option value="admin_js">JS (admin)</option>
+        <option value="admin_promise">Promise (admin)</option>
+      </select>
+      <span id="contador" style="font-size:0.78rem; color:#aaa;"></span>
+    </div>
+    <button id="btn-limpiar" class="btn-admin" style="color:#c33; border-color:#f5c6c6; font-size:0.78rem;">
+      <svg viewBox="0 0 16 16" fill="none" width="13" height="13">
+        <path d="M2 4h12M5 4V2.5h6V4M5.5 6.5v4M10.5 6.5v4M3 4l.75 7.5h8.5L13 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Borrar todos
+    </button>
+  </div>
+
+  <div class="tabla-wrap">
+    <div id="err-carga" style="padding:2rem 1.5rem; color:#aaa; font-size:0.85rem;">Cargando…</div>
+    <table id="err-tabla" style="display:none;">
+      <thead>
+        <tr>
+          <th style="width:130px;">Fecha</th>
+          <th style="width:110px;">Tipo</th>
+          <th style="width:160px;">Usuario</th>
+          <th>Mensaje</th>
+          <th style="width:36px;"></th>
+        </tr>
+      </thead>
+      <tbody id="err-tbody"></tbody>
+    </table>
+    <div id="err-vacio" style="display:none; padding:2rem 1.5rem; color:#aaa; font-size:0.85rem;">
+      Sin errores registrados. ¡Todo en orden!
+    </div>
+  </div>
+
+  <!-- Modal detalle -->
+  <div id="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:200; align-items:center; justify-content:center; padding:1rem;">
+    <div id="modal-box" style="background:#fff; border-radius:14px; max-width:680px; width:100%; max-height:85vh; overflow-y:auto; box-shadow:0 8px 40px rgba(0,0,0,0.18); display:flex; flex-direction:column;">
+      <div style="display:flex; align-items:center; gap:0.75rem; padding:1.25rem 1.5rem; border-bottom:1px solid #f0f5f2;">
+        <span id="modal-tipo" style="font-size:0.72rem; font-weight:700; padding:0.2rem 0.55rem; border-radius:5px; background:#fdf5f0; color:#b84a00;"></span>
+        <span id="modal-fecha" style="font-size:0.78rem; color:#aaa; flex:1;"></span>
+        <button id="modal-cerrar" style="background:none; border:none; cursor:pointer; color:#aaa; font-size:1.1rem; padding:0.2rem;">✕</button>
+      </div>
+      <div style="padding:1.25rem 1.5rem; display:flex; flex-direction:column; gap:1rem;">
+        <div>
+          <p style="font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#aaa; margin:0 0 0.35rem;">Mensaje</p>
+          <p id="modal-msg" style="font-size:0.85rem; color:var(--color-text); line-height:1.5; margin:0;"></p>
+        </div>
+        <div id="modal-url-wrap">
+          <p style="font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#aaa; margin:0 0 0.35rem;">Página</p>
+          <p id="modal-url" style="font-size:0.8rem; color:#555; word-break:break-all; margin:0;"></p>
+        </div>
+        <div id="modal-pos-wrap">
+          <p style="font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#aaa; margin:0 0 0.35rem;">Posición</p>
+          <p id="modal-pos" style="font-size:0.8rem; color:#555; margin:0;"></p>
+        </div>
+        <div id="modal-usuario-wrap">
+          <p style="font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#aaa; margin:0 0 0.35rem;">Usuario</p>
+          <p id="modal-usuario" style="font-size:0.8rem; color:#555; margin:0;"></p>
+        </div>
+        <div id="modal-stack-wrap">
+          <p style="font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#aaa; margin:0 0 0.35rem;">Stack trace</p>
+          <pre id="modal-stack" style="font-size:0.72rem; color:#555; background:#f5f7f6; border-radius:8px; padding:0.75rem 1rem; overflow-x:auto; white-space:pre-wrap; word-break:break-all; margin:0; line-height:1.6;"></pre>
+        </div>
+        <div id="modal-ua-wrap">
+          <p style="font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#aaa; margin:0 0 0.35rem;">Navegador</p>
+          <p id="modal-ua" style="font-size:0.72rem; color:#aaa; margin:0;"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</PlantillaAdmin>
+
+<script>
+let tipoFiltro = '';
+
+async function cargar() {
+  document.getElementById('err-carga')!.style.display = 'block';
+  document.getElementById('err-tabla')!.style.display = 'none';
+  document.getElementById('err-vacio')!.style.display = 'none';
+
+  const url = `/api/errores.php?limit=200${tipoFiltro ? '&tipo=' + tipoFiltro : ''}`;
+  const res  = await fetch(url);
+  const data = await res.json();
+
+  document.getElementById('err-carga')!.style.display = 'none';
+
+  if (!data.ok || data.errores.length === 0) {
+    document.getElementById('err-vacio')!.style.display = 'block';
+    document.getElementById('contador')!.textContent = '0 errores';
+    return;
+  }
+
+  document.getElementById('contador')!.textContent = `${data.total} error${data.total !== 1 ? 'es' : ''}`;
+  const tbody = document.getElementById('err-tbody')!;
+  tbody.innerHTML = '';
+
+  data.errores.forEach((e: any) => {
+    const tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    const fecha = new Date(e.creado_en).toLocaleString('es-ES', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' });
+    const esAdmin = e.tipo.startsWith('admin_');
+    const tipoLabel = e.tipo.replace('admin_', '').toUpperCase();
+    tr.innerHTML = `
+      <td style="font-size:0.78rem; color:#aaa; white-space:nowrap;">${fecha}</td>
+      <td>
+        <span style="font-size:0.7rem; font-weight:700; padding:0.15rem 0.45rem; border-radius:5px;
+          background:${esAdmin ? '#f0f4ff' : '#fdf5f0'}; color:${esAdmin ? '#2244cc' : '#b84a00'};">
+          ${esAdmin ? 'ADMIN · ' : ''}${tipoLabel}
+        </span>
+      </td>
+      <td style="font-size:0.8rem; color:#888;">${e.usuario_email || e.usuario_id ? (e.usuario_email || 'ID ' + e.usuario_id) : '<span style="color:#ccc">—</span>'}</td>
+      <td style="font-size:0.82rem; color:var(--color-text); max-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${e.mensaje}</td>
+      <td>
+        <button class="btn-del-err btn-card-del" data-id="${e.id}" title="Borrar" style="padding:0.3rem 0.4rem;" onclick="event.stopPropagation()">
+          <svg viewBox="0 0 14 14" fill="none" width="12" height="12">
+            <path d="M2 4h10M5 4V2.5h4V4M5.5 6.5v4M8.5 6.5v4M3 4l.75 7.5h6.5L11 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </td>
+    `;
+    tr.addEventListener('click', () => abrirDetalle(e));
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('err-tabla')!.style.display = '';
+  document.querySelectorAll('.btn-del-err').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = (btn as HTMLElement).dataset.id;
+      await fetch(`/api/errores.php?id=${id}`, { method: 'DELETE' });
+      cargar();
+    });
+  });
+}
+
+function abrirDetalle(e: any) {
+  const overlay = document.getElementById('modal-overlay')!;
+  const fecha = new Date(e.creado_en).toLocaleString('es-ES', { dateStyle: 'long', timeStyle: 'medium' });
+  (document.getElementById('modal-tipo')   as HTMLElement).textContent = e.tipo;
+  (document.getElementById('modal-fecha')  as HTMLElement).textContent = fecha;
+  (document.getElementById('modal-msg')    as HTMLElement).textContent = e.mensaje;
+  (document.getElementById('modal-url')    as HTMLElement).textContent = e.url_pagina || '—';
+  (document.getElementById('modal-pos')    as HTMLElement).textContent = e.linea ? `Línea ${e.linea}, col. ${e.columna}` : '—';
+  (document.getElementById('modal-usuario')as HTMLElement).textContent = e.usuario_email ? `${e.usuario_email} (ID ${e.usuario_id})` : (e.usuario_id ? `ID ${e.usuario_id}` : 'No identificado');
+  (document.getElementById('modal-stack')  as HTMLElement).textContent = e.stack || 'Sin stack trace';
+  (document.getElementById('modal-ua')     as HTMLElement).textContent = e.user_agent || '—';
+  document.getElementById('modal-url-wrap')!.style.display = e.url_pagina ? '' : 'none';
+  document.getElementById('modal-pos-wrap')!.style.display = e.linea ? '' : 'none';
+  document.getElementById('modal-stack-wrap')!.style.display = e.stack ? '' : 'none';
+  overlay.style.display = 'flex';
+}
+
+document.getElementById('modal-cerrar')!.addEventListener('click', () => { document.getElementById('modal-overlay')!.style.display = 'none'; });
+document.getElementById('modal-overlay')!.addEventListener('click', (e) => { if (e.target === e.currentTarget) (e.currentTarget as HTMLElement).style.display = 'none'; });
+
+document.getElementById('sel-tipo')!.addEventListener('change', (e) => {
+  tipoFiltro = (e.target as HTMLSelectElement).value;
+  cargar();
+});
+
+document.getElementById('btn-limpiar')!.addEventListener('click', async () => {
+  if (!confirm('¿Borrar todos los errores registrados?')) return;
+  await fetch('/api/errores.php', { method: 'DELETE' });
+  cargar();
+});
+
+cargar();
+</script>
+
+<style>
+.btn-card-del {
+  background: none;
+  border: 1px solid #f5c6c6;
+  border-radius: 7px;
+  cursor: pointer;
+  color: #c33;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s;
+}
+.btn-card-del:hover { background: #fdf0f0; }
+</style>

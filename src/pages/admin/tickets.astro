@@ -114,6 +114,11 @@ function crearFilaTicket(ticket: any): HTMLElement {
         <span class="tk-badge ${badgeClass}">${badgeTxt}</span>
         <span class="tk-fecha">${fechaStr}</span>
         <span class="tk-resp-count">${numResp} resp.</span>
+        <button class="tk-btn-del" data-id="${ticket.id}" title="Eliminar conversación" onclick="event.stopPropagation()">
+          <svg viewBox="0 0 14 14" fill="none" width="13" height="13">
+            <path d="M2 4h10M5 4V2.5h4V4M5.5 6.5v4M8.5 6.5v4M3 4l.75 7.5h6.5L11 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
       </div>
       <svg class="tk-chevron" viewBox="0 0 16 16" fill="none" width="16" height="16">
         <path d="M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -188,6 +193,26 @@ function crearFilaTicket(ticket: any): HTMLElement {
     const abierto = detalle.classList.toggle('abierto');
     chevron.classList.toggle('girado', abierto);
   });
+
+  // Eliminar ticket
+  const btnDel = div.querySelector('.tk-btn-del') as HTMLButtonElement | null;
+  if (btnDel) {
+    btnDel.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (!confirm('¿Eliminar esta conversación? No se puede deshacer.')) return;
+      btnDel.disabled = true;
+      try {
+        const res  = await fetch(`/api/tickets.php?id=${ticket.id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.ok) {
+          div.remove();
+          todosLosTickets = todosLosTickets.filter((t: any) => t.id !== ticket.id);
+          actualizarContadores();
+        }
+      } catch {}
+      btnDel.disabled = false;
+    });
+  }
 
   // Enviar respuesta
   const btnResp = div.querySelector('.tk-btn-responder');
@@ -607,6 +632,23 @@ cargarTickets();
 }
 .tk-btn-responder:hover { opacity: 0.87; }
 .tk-btn-responder:disabled { opacity: 0.5; cursor: default; }
+
+.tk-btn-del {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid #e8d0d0;
+  border-radius: 6px;
+  background: #fff8f8;
+  color: #c55;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+  flex-shrink: 0;
+}
+.tk-btn-del:hover { background: #fee; border-color: #c55; }
+.tk-btn-del:disabled { opacity: 0.4; cursor: default; }
 
 .tk-form-msg {
   font-size: 0.8rem;

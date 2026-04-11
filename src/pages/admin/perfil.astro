@@ -1,0 +1,164 @@
+---
+import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
+---
+
+<PlantillaAdmin titulo="Mi perfil" paginaActual="perfil">
+
+  <div style="max-width:560px; margin:0 auto; display:flex; flex-direction:column; gap:1.5rem;">
+
+    <!-- Datos personales -->
+    <div class="tabla-wrap">
+      <div class="tabla-header">
+        <span class="tabla-titulo">Datos de la cuenta</span>
+      </div>
+      <div style="padding:1.5rem;">
+        <form id="form-datos">
+          <div class="pf-campo">
+            <label class="pf-label">Nombre</label>
+            <input id="inp-nombre" type="text" class="pf-input" required />
+          </div>
+          <div class="pf-campo">
+            <label class="pf-label">Apellidos</label>
+            <input id="inp-apellidos" type="text" class="pf-input" required />
+          </div>
+          <div class="pf-campo">
+            <label class="pf-label">Email</label>
+            <input id="inp-email" type="email" class="pf-input" required />
+          </div>
+          <div id="msg-datos" style="display:none; font-size:0.82rem; margin-top:0.5rem;"></div>
+          <button type="submit" class="btn-admin primario" style="margin-top:1rem;">
+            Guardar cambios
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Cambiar contraseña -->
+    <div class="tabla-wrap">
+      <div class="tabla-header">
+        <span class="tabla-titulo">Cambiar contraseña</span>
+      </div>
+      <div style="padding:1.5rem;">
+        <form id="form-password">
+          <div class="pf-campo">
+            <label class="pf-label">Nueva contraseña</label>
+            <input id="inp-pwd1" type="password" class="pf-input" minlength="6" placeholder="Mínimo 6 caracteres" required />
+          </div>
+          <div class="pf-campo">
+            <label class="pf-label">Repetir contraseña</label>
+            <input id="inp-pwd2" type="password" class="pf-input" minlength="6" required />
+          </div>
+          <div id="msg-pwd" style="display:none; font-size:0.82rem; margin-top:0.5rem;"></div>
+          <button type="submit" class="btn-admin primario" style="margin-top:1rem;">
+            Cambiar contraseña
+          </button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+
+</PlantillaAdmin>
+
+<script>
+const s: any = (() => { try { return JSON.parse(sessionStorage.getItem('umme_session') || '{}'); } catch { return {}; } })();
+
+// ── Cargar datos actuales ─────────────────────────────────────
+async function cargarDatos() {
+  if (!s.userId) return;
+  const res  = await fetch(`/api/perfil-admin.php?usuario_id=${s.userId}`);
+  const data = await res.json();
+  if (!data.ok) return;
+  (document.getElementById('inp-nombre')    as HTMLInputElement).value = data.admin.nombre;
+  (document.getElementById('inp-apellidos') as HTMLInputElement).value = data.admin.apellidos;
+  (document.getElementById('inp-email')     as HTMLInputElement).value = data.admin.email;
+}
+cargarDatos();
+
+function mostrarMsg(id: string, texto: string, ok: boolean) {
+  const el = document.getElementById(id)!;
+  el.textContent = texto;
+  el.style.color  = ok ? 'var(--color-primary)' : '#c33';
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 3500);
+}
+
+// ── Guardar datos ─────────────────────────────────────────────
+document.getElementById('form-datos')!.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const nombre    = (document.getElementById('inp-nombre')    as HTMLInputElement).value.trim();
+  const apellidos = (document.getElementById('inp-apellidos') as HTMLInputElement).value.trim();
+  const email     = (document.getElementById('inp-email')     as HTMLInputElement).value.trim();
+
+  const res  = await fetch('/api/perfil-admin.php', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ usuario_id: s.userId, nombre, apellidos, email }),
+  });
+  const data = await res.json();
+  if (data.ok) {
+    // Actualizar sesión local
+    const sesion = JSON.parse(sessionStorage.getItem('umme_session') || '{}');
+    sesion.nombre = nombre;
+    sesion.email  = email;
+    sessionStorage.setItem('umme_session', JSON.stringify(sesion));
+    mostrarMsg('msg-datos', 'Datos actualizados correctamente.', true);
+  } else {
+    mostrarMsg('msg-datos', data.error || 'Error al guardar.', false);
+  }
+});
+
+// ── Cambiar contraseña ────────────────────────────────────────
+document.getElementById('form-password')!.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const pwd1 = (document.getElementById('inp-pwd1') as HTMLInputElement).value;
+  const pwd2 = (document.getElementById('inp-pwd2') as HTMLInputElement).value;
+
+  if (pwd1 !== pwd2) {
+    mostrarMsg('msg-pwd', 'Las contraseñas no coinciden.', false);
+    return;
+  }
+
+  const res  = await fetch('/api/cambiar-password.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ usuario_id: s.userId, password_nueva: pwd1 }),
+  });
+  const data = await res.json();
+  mostrarMsg('msg-pwd', data.mensaje || (data.ok ? 'Contraseña actualizada.' : 'Error.'), data.ok);
+  if (data.ok) {
+    (document.getElementById('inp-pwd1') as HTMLInputElement).value = '';
+    (document.getElementById('inp-pwd2') as HTMLInputElement).value = '';
+  }
+});
+</script>
+
+<style>
+.pf-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 1rem;
+}
+.pf-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.pf-input {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid #e0ece6;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-family: inherit;
+  color: var(--color-text);
+  background: #fafcfb;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.pf-input:focus {
+  border-color: var(--color-primary);
+}
+</style>

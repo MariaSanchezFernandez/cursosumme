@@ -14,6 +14,7 @@ header('Access-Control-Allow-Headers: Content-Type');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
 require_once __DIR__ . '/db-connect.php';
+require_once __DIR__ . '/log-helper.php';
 $pdo = obtenerPDO();
 
 $metodo = $_SERVER['REQUEST_METHOD'];
@@ -21,7 +22,7 @@ $metodo = $_SERVER['REQUEST_METHOD'];
 // ── GET ──────────────────────────────────────────────────────
 if ($metodo === 'GET') {
     $stmt = $pdo->query(
-        'SELECT c.id, c.titulo, c.descripcion, c.etiqueta, c.nivel, c.duracion, c.pack, c.pack_color, c.color, c.activo, c.creado_en,
+        'SELECT c.id, c.titulo, c.descripcion, c.etiqueta, c.nivel, c.duracion, c.pack, c.pack_color, c.color, c.imagen, c.activo, c.creado_en,
                 COUNT(t.id) AS num_temas
          FROM cursos c
          LEFT JOIN temas t ON t.curso_id = c.id
@@ -35,16 +36,13 @@ if ($metodo === 'GET') {
 // ── POST ─────────────────────────────────────────────────────
 if ($metodo === 'POST') {
     $body = json_decode(file_get_contents('php://input'), true);
-    $campos = ['titulo', 'etiqueta', 'nivel'];
-    foreach ($campos as $c) {
-        if (empty($body[$c])) {
-            http_response_code(400);
-            echo json_encode(['ok' => false, 'mensaje' => "Falta el campo: {$c}"]);
-            exit;
-        }
+    if (empty($body['titulo']) || empty($body['etiqueta'])) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'mensaje' => 'Faltan campos obligatorios']);
+        exit;
     }
     $stmt = $pdo->prepare(
-        'INSERT INTO cursos (titulo, descripcion, etiqueta, nivel, duracion, pack) VALUES (:titulo, :descripcion, :etiqueta, :nivel, :duracion, :pack)'
+        'INSERT INTO cursos (titulo, descripcion, etiqueta, nivel, duracion, pack, imagen) VALUES (:titulo, :descripcion, :etiqueta, :nivel, :duracion, :pack, :imagen)'
     );
     $stmt->execute([
         ':titulo'      => trim($body['titulo']),
@@ -53,8 +51,12 @@ if ($metodo === 'POST') {
         ':nivel'       => trim($body['nivel']),
         ':duracion'    => trim($body['duracion'] ?? ''),
         ':pack'        => !empty($body['pack']) ? trim($body['pack']) : null,
+        ':imagen'      => !empty($body['imagen']) ? trim($body['imagen']) : null,
     ]);
-    echo json_encode(['ok' => true, 'id' => $pdo->lastInsertId()]);
+    $newId = $pdo->lastInsertId();
+    $adminIdPost = isset($body['admin_id']) ? (int)$body['admin_id'] : 0;
+    registrar_log($pdo, 'curso_creado', "Curso \"" . trim($body['titulo']) . "\" creado", $adminIdPost);
+    echo json_encode(['ok' => true, 'id' => $newId]);
     exit;
 }
 
@@ -68,7 +70,7 @@ if ($metodo === 'PUT') {
     }
     $stmt = $pdo->prepare(
         'UPDATE cursos SET titulo=:titulo, descripcion=:descripcion, etiqueta=:etiqueta, nivel=:nivel,
-         duracion=:duracion, pack=:pack, pack_color=:pack_color, color=:color, activo=:activo WHERE id=:id'
+         duracion=:duracion, pack=:pack, pack_color=:pack_color, color=:color, imagen=:imagen, activo=:activo WHERE id=:id'
     );
     $stmt->execute([
         ':titulo'      => trim($body['titulo'] ?? ''),
@@ -79,9 +81,12 @@ if ($metodo === 'PUT') {
         ':pack'        => !empty($body['pack']) ? trim($body['pack']) : null,
         ':pack_color'  => !empty($body['pack_color']) ? trim($body['pack_color']) : null,
         ':color'       => !empty($body['color']) ? trim($body['color']) : null,
+        ':imagen'      => !empty($body['imagen']) ? trim($body['imagen']) : null,
         ':activo'      => isset($body['activo']) ? (int)$body['activo'] : 1,
         ':id'          => (int)$body['id'],
     ]);
+    $adminIdPut = isset($body['admin_id']) ? (int)$body['admin_id'] : 0;
+    registrar_log($pdo, 'curso_editado', "Curso \"" . trim($body['titulo'] ?? '') . "\" editado", $adminIdPut);
     echo json_encode(['ok' => true]);
     exit;
 }
@@ -103,7 +108,11 @@ if ($metodo === 'DELETE') {
     }
     $pdo->prepare('DELETE FROM temas WHERE curso_id = :id')->execute([':id' => $id]);
     $pdo->prepare('DELETE FROM usuarios_cursos WHERE curso_id = :id')->execute([':id' => $id]);
+    $rowTitulo = $pdo->prepare('SELECT titulo FROM cursos WHERE id = ?');
+    $rowTitulo->execute([$id]);
+    $tituloCurso = $rowTitulo->fetchColumn() ?: "ID {$id}";
     $pdo->prepare('DELETE FROM cursos WHERE id = :id')->execute([':id' => $id]);
+    registrar_log($pdo, 'curso_eliminado', "Curso \"{$tituloCurso}\" eliminado", 0);
     echo json_encode(['ok' => true]);
     exit;
 }

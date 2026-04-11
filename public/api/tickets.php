@@ -2,7 +2,7 @@
 header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, PUT, OPTIONS');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -11,6 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/db-connect.php';
+require_once __DIR__ . '/log-helper.php';
 $pdo = obtenerPDO();
 
 $method = $_SERVER['REQUEST_METHOD'];
@@ -152,7 +153,9 @@ if ($method === 'POST') {
             VALUES (?, ?, ?)
         ");
         $stmt->execute([$usuarioId, $asunto, $mensaje]);
-        echo json_encode(['ok' => true, 'id' => (int)$pdo->lastInsertId()]);
+        $newTId = (int)$pdo->lastInsertId();
+        registrar_log($pdo, 'ticket_creado', "Ticket \"" . mb_substr($asunto, 0, 60) . "\" abierto por usuario ID {$usuarioId}", $usuarioId);
+        echo json_encode(['ok' => true, 'id' => $newTId]);
     } catch (PDOException $e) {
         http_response_code(500);
         echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
@@ -244,9 +247,34 @@ if ($method === 'PUT') {
         $stmtT->execute([$estado, $ticketId]);
 
         $pdo->commit();
+        registrar_log($pdo, 'ticket_respondido', "Admin respondió al ticket ID {$ticketId}", $adminId);
         echo json_encode(['ok' => true]);
     } catch (PDOException $e) {
         $pdo->rollBack();
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+
+// ── DELETE: eliminar ticket ───────────────────────────────────
+if ($method === 'DELETE') {
+    $ticketId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+    if (!$ticketId) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => 'Falta id del ticket']);
+        exit;
+    }
+    try {
+        $asuntoRow = $pdo->prepare('SELECT asunto FROM tickets WHERE id = ?');
+        $asuntoRow->execute([$ticketId]);
+        $asunto = $asuntoRow->fetchColumn() ?: "ID {$ticketId}";
+        $pdo->prepare('DELETE FROM ticket_respuestas WHERE ticket_id = ?')->execute([$ticketId]);
+        $pdo->prepare('DELETE FROM tickets WHERE id = ?')->execute([$ticketId]);
+        registrar_log($pdo, 'ticket_eliminado', "Ticket \"{$asunto}\" eliminado", 0);
+        echo json_encode(['ok' => true]);
+    } catch (PDOException $e) {
         http_response_code(500);
         echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
     }

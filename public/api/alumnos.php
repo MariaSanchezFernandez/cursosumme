@@ -14,6 +14,7 @@ header('Access-Control-Allow-Headers: Content-Type');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
 require_once __DIR__ . '/db-connect.php';
+require_once __DIR__ . '/log-helper.php';
 $pdo = obtenerPDO();
 
 $metodo = $_SERVER['REQUEST_METHOD'];
@@ -59,7 +60,7 @@ if ($metodo === 'POST') {
     }
 
     // Contraseña por defecto: Umme@2024
-    $hashDefault = '4b906bf418f949f42ecb103c146e6ee3cafc4ad4cbb5a4349be0a326fb1ccfaa';
+    $hashDefault = password_hash('Umme@2024', PASSWORD_BCRYPT, ['cost' => 12]);
     $fechaAlta   = !empty($body['fecha_alta']) ? $body['fecha_alta'] : date('Y-m-d');
     // fecha_baja: por defecto 1 año desde fecha_alta
     $fechaBaja   = !empty($body['fecha_baja'])
@@ -89,6 +90,8 @@ if ($metodo === 'POST') {
         $stmtUc->execute([':uid' => $nuevoId, ':cid' => (int)$cursoId]);
     }
 
+    $adminId = isset($body['admin_id']) ? (int)$body['admin_id'] : 0;
+    registrar_log($pdo, 'alumno_creado', "Alumno {$body['nombre']} {$body['apellidos']} ({$email}) creado", $adminId);
     echo json_encode(['ok' => true, 'id' => $nuevoId]);
     exit;
 }
@@ -134,6 +137,8 @@ if ($metodo === 'PUT') {
         }
     }
 
+    $adminIdPut = isset($body['admin_id']) ? (int)$body['admin_id'] : 0;
+    registrar_log($pdo, 'alumno_actualizado', "Alumno ID {$uid} actualizado", $adminIdPut);
     echo json_encode(['ok' => true]);
     exit;
 }

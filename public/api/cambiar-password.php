@@ -30,7 +30,7 @@ if (!$userId || strlen($nuevaPwd) < 6) {
 require_once __DIR__ . '/db-connect.php';
 $pdo = obtenerPDO();
 
-$hash = hash('sha256', $nuevaPwd);
+$hash = password_hash($nuevaPwd, PASSWORD_BCRYPT, ['cost' => 12]);
 $stmt = $pdo->prepare('UPDATE usuarios SET contrasena = :hash WHERE id = :id');
 $stmt->execute([':hash' => $hash, ':id' => $userId]);
 

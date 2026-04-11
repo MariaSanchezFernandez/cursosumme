@@ -356,8 +356,16 @@
   color: var(--color-text-muted);
   line-height: 1.7;
   margin-top: 0.35rem;
-  white-space: pre-line;
 }
+.leccion-descripcion h2 { font-size: 1rem; font-weight: 700; color: var(--color-text); margin: 0.6rem 0 0.2rem; }
+.leccion-descripcion h3 { font-size: 0.9rem; font-weight: 700; color: var(--color-text); margin: 0.4rem 0 0.15rem; }
+.leccion-descripcion ul, .leccion-descripcion ol {
+  padding-left: 1.4rem;
+  margin: 0.35rem 0;
+}
+.leccion-descripcion li { margin-bottom: 0.15rem; }
+.leccion-descripcion strong { font-weight: 700; color: var(--color-text); }
+.leccion-descripcion em { font-style: italic; }
 
 .leccion-descripcion:empty {
   display: none;
@@ -426,8 +434,16 @@
   font-size: 0.88rem;
   color: var(--color-text-muted);
   line-height: 1.8;
-  white-space: pre-line;
 }
+.intro-desc h2 { font-size: 1rem; font-weight: 700; color: var(--color-text); margin: 0.6rem 0 0.2rem; }
+.intro-desc h3 { font-size: 0.9rem; font-weight: 700; color: var(--color-text); margin: 0.4rem 0 0.15rem; }
+.intro-desc ul, .intro-desc ol {
+  padding-left: 1.4rem;
+  margin: 0.4rem 0;
+}
+.intro-desc li { margin-bottom: 0.2rem; }
+.intro-desc strong { font-weight: 700; color: var(--color-text); }
+.intro-desc em { font-style: italic; }
 
 .intro-desc:empty::before {
   content: 'Este curso no tiene descripción.';

@@ -8,6 +8,15 @@
 header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/db-connect.php';
+
+// ── Protección: requiere ?key=SETUP_KEY ───────────────────────
+$keyProvided = trim($_GET['key'] ?? '');
+if (!defined('SETUP_KEY') || !hash_equals(SETUP_KEY, $keyProvided)) {
+    http_response_code(403);
+    echo json_encode(['ok' => false, 'mensaje' => 'Acceso denegado. Usa ?key=TU_CLAVE']);
+    exit;
+}
+
 $pdo = obtenerPDO();
 
 $resultados = [];
@@ -31,6 +40,7 @@ ejecutar($pdo, 'ALTER TABLE temas  ADD COLUMN IF NOT EXISTS color       VARCHAR(
 ejecutar($pdo, 'ALTER TABLE temas  ADD COLUMN IF NOT EXISTS duracion    VARCHAR(50)  NOT NULL DEFAULT \'\'', 'duracion en temas', $resultados);
 ejecutar($pdo, 'ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS fecha_baja DATE DEFAULT NULL', 'fecha_baja en usuarios', $resultados);
 ejecutar($pdo, 'ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS foto_perfil VARCHAR(255) DEFAULT NULL', 'foto_perfil en usuarios', $resultados);
+ejecutar($pdo, 'ALTER TABLE cursos  ADD COLUMN IF NOT EXISTS imagen      VARCHAR(500) DEFAULT NULL', 'imagen en cursos', $resultados);
 
 // ── Tabla progresos ───────────────────────────────────────────
 ejecutar($pdo, "CREATE TABLE IF NOT EXISTS progresos (
@@ -61,6 +71,52 @@ ejecutar($pdo, "CREATE TABLE IF NOT EXISTS ticket_respuestas (
 
 // ── Columna para conversación alumno ─────────────────────────
 ejecutar($pdo, 'ALTER TABLE ticket_respuestas ADD COLUMN IF NOT EXISTS alumno_id INT DEFAULT NULL', 'alumno_id en ticket_respuestas', $resultados);
+
+// ── Tabla de logs ─────────────────────────────────────────────
+ejecutar($pdo, "CREATE TABLE IF NOT EXISTS logs (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    tipo        VARCHAR(60) NOT NULL,
+    descripcion VARCHAR(500) NOT NULL,
+    usuario_id  INT NOT NULL DEFAULT 0,
+    creado_en   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_logs_tipo (tipo),
+    INDEX idx_logs_creado (creado_en)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", 'tabla logs', $resultados);
+
+// ── Charset utf8mb4 para soporte de emoji ─────────────────────
+ejecutar($pdo, "ALTER TABLE cursos CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci", 'utf8mb4 en cursos', $resultados);
+ejecutar($pdo, "ALTER TABLE temas  CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci", 'utf8mb4 en temas', $resultados);
+
+// ── Columnas para tokens de sesión y bcrypt ───────────────────
+ejecutar($pdo, 'ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS token_sesion VARCHAR(128) DEFAULT NULL', 'token_sesion en usuarios', $resultados);
+ejecutar($pdo, 'ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS token_expira DATETIME DEFAULT NULL',     'token_expira en usuarios', $resultados);
+ejecutar($pdo, 'ALTER TABLE usuarios ADD INDEX IF NOT EXISTS idx_token (token_sesion(32))', 'índice token_sesion', $resultados);
+
+// ── Tabla de intentos de login (rate limiting) ────────────────
+ejecutar($pdo, "CREATE TABLE IF NOT EXISTS login_intentos (
+    ip              VARCHAR(45)  NOT NULL,
+    intentos        TINYINT      NOT NULL DEFAULT 1,
+    bloqueado_hasta DATETIME     DEFAULT NULL,
+    ultimo_intento  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (ip)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", 'tabla login_intentos', $resultados);
+
+// ── Tabla de errores de frontend ─────────────────────────────
+ejecutar($pdo, "CREATE TABLE IF NOT EXISTS errores (
+    id             INT AUTO_INCREMENT PRIMARY KEY,
+    tipo           VARCHAR(30)  NOT NULL DEFAULT 'js',
+    mensaje        TEXT         NOT NULL,
+    url_pagina     VARCHAR(500) DEFAULT NULL,
+    linea          INT          DEFAULT NULL,
+    columna        INT          DEFAULT NULL,
+    stack          TEXT         DEFAULT NULL,
+    usuario_id     INT          DEFAULT NULL,
+    usuario_email  VARCHAR(255) DEFAULT NULL,
+    user_agent     VARCHAR(500) DEFAULT NULL,
+    creado_en      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_err_creado (creado_en),
+    INDEX idx_err_usuario (usuario_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", 'tabla errores', $resultados);
 
 // ── Índices (mejoran rendimiento en JOINs y filtros frecuentes) ──
 ejecutar($pdo, 'ALTER TABLE usuarios_cursos ADD INDEX IF NOT EXISTS idx_uc_usuario (usuario_id)', 'índice usuarios_cursos.usuario_id', $resultados);

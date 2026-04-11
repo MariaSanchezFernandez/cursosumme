@@ -20,22 +20,48 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
             <input class="form-input" type="text" id="titulo" placeholder="Ej. Formación en Igualdad" required />
           </div>
           <div class="form-grupo" style="grid-column:1/-1;">
-            <label class="form-label" for="descripcion">Descripción del curso <span style="font-weight:400; color:#aaa;">(opcional)</span></label>
-            <textarea class="form-input" id="descripcion" rows="3" placeholder="Breve descripción del curso…" style="resize:vertical;"></textarea>
+            <label class="form-label">Descripción del curso <span style="font-weight:400; color:#aaa;">(opcional)</span></label>
+            <div class="rte-wrap">
+              <div class="rte-barra">
+                <button type="button" class="rte-btn" data-cmd="formatBlock" data-val="h2" title="Título"><span style="font-size:1rem;font-weight:800;line-height:1">A</span></button>
+                <button type="button" class="rte-btn" data-cmd="formatBlock" data-val="h3" title="Subtítulo"><span style="font-size:0.72rem;font-weight:800;line-height:1">A</span></button>
+                <span class="rte-div"></span>
+                <button type="button" class="rte-btn" data-cmd="bold" title="Negrita"><strong>B</strong></button>
+                <button type="button" class="rte-btn" data-cmd="italic" title="Cursiva"><em>I</em></button>
+                <span class="rte-div"></span>
+                <button type="button" class="rte-btn" data-cmd="insertUnorderedList" title="Lista con viñetas">
+                  <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><circle cx="3" cy="5" r="1.2" fill="currentColor"/><circle cx="3" cy="9" r="1.2" fill="currentColor"/><circle cx="3" cy="13" r="1.2" fill="currentColor"/><path d="M6 5h7M6 9h7M6 13h7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                </button>
+                <button type="button" class="rte-btn" data-cmd="insertOrderedList" title="Lista numerada">
+                  <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><path d="M2 4h1.5V7.5H2M2 9.5h2v.5l-2 2h2M2.5 14.5v-2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 5h7M6 9h7M6 13h7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                </button>
+              </div>
+              <div class="rte-body" id="descripcion-editor" contenteditable="true" data-placeholder="Describe el curso: objetivos, a quién va dirigido, qué aprenderán…"></div>
+            </div>
+          </div>
+          <div class="form-grupo" style="grid-column:1/-1;">
+            <label class="form-label">Imagen de portada <span style="font-weight:400; color:#aaa;">(opcional)</span></label>
+            <div id="imagen-zona" class="imagen-zona">
+              <div id="imagen-placeholder">
+                <svg viewBox="0 0 32 32" fill="none" width="32" height="32" style="opacity:0.35">
+                  <rect x="2" y="6" width="28" height="20" rx="3" stroke="currentColor" stroke-width="1.5"/>
+                  <circle cx="10" cy="13" r="2.5" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M2 22l7-6 5 5 4-3 7 5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                </svg>
+                <span style="font-size:0.82rem; color:#aaa; margin-top:0.5rem;">Arrastra o haz clic para añadir portada</span>
+                <span style="font-size:0.72rem; color:#ccc;">JPG, PNG o WEBP · Máx. 5 MB</span>
+              </div>
+              <img id="imagen-preview" src="" alt="Portada" style="display:none; width:100%; height:100%; object-fit:cover; border-radius:8px;" />
+              <button type="button" id="imagen-quitar" style="display:none; position:absolute; top:0.5rem; right:0.5rem;
+                background:rgba(0,0,0,0.55); color:#fff; border:none; border-radius:6px; padding:0.25rem 0.6rem;
+                font-size:0.75rem; cursor:pointer; font-family:inherit;">✕ Quitar</button>
+              <input type="file" id="imagen-input" accept=".jpg,.jpeg,.png,.webp" style="display:none;" />
+            </div>
+            <div id="imagen-msg" style="font-size:0.78rem; margin-top:0.4rem; display:none;"></div>
           </div>
           <div class="form-grupo">
             <label class="form-label" for="etiqueta">Categoría</label>
             <input class="form-input" type="text" id="etiqueta" placeholder="Ej. Derechos, Salud…" required />
-          </div>
-          <div class="form-grupo">
-            <label class="form-label" for="nivel">Nivel</label>
-            <select class="form-input" id="nivel" required>
-              <option value="" disabled selected>Selecciona un nivel…</option>
-              <option value="Básico">Básico</option>
-              <option value="Intermedio">Intermedio</option>
-              <option value="Avanzado">Avanzado</option>
-              <option value="Todos los niveles">Todos los niveles</option>
-            </select>
           </div>
           <div class="form-grupo">
             <label class="form-label">Estado</label>
@@ -100,6 +126,56 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
 </PlantillaAdmin>
 
 <style is:global>
+/* ── Editor de texto enriquecido ── */
+.rte-wrap {
+  border: 1.5px solid #d4e0db;
+  border-radius: 9px;
+  overflow: hidden;
+  background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.rte-wrap:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(46,125,85,0.08);
+}
+.rte-barra {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.3rem 0.45rem;
+  background: #f7faf9;
+  border-bottom: 1px solid #e8eeec;
+}
+.rte-btn {
+  width: 28px; height: 28px; border-radius: 6px;
+  border: 1px solid transparent;
+  background: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--color-text); font-size: 0.8rem;
+  font-family: inherit; transition: background 0.1s, border-color 0.1s;
+  padding: 0; flex-shrink: 0;
+}
+.rte-btn:hover  { background: #eaf3ed; border-color: #c4d9d2; }
+.rte-btn.activo { background: #d6eddf; border-color: var(--color-primary); color: var(--color-primary); }
+.rte-div { width: 1px; height: 16px; background: #dde8e4; margin: 0 0.25rem; flex-shrink: 0; }
+.rte-body {
+  min-height: 100px;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.85rem;
+  line-height: 1.7;
+  color: var(--color-text);
+  outline: none;
+}
+.rte-body:empty::before {
+  content: attr(data-placeholder);
+  color: #bbb;
+  pointer-events: none;
+}
+.rte-body ul, .rte-body ol { padding-left: 1.4rem; margin: 0.3rem 0; }
+.rte-body li { margin-bottom: 0.15rem; }
+.rte-body h2 { font-size: 1.05rem; font-weight: 700; color: var(--color-text); margin: 0.5rem 0 0.1rem; }
+.rte-body h3 { font-size: 0.93rem; font-weight: 700; color: var(--color-text); margin: 0.4rem 0 0.1rem; }
+
 /* ── Tarjeta de tema ── */
 .tema-card {
   background: #fff;
@@ -215,10 +291,45 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
   background: #fff; border: 1.5px dashed #d4e8e0;
   border-radius: 12px; color: #aaa; font-size: 0.85rem;
 }
+/* Zona de imagen de portada */
+.imagen-zona {
+  position: relative;
+  width: 100%;
+  height: 160px;
+  border: 2px dashed #d4e0db;
+  border-radius: 10px;
+  background: #f9fbfa;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  overflow: hidden;
+}
+.imagen-zona:hover {
+  border-color: var(--color-primary);
+  background: #f0f8f4;
+}
+.imagen-zona.con-imagen {
+  border-style: solid;
+  border-color: #d4e0db;
+  cursor: default;
+}
+#imagen-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  color: #999;
+  pointer-events: none;
+}
 </style>
 
 <script>
 let cursoId = 0;
+let imagenUrl = '';
 
 const msgGlobal = document.getElementById('msg-global') as HTMLDivElement;
 function mostrarMsg(texto: string, tipo: 'ok' | 'error') {
@@ -228,6 +339,44 @@ function mostrarMsg(texto: string, tipo: 'ok' | 'error') {
   msgGlobal.style.border     = `1px solid ${tipo === 'ok' ? '#b6e0cc' : '#f5c6c6'}`;
   msgGlobal.style.color      = tipo === 'ok' ? '#2e7d55' : '#a33';
   setTimeout(() => { msgGlobal.style.display = 'none'; }, 5000);
+}
+
+// ── Imagen de portada ──────────────────────────────────────────
+const imagenZona   = document.getElementById('imagen-zona') as HTMLElement;
+const imagenInput  = document.getElementById('imagen-input') as HTMLInputElement;
+const imagenPreview = document.getElementById('imagen-preview') as HTMLImageElement;
+const imagenPlaceholder = document.getElementById('imagen-placeholder') as HTMLElement;
+const imagenQuitar = document.getElementById('imagen-quitar') as HTMLButtonElement;
+const imagenMsg    = document.getElementById('imagen-msg') as HTMLElement;
+
+imagenZona.addEventListener('click', () => { if (!imagenUrl) imagenInput.click(); });
+imagenZona.addEventListener('dragover', e => { e.preventDefault(); imagenZona.style.borderColor = 'var(--color-primary)'; });
+imagenZona.addEventListener('dragleave', () => { imagenZona.style.borderColor = ''; });
+imagenZona.addEventListener('drop', e => { e.preventDefault(); imagenZona.style.borderColor = ''; const f = e.dataTransfer?.files[0]; if (f) subirImagen(f); });
+imagenInput.addEventListener('change', () => { const f = imagenInput.files?.[0]; if (f) subirImagen(f); });
+imagenQuitar.addEventListener('click', e => { e.stopPropagation(); imagenUrl = ''; imagenPreview.src = ''; imagenPreview.style.display = 'none'; imagenPlaceholder.style.display = 'flex'; imagenQuitar.style.display = 'none'; imagenZona.classList.remove('con-imagen'); imagenInput.value = ''; });
+
+async function subirImagen(file: File) {
+  imagenMsg.style.display = 'block';
+  imagenMsg.style.color   = '#888';
+  imagenMsg.textContent   = 'Subiendo imagen…';
+  const fd = new FormData();
+  fd.append('archivo', file);
+  try {
+    const res  = await fetch('/api/upload-imagen.php', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.mensaje);
+    imagenUrl = data.ruta;
+    imagenPreview.src          = data.ruta;
+    imagenPreview.style.display = 'block';
+    imagenPlaceholder.style.display = 'none';
+    imagenQuitar.style.display = 'block';
+    imagenZona.classList.add('con-imagen');
+    imagenMsg.style.display = 'none';
+  } catch (err: any) {
+    imagenMsg.style.color   = '#c33';
+    imagenMsg.textContent   = err.message || 'Error al subir la imagen';
+  }
 }
 
 // ── Crear curso ────────────────────────────────────────────────
@@ -242,15 +391,16 @@ form.addEventListener('submit', async (e) => {
   msgError.style.display = 'none';
 
   try {
+    const descHtml = (document.getElementById('descripcion-editor') as HTMLElement).innerHTML.trim();
     const res  = await fetch('/api/cursos.php', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        titulo:      (document.getElementById('titulo')      as HTMLInputElement).value.trim(),
-        descripcion: (document.getElementById('descripcion') as HTMLTextAreaElement).value.trim(),
-        etiqueta:    (document.getElementById('etiqueta')    as HTMLInputElement).value.trim(),
-        nivel:       (document.getElementById('nivel')       as HTMLSelectElement).value,
-        activo:      (document.getElementById('activo')      as HTMLInputElement).checked ? 1 : 0,
+        titulo:      (document.getElementById('titulo')   as HTMLInputElement).value.trim(),
+        descripcion: descHtml === '<br>' ? '' : descHtml,
+        etiqueta:    (document.getElementById('etiqueta') as HTMLInputElement).value.trim(),
+        activo:      (document.getElementById('activo')   as HTMLInputElement).checked ? 1 : 0,
+        imagen:      imagenUrl || null,
       }),
     });
     const data = await res.json();
@@ -400,7 +550,16 @@ async function crearTemaCard(tema: any): Promise<HTMLElement> {
       </div>
       <div class="form-grupo" style="margin:0;">
         <label class="form-label">Descripción del tema <span style="font-weight:400; color:#aaa;">(opcional)</span></label>
-        <textarea class="form-input input-desc-tema" rows="2" placeholder="Breve descripción de este tema…" style="resize:vertical;">${tema.descripcion || ''}</textarea>
+        <div class="rte-wrap">
+          <div class="rte-barra">
+            <button type="button" class="rte-btn" data-cmd="bold" title="Negrita"><strong>B</strong></button>
+            <button type="button" class="rte-btn" data-cmd="italic" title="Cursiva"><em>I</em></button>
+            <span class="rte-div"></span>
+            <button type="button" class="rte-btn" data-cmd="insertUnorderedList" title="Lista con viñetas"><svg viewBox="0 0 16 16" fill="none" width="14" height="14"><circle cx="3" cy="5" r="1.2" fill="currentColor"/><circle cx="3" cy="9" r="1.2" fill="currentColor"/><circle cx="3" cy="13" r="1.2" fill="currentColor"/><path d="M6 5h7M6 9h7M6 13h7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>
+            <button type="button" class="rte-btn" data-cmd="insertOrderedList" title="Lista numerada"><svg viewBox="0 0 16 16" fill="none" width="14" height="14"><path d="M2 4h1.5V7.5H2M2 9.5h2v.5l-2 2h2M2.5 14.5v-2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 5h7M6 9h7M6 13h7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>
+          </div>
+          <div class="rte-body input-desc-tema" contenteditable="true" data-placeholder="Breve descripción de este tema…">${tema.descripcion || ''}</div>
+        </div>
       </div>
       <div style="display:flex; gap:0.5rem;">
         <button type="button" class="btn-admin primario btn-guardar-tema" style="height:38px;">Guardar</button>
@@ -454,7 +613,8 @@ async function crearTemaCard(tema: any): Promise<HTMLElement> {
   card.querySelector('.btn-guardar-tema')!.addEventListener('click', async () => {
     const titulo      = (card.querySelector('.input-titulo-tema') as HTMLInputElement).value.trim();
     const duracion    = (card.querySelector('.input-dur-tema')    as HTMLInputElement).value.trim();
-    const descripcion = (card.querySelector('.input-desc-tema')   as HTMLTextAreaElement).value.trim();
+    const descEl = card.querySelector('.input-desc-tema') as HTMLElement;
+    const descripcion = descEl.innerHTML.trim() === '<br>' ? '' : descEl.innerHTML.trim();
     const res = await fetch('/api/temas.php', {
       method: 'PUT', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ id: tema.id, titulo, descripcion, duracion, orden: tema.orden, color: tema.color || null }),
@@ -510,6 +670,15 @@ async function crearTemaCard(tema: any): Promise<HTMLElement> {
     (formDoc.querySelector('button') as HTMLButtonElement).disabled = false;
     input.value = '';
   });
+
+  // Inicializar RTE del tema
+  const temaWrap   = card.querySelector('.rte-wrap') as HTMLElement;
+  const temaEditor = card.querySelector('.input-desc-tema') as HTMLElement;
+  temaWrap?.querySelectorAll<HTMLButtonElement>('.rte-btn').forEach(btn => {
+    btn.addEventListener('mousedown', e => { e.preventDefault(); rteExec(btn); actualizarEstado(temaWrap); });
+  });
+  temaEditor?.addEventListener('keyup',  () => actualizarEstado(temaWrap));
+  temaEditor?.addEventListener('mouseup', () => actualizarEstado(temaWrap));
 
   return card;
 }
@@ -622,4 +791,34 @@ async function subirArchivo(card: HTMLElement, tema: any, archivo: File, tipo: s
     mostrarMsg('Error de conexión al subir.', 'error');
   }
 }
+
+// ── Editor de texto enriquecido ───────────────────────────────
+function rteExec(btn: HTMLElement) {
+  const val = btn.dataset.val;
+  if (val) {
+    const cur = document.queryCommandValue('formatBlock').toLowerCase();
+    document.execCommand('formatBlock', false, cur === val ? 'p' : val);
+  } else {
+    document.execCommand(btn.dataset.cmd!, false, undefined);
+  }
+}
+function actualizarEstado(wrap: HTMLElement) {
+  wrap.querySelectorAll<HTMLElement>('.rte-btn[data-cmd]').forEach(btn => {
+    try {
+      btn.classList.toggle('activo', btn.dataset.val
+        ? document.queryCommandValue('formatBlock').toLowerCase() === btn.dataset.val
+        : document.queryCommandState(btn.dataset.cmd!));
+    } catch {}
+  });
+}
+// Init RTE de descripción del curso
+(function() {
+  const wrap   = document.getElementById('descripcion-editor')!.closest('.rte-wrap') as HTMLElement;
+  const editor = document.getElementById('descripcion-editor')!;
+  wrap.querySelectorAll<HTMLButtonElement>('.rte-btn').forEach(btn => {
+    btn.addEventListener('mousedown', e => { e.preventDefault(); rteExec(btn); actualizarEstado(wrap); });
+  });
+  editor.addEventListener('keyup',   () => actualizarEstado(wrap));
+  editor.addEventListener('mouseup', () => actualizarEstado(wrap));
+})();
 </script>

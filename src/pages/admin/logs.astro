@@ -1,0 +1,119 @@
+---
+import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
+---
+
+<PlantillaAdmin titulo="Log de cambios" paginaActual="logs">
+
+  <div class="tabla-wrap">
+    <div class="tabla-header">
+      <span class="tabla-titulo">Actividad reciente</span>
+      <select id="sel-filtro" style="font-size:0.78rem; padding:0.3rem 0.6rem; border:1px solid #e0ece6; border-radius:7px; background:#fafcfb; font-family:inherit; color:var(--color-text-muted);">
+        <option value="">Todas las acciones</option>
+        <option value="alumno_creado">Alumnos creados</option>
+        <option value="alumno_actualizado">Alumnos actualizados</option>
+        <option value="curso_creado">Cursos creados</option>
+        <option value="curso_editado">Cursos editados</option>
+        <option value="curso_eliminado">Cursos eliminados</option>
+        <option value="ticket_creado">Tickets abiertos</option>
+        <option value="ticket_respondido">Tickets respondidos</option>
+        <option value="perfil_actualizado">Perfil actualizado</option>
+      </select>
+    </div>
+    <div id="logs-carga" style="padding:2rem 1.5rem; color:#aaa; font-size:0.85rem;">Cargando…</div>
+    <table id="logs-tabla" style="display:none;">
+      <thead>
+        <tr>
+          <th style="width:140px;">Fecha</th>
+          <th style="width:160px;">Acción</th>
+          <th>Descripción</th>
+          <th style="width:120px;">Usuario</th>
+        </tr>
+      </thead>
+      <tbody id="logs-tbody"></tbody>
+    </table>
+    <div id="logs-vacio" style="display:none; padding:2rem 1.5rem; color:#aaa; font-size:0.85rem;">
+      No hay registros aún.
+    </div>
+  </div>
+
+</PlantillaAdmin>
+
+<script>
+const iconos: Record<string, string> = {
+  alumno_creado:      '👤',
+  alumno_actualizado: '✏️',
+  curso_creado:       '📚',
+  curso_editado:      '✏️',
+  curso_eliminado:    '🗑️',
+  ticket_creado:      '💬',
+  ticket_respondido:  '↩️',
+  perfil_actualizado: '⚙️',
+};
+
+const etiquetas: Record<string, string> = {
+  alumno_creado:      'Alumno creado',
+  alumno_actualizado: 'Alumno actualizado',
+  curso_creado:       'Curso creado',
+  curso_editado:      'Curso editado',
+  curso_eliminado:    'Curso eliminado',
+  ticket_creado:      'Ticket abierto',
+  ticket_respondido:  'Ticket respondido',
+  perfil_actualizado: 'Perfil actualizado',
+};
+
+let todosLogs: any[] = [];
+
+async function cargarLogs() {
+  const res  = await fetch('/api/logs.php?limite=100');
+  const data = await res.json();
+  if (!data.ok) return;
+  todosLogs = data.logs ?? [];
+  renderizar(todosLogs);
+}
+
+function renderizar(logs: any[]) {
+  const carga  = document.getElementById('logs-carga')!;
+  const tabla  = document.getElementById('logs-tabla')!;
+  const tbody  = document.getElementById('logs-tbody')!;
+  const vacio  = document.getElementById('logs-vacio')!;
+
+  carga.style.display = 'none';
+
+  if (logs.length === 0) {
+    tabla.style.display = 'none';
+    vacio.style.display = 'block';
+    return;
+  }
+
+  vacio.style.display = 'none';
+  tabla.style.display = 'table';
+
+  tbody.innerHTML = logs.map((l: any) => {
+    const fecha = new Date(l.creado_en).toLocaleString('es-ES', {
+      day: '2-digit', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    });
+    const icono    = iconos[l.tipo] ?? '•';
+    const etiqueta = etiquetas[l.tipo] ?? l.tipo;
+    return `
+      <tr>
+        <td style="font-size:0.78rem; color:#aaa; white-space:nowrap;">${fecha}</td>
+        <td>
+          <span style="display:inline-flex; align-items:center; gap:0.35rem; font-size:0.78rem; font-weight:700; color:var(--color-text-muted);">
+            ${icono} ${etiqueta}
+          </span>
+        </td>
+        <td style="font-size:0.83rem;">${l.descripcion}</td>
+        <td style="font-size:0.78rem; color:#aaa;">${l.actor}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+document.getElementById('sel-filtro')!.addEventListener('change', (e) => {
+  const filtro = (e.target as HTMLSelectElement).value;
+  renderizar(filtro ? todosLogs.filter(l => l.tipo === filtro) : todosLogs);
+});
+
+cargarLogs();
+</script>

@@ -32,7 +32,7 @@ $pdo = obtenerPDO();
 
 // Cursos asignados al alumno (activos)
 $stmtCursos = $pdo->prepare(
-    'SELECT c.id, c.titulo, c.descripcion, c.etiqueta, c.nivel, c.duracion, c.color, c.pack_color
+    'SELECT c.id, c.titulo, c.descripcion, c.etiqueta, c.nivel, c.duracion, c.color, c.pack_color, c.imagen
      FROM cursos c
      INNER JOIN usuarios_cursos uc ON uc.curso_id = c.id
      WHERE uc.usuario_id = :uid AND c.activo = 1

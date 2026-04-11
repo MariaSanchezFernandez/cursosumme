@@ -108,6 +108,12 @@ let todosCursos: any[] = [];
 let visitedIds: Set<number> = new Set();
 const PALETA = ['#b5d8cc','#b5c8e8','#d4c8e8','#e8d4b5','#e8c8b5','#c8e8b5'];
 function colorCurso(c: any) { return c.color || c.pack_color || PALETA[Number(c.id) % PALETA.length]; }
+function stripHtml(html: string, maxLen = 110): string {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  const text = (tmp.textContent || '').replace(/\s+/g, ' ').trim();
+  return text.length > maxLen ? text.slice(0, maxLen) + '…' : text;
+}
 
 // ── Cargar cursos desde la BD ─────────────────────────────────
 const sesion = JSON.parse(sessionStorage.getItem('umme_session') || '{}');
@@ -304,16 +310,15 @@ function renderCursos(cursos: any[]) {
       article.className = 'curso';
       article.dataset.cursoId = String(curso.id);
       article.innerHTML = `
+        ${curso.imagen ? `<div class="curso-fila-img"><img src="${curso.imagen}" alt="" /></div>` : ''}
         <button class="curso-fila">
-          <div class="curso-acento" style="background:${color}"></div>
+          ${!curso.imagen ? `<div class="curso-acento" style="background:${color}"></div>` : ''}
           <div class="curso-info">
             <h2>${curso.titulo}</h2>
-            ${curso.descripcion?.trim() ? `<p class="curso-desc-preview">${curso.descripcion.trim()}</p>` : ''}
+            ${curso.descripcion?.trim() ? `<p class="curso-desc-preview">${stripHtml(curso.descripcion.trim())}</p>` : ''}
             <div class="curso-meta">
               <span>${numTemas} tema${numTemas !== 1 ? 's' : ''}</span>
               ${durTotal ? `<span>·</span><span>${durTotal}</span>` : ''}
-              <span>·</span>
-              <span>${curso.nivel}</span>
               ${numTemas > 0 ? `<span>·</span><span class="curso-pct-span" style="color:${pct === 100 ? '#1d7a52' : pct > 0 ? color : '#b5bfbb'}; font-weight:${pct > 0 ? 600 : 400}">${pct}%</span>` : ''}
             </div>
           </div>
@@ -401,12 +406,19 @@ function abrirCurso(curso: any, articleEl: HTMLElement) {
     listaTemas.appendChild(li);
   });
 
-  // ── Panel intro: descripción + índice de temas ───────────
+  // ── Panel intro: imagen + descripción + índice de temas ──
+  const introImgWrap = document.getElementById('introCursoBanner') as HTMLElement;
+  if (curso.imagen) {
+    (introImgWrap.querySelector('img') as HTMLImageElement).src = curso.imagen;
+    introImgWrap.style.display = 'block';
+  } else {
+    introImgWrap.style.display = 'none';
+  }
   if (curso.descripcion?.trim()) {
-    introDesc.textContent   = curso.descripcion.trim();
+    introDesc.innerHTML     = curso.descripcion.trim();
     introDesc.style.display = '';
   } else {
-    introDesc.innerHTML    = '';
+    introDesc.innerHTML     = '';
     introDesc.style.display = 'none';
   }
   introTemaLista.innerHTML = '';
@@ -418,7 +430,7 @@ function abrirCurso(curso: any, articleEl: HTMLElement) {
       <span class="intro-tema-num" style="background:${color}">${idx + 1}</span>
       <span class="intro-tema-info">
         <span class="intro-tema-titulo">${tema.titulo}</span>
-        ${tema.descripcion?.trim() ? `<span class="intro-tema-desc">${tema.descripcion.trim()}</span>` : ''}
+        ${tema.descripcion?.trim() ? `<span class="intro-tema-desc">${stripHtml(tema.descripcion.trim(), 80)}</span>` : ''}
         <span class="intro-tema-dur">
           ${tieneVideo ? '▶ Video · ' : ''}${tema.duracion ? tema.duracion + ' min' : ''}
         </span>
@@ -457,7 +469,7 @@ function seleccionarTema(tema: any, liEl: HTMLElement) {
   listaTemas.querySelectorAll('.tema-btn').forEach(b => b.classList.remove('activo'));
   liEl.querySelector('.tema-btn')!.classList.add('activo');
   leccionTit.textContent  = tema.titulo;
-  leccionDesc.textContent = tema.descripcion || '';
+  leccionDesc.innerHTML = tema.descripcion || '';
   temaActualId = tema.id ?? null;
 
   const videoMat = (tema.materiales ?? []).find((m: any) => m.tipo === 'video');
@@ -514,7 +526,7 @@ btnVolver.addEventListener('click', () => {
   panelSubtemas.style.flex    = '0 0 0';
   panelSubtemas.style.opacity = '0';
   panelIntro.style.display       = 'none';
-  panelContenido.style.display   = 'flex';
+  panelContenido.style.display   = 'none';
 });
 
 // ── Filtros ───────────────────────────────────────────────────
