@@ -146,9 +146,11 @@ btnEnviar.addEventListener('click', async () => {
       cargarTickets();
     } else {
       formError.textContent = data.error || 'Error al enviar la consulta.';
+      (window as any).logAppError?.('ticket_crear', 'Servidor rechazó crear ticket', { detalle: data.error || ('HTTP ' + res.status) });
     }
-  } catch {
+  } catch (err: any) {
     formError.textContent = 'Error de conexión. Inténtalo de nuevo.';
+    (window as any).logAppError?.('ticket_crear', 'Error de red al crear ticket', { detalle: err?.message, stack: err?.stack });
   }
 
   btnEnviar.disabled = false;
@@ -291,10 +293,12 @@ function crearTarjetaTicket(ticket: any): HTMLElement {
         } else {
           btn.disabled = false;
           btn.textContent = 'Cerrar consulta';
+          (window as any).logAppError?.('ticket_cerrar', 'Servidor rechazó cerrar ticket', { detalle: data.error || ('HTTP ' + res.status) });
         }
-      } catch {
+      } catch (err: any) {
         btn.disabled = false;
         btn.textContent = 'Cerrar consulta';
+        (window as any).logAppError?.('ticket_cerrar', 'Error de red al cerrar ticket', { detalle: err?.message, stack: err?.stack });
       }
     });
   }
@@ -326,11 +330,13 @@ function crearTarjetaTicket(ticket: any): HTMLElement {
           errEl.textContent = data.error || 'Error al enviar.';
           btn.disabled = false;
           btn.textContent = 'Enviar';
+          (window as any).logAppError?.('ticket_responder', 'Servidor rechazó respuesta ticket', { detalle: data.error || ('HTTP ' + res.status) });
         }
-      } catch {
+      } catch (err: any) {
         errEl.textContent = 'Error de conexión.';
         btn.disabled = false;
         btn.textContent = 'Enviar';
+        (window as any).logAppError?.('ticket_responder', 'Error de red respondiendo ticket', { detalle: err?.message, stack: err?.stack });
       }
     });
   }

@@ -9,12 +9,16 @@
     "astro": "astro",
     "deploy": "node scripts/deploy.mjs",
     "hash-password": "node scripts/hash-password.mjs",
-    "migrar": "node scripts/migrar.mjs"
+    "migrar": "node scripts/migrar.mjs",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:report": "playwright show-report"
   },
   "dependencies": {
     "astro": "^5.17.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "dotenv": "^17.3.1",
     "mysql2": "^3.20.0",
     "ssh2-sftp-client": "^12.1.0"

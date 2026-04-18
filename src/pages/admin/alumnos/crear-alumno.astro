@@ -332,16 +332,18 @@ form.addEventListener('submit', async (e) => {
       msgError.style.display = 'block';
       btnCrear.disabled      = false;
       btnCrear.textContent   = 'Crear alumno';
+      (window as any).logAppError?.('crear_alumno', 'Servidor rechazó creación de alumno', { detalle: data.mensaje || ('HTTP ' + res.status) });
       return;
     }
 
     formWrap.style.display = 'none';
     aviso.style.display    = 'block';
-  } catch {
+  } catch (err: any) {
     msgError.textContent   = 'Error de conexión. Inténtalo de nuevo.';
     msgError.style.display = 'block';
     btnCrear.disabled      = false;
     btnCrear.textContent   = 'Crear alumno';
+    (window as any).logAppError?.('crear_alumno', 'Error de red al crear alumno', { detalle: err?.message, stack: err?.stack });
   }
 });
 </script>

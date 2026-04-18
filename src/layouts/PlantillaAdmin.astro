@@ -48,6 +48,29 @@ const { titulo, paginaActual } = Astro.props;
         var err = e.reason;
         enviar('promise', err && err.message ? err.message : String(err), location.href, null, null, err && err.stack);
       });
+
+      // Helper para registrar errores "manejados" (uploads fallidos, llamadas API, etc.)
+      window.logAppError = function(tipo, mensaje, extra) {
+        extra = extra || {};
+        try {
+          var s = JSON.parse(sessionStorage.getItem('umme_session') || '{}');
+          var msgFinal = String(mensaje).slice(0, 900);
+          if (extra.detalle) msgFinal += ' | ' + String(extra.detalle).slice(0, 300);
+          fetch('/api/log-error.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              tipo: 'admin_' + tipo,
+              mensaje: msgFinal,
+              url: location.href,
+              linea: null, columna: null,
+              stack: extra.stack || null,
+              usuario_id: s.userId || null,
+              usuario_email: s.email || null,
+            }),
+          }).catch(function(){});
+        } catch(e) {}
+      };
     })();
     </script>
 

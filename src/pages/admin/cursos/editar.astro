@@ -51,7 +51,7 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
                 <span style="font-size:0.82rem; color:#aaa; margin-top:0.5rem;">Arrastra o haz clic para añadir portada</span>
                 <span style="font-size:0.72rem; color:#ccc;">JPG, PNG o WEBP · Máx. 5 MB</span>
               </div>
-              <img id="imagen-preview" src="" alt="Portada" style="display:none; width:100%; height:100%; object-fit:cover; border-radius:8px;" />
+              <img id="imagen-preview" src="" alt="Portada" style="display:none; width:100%; height:100%; object-fit:cover;" />
               <button type="button" id="imagen-quitar" style="display:none; position:absolute; top:0.5rem; right:0.5rem;
                 background:rgba(0,0,0,0.55); color:#fff; border:none; border-radius:6px; padding:0.25rem 0.6rem;
                 font-size:0.75rem; cursor:pointer; font-family:inherit;">✕ Quitar</button>
@@ -296,11 +296,15 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
 .upload-row input[type="file"] { flex: 1; font-size: 0.76rem; min-width: 0; color: #666; }
 .btn-upload { font-size: 0.74rem !important; padding: 0.28rem 0.7rem !important; height: auto !important; white-space: nowrap; flex-shrink: 0; }
 .subiendo-msg { font-size: 0.73rem; color: #88a; font-style: italic; }
+.upload-progreso { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
+.upload-progreso-barra { flex: 1; height: 6px; background: #e8eeec; border-radius: 3px; overflow: hidden; }
+.upload-progreso-fill { height: 100%; background: var(--color-acento, #3aaa74); border-radius: 3px; transition: width 0.15s ease; }
+.upload-progreso-txt { font-size: 0.72rem; color: #667; min-width: 2.5rem; text-align: right; font-variant-numeric: tabular-nums; }
 /* Zona de imagen de portada */
 .imagen-zona {
   position: relative;
   width: 100%;
-  height: 160px;
+  height: 220px;
   border: 2px dashed #d4e0db;
   border-radius: 10px;
   background: #f9fbfa;
@@ -382,6 +386,7 @@ async function subirImagen(file: File) {
   } catch (err: any) {
     imagenMsg.style.color = '#c33';
     imagenMsg.textContent = err.message || 'Error al subir la imagen';
+    (window as any).logAppError?.('upload_imagen', 'Fallo subiendo imagen de curso', { detalle: err?.message, stack: err?.stack });
   }
 }
 
@@ -421,25 +426,33 @@ formCurso.addEventListener('submit', async (e) => {
   e.preventDefault();
   btnGuardar.disabled    = true;
   btnGuardar.textContent = 'Guardando…';
-  const res  = await fetch('/api/cursos.php', {
-    method: 'PUT', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({
-      id:          cursoId,
-      titulo:      (document.getElementById('titulo')   as HTMLInputElement).value.trim(),
-      descripcion: (() => { const h = (document.getElementById('descripcion-editor') as HTMLElement).innerHTML.trim(); return h === '<br>' ? '' : h; })(),
-      etiqueta:    (document.getElementById('etiqueta') as HTMLInputElement).value.trim(),
-      pack:        (document.getElementById('pack')     as HTMLInputElement).value.trim(),
-      duracion:    calcularDuracionTotal(),
-      activo:      (document.getElementById('activo')      as HTMLInputElement).checked ? 1 : 0,
-      color:       colorActual,
-      pack_color:  packColorActual,
-      imagen:      imagenUrl || null,
-    }),
-  });
-  const data = await res.json();
+  try {
+    const res  = await fetch('/api/cursos.php', {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        id:          cursoId,
+        titulo:      (document.getElementById('titulo')   as HTMLInputElement).value.trim(),
+        descripcion: (() => { const h = (document.getElementById('descripcion-editor') as HTMLElement).innerHTML.trim(); return h === '<br>' ? '' : h; })(),
+        etiqueta:    (document.getElementById('etiqueta') as HTMLInputElement).value.trim(),
+        pack:        (document.getElementById('pack')     as HTMLInputElement).value.trim(),
+        duracion:    calcularDuracionTotal(),
+        activo:      (document.getElementById('activo')      as HTMLInputElement).checked ? 1 : 0,
+        color:       colorActual,
+        pack_color:  packColorActual,
+        imagen:      imagenUrl || null,
+      }),
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      (window as any).logAppError?.('editar_curso', 'Servidor rechazó guardar curso', { detalle: data.mensaje || ('HTTP ' + res.status) });
+    }
+    mostrarMsg(data.ok ? '✓ Cambios guardados.' : (data.mensaje || 'Error'), data.ok ? 'ok' : 'error');
+  } catch (err: any) {
+    (window as any).logAppError?.('editar_curso', 'Error de red al guardar curso', { detalle: err?.message, stack: err?.stack });
+    mostrarMsg('Error de conexión al guardar.', 'error');
+  }
   btnGuardar.disabled    = false;
   btnGuardar.textContent = 'Guardar cambios';
-  mostrarMsg(data.ok ? '✓ Cambios guardados.' : (data.mensaje || 'Error'), data.ok ? 'ok' : 'error');
 });
 
 // ── Duración total ────────────────────────────────────────────
@@ -570,7 +583,10 @@ async function crearTemaCard(tema: any): Promise<HTMLElement> {
             <input type="file" class="input-video" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" />
             <button type="submit" class="btn-admin primario btn-upload">Subir vídeo</button>
           </div>
-          <span class="subiendo-msg" style="margin-top:0.4rem; display:none;">Subiendo vídeo, espera…</span>
+          <div class="upload-progreso" style="display:none;">
+            <div class="upload-progreso-barra"><div class="upload-progreso-fill" style="width:0%"></div></div>
+            <span class="upload-progreso-txt">0%</span>
+          </div>
         </form>
       </div>
     </div>
@@ -674,17 +690,34 @@ async function crearTemaCard(tema: any): Promise<HTMLElement> {
   });
 
   // ── Upload vídeo ──────────────────────────────────────────
-  const formVideo = cuerpo.querySelector('.form-upload-video') as HTMLFormElement;
-  const msgVideo  = formVideo.querySelector('.subiendo-msg') as HTMLElement;
+  const formVideo     = cuerpo.querySelector('.form-upload-video') as HTMLFormElement;
+  const progresoVideo = formVideo.querySelector('.upload-progreso') as HTMLElement;
+  const progresoBarra = formVideo.querySelector('.upload-progreso-fill') as HTMLElement;
+  const progresoTxt   = formVideo.querySelector('.upload-progreso-txt') as HTMLElement;
+  const btnSubirVideo = formVideo.querySelector('button[type="submit"]') as HTMLButtonElement;
   formVideo.addEventListener('submit', async (e) => {
     e.preventDefault();
     const input = formVideo.querySelector('.input-video') as HTMLInputElement;
     if (!input.files?.length) return;
-    msgVideo.style.display = 'inline';
-    (formVideo.querySelector('button[type="submit"]') as HTMLButtonElement).disabled = true;
-    await subirArchivo(cuerpo, tema, input.files[0], 'video');
-    msgVideo.style.display = 'none';
-    (formVideo.querySelector('button[type="submit"]') as HTMLButtonElement).disabled = false;
+    const archivo = input.files[0];
+    const MAX_VIDEO = 2048 * 1024 * 1024;
+    if (archivo.size > MAX_VIDEO) {
+      const mb = (archivo.size / 1024 / 1024).toFixed(0);
+      mostrarMsg(`El vídeo pesa ${mb} MB y supera el límite de 2 GB. Comprímelo antes de subirlo.`, 'error');
+      (window as any).logAppError?.('upload', `Vídeo rechazado en cliente (${mb} MB > 2 GB)`, { detalle: archivo.name + ' · tema=' + tema.id });
+      input.value = '';
+      return;
+    }
+    progresoVideo.style.display = 'flex';
+    progresoBarra.style.width = '0%';
+    progresoTxt.textContent = '0%';
+    btnSubirVideo.disabled = true;
+    await subirArchivo(cuerpo, tema, archivo, 'video', (pct) => {
+      progresoBarra.style.width = pct + '%';
+      progresoTxt.textContent = pct + '%';
+    });
+    progresoVideo.style.display = 'none';
+    btnSubirVideo.disabled = false;
     input.value = '';
   });
 
@@ -695,9 +728,18 @@ async function crearTemaCard(tema: any): Promise<HTMLElement> {
     e.preventDefault();
     const input = formDoc.querySelector('.input-doc') as HTMLInputElement;
     if (!input.files?.length) return;
+    const archivo = input.files[0];
+    const MAX_DOC = 100 * 1024 * 1024;
+    if (archivo.size > MAX_DOC) {
+      const mb = (archivo.size / 1024 / 1024).toFixed(0);
+      mostrarMsg(`El archivo pesa ${mb} MB y supera el límite de 100 MB.`, 'error');
+      (window as any).logAppError?.('upload', `Documento rechazado en cliente (${mb} MB > 100 MB)`, { detalle: archivo.name + ' · tema=' + tema.id });
+      input.value = '';
+      return;
+    }
     msgDoc.style.display = 'inline';
     (formDoc.querySelector('button[type="submit"]') as HTMLButtonElement).disabled = true;
-    await subirArchivo(cuerpo, tema, input.files[0], 'documento');
+    await subirArchivo(cuerpo, tema, archivo, 'documento');
     msgDoc.style.display = 'none';
     (formDoc.querySelector('button[type="submit"]') as HTMLButtonElement).disabled = false;
     input.value = '';
@@ -802,54 +844,99 @@ function leerDuracionVideo(archivo: File): Promise<number> {
   });
 }
 
-async function subirArchivo(cuerpo: HTMLElement, tema: any, archivo: File, tipo: string) {
-  let durMin = 0;
-  if (tipo === 'video') {
-    try {
-      const seg = await leerDuracionVideo(archivo);
-      durMin = seg > 0 ? Math.ceil(seg / 60) : 0;
-    } catch { durMin = 0; }
-  }
-
-  const fd = new FormData();
-  fd.append('archivo', archivo);
-  fd.append('tema_id', String(tema.id));
-  fd.append('tipo',    tipo);
-  if (durMin > 0) fd.append('duracion', String(durMin));
-
-  try {
-    const res  = await fetch('/api/upload.php', { method: 'POST', body: fd });
-    if (!res.ok) {
-      mostrarMsg(`Error del servidor (${res.status}). El archivo puede ser demasiado grande.`, 'error');
-      return;
+function subirArchivo(
+  cuerpo: HTMLElement,
+  tema: any,
+  archivo: File,
+  tipo: string,
+  onProgress?: (pct: number) => void
+): Promise<void> {
+  return new Promise(async (resolve) => {
+    let durMin = 0;
+    if (tipo === 'video') {
+      try {
+        const seg = await leerDuracionVideo(archivo);
+        durMin = seg > 0 ? Math.ceil(seg / 60) : 0;
+      } catch { durMin = 0; }
     }
-    const data = await res.json();
-    if (!data.ok) { mostrarMsg(data.mensaje || 'Error al subir el archivo', 'error'); return; }
 
-    const lista = cuerpo.querySelector(
-      tipo === 'video' ? '.mat-lista-video' : '.mat-lista-doc'
-    ) as HTMLElement;
-    lista.appendChild(crearFilaMat(data.material));
+    const fd = new FormData();
+    fd.append('archivo', archivo);
+    fd.append('tema_id', String(tema.id));
+    fd.append('tipo',    tipo);
+    if (durMin > 0) fd.append('duracion', String(durMin));
 
-    if (tipo === 'video' && durMin > 0) {
-      const card     = cuerpo.closest('.tema-card') as HTMLElement;
-      const editPanel = card.querySelector('.tema-editar-panel') as HTMLElement;
-      const inputDur = editPanel.querySelector('.input-dur-tema') as HTMLInputElement;
-      if (!inputDur.value || inputDur.value === '0') {
-        inputDur.value = String(durMin);
-        const pill = card.querySelector('.tema-dur-pill') as HTMLElement;
-        if (pill) { pill.textContent = durMin + ' min'; pill.style.display = ''; }
-        await fetch('/api/temas.php', {
-          method: 'PUT', headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ id: tema.id, titulo: tema.titulo, duracion: String(durMin), orden: tema.orden }),
-        });
-        actualizarDurDisplay();
+    const xhr = new XMLHttpRequest();
+
+    if (onProgress) {
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+      });
+    }
+
+    const detalle = `${tipo} · ${archivo.name} · ${(archivo.size/1024/1024).toFixed(1)} MB · tema=${tema.id}`;
+
+    xhr.addEventListener('load', () => {
+      if (xhr.status < 200 || xhr.status >= 300) {
+        mostrarMsg(`Error del servidor (${xhr.status}). El archivo puede ser demasiado grande.`, 'error');
+        (window as any).logAppError?.('upload', `Servidor devolvió ${xhr.status} al subir ${tipo}`, { detalle: detalle + ' · respuesta=' + (xhr.responseText || '').slice(0, 200) });
+        resolve(); return;
       }
-    }
-    mostrarMsg(`✓ ${tipo === 'video' ? 'Vídeo' : 'Archivo'} subido correctamente.`, 'ok');
-  } catch {
-    mostrarMsg('Error de conexión al subir. Comprueba el tamaño del archivo.', 'error');
-  }
+      try {
+        const data = JSON.parse(xhr.responseText);
+        if (!data.ok) {
+          mostrarMsg(data.mensaje || 'Error al subir el archivo', 'error');
+          (window as any).logAppError?.('upload', `Upload rechazado: ${data.mensaje || 'sin mensaje'}`, { detalle });
+          resolve(); return;
+        }
+
+        const lista = cuerpo.querySelector(
+          tipo === 'video' ? '.mat-lista-video' : '.mat-lista-doc'
+        ) as HTMLElement;
+        lista.appendChild(crearFilaMat(data.material));
+
+        if (tipo === 'video' && durMin > 0) {
+          const card      = cuerpo.closest('.tema-card') as HTMLElement;
+          const editPanel = card.querySelector('.tema-editar-panel') as HTMLElement;
+          const inputDur  = editPanel.querySelector('.input-dur-tema') as HTMLInputElement;
+          if (!inputDur.value || inputDur.value === '0') {
+            inputDur.value = String(durMin);
+            const pill = card.querySelector('.tema-dur-pill') as HTMLElement;
+            if (pill) { pill.textContent = durMin + ' min'; pill.style.display = ''; }
+            fetch('/api/temas.php', {
+              method: 'PUT', headers: {'Content-Type':'application/json'},
+              body: JSON.stringify({ id: tema.id, titulo: tema.titulo, duracion: String(durMin), orden: tema.orden }),
+            }).then(() => actualizarDurDisplay());
+          }
+        }
+        mostrarMsg(`✓ ${tipo === 'video' ? 'Vídeo' : 'Archivo'} subido correctamente.`, 'ok');
+      } catch (err) {
+        mostrarMsg('Error al procesar la respuesta del servidor.', 'error');
+        (window as any).logAppError?.('upload', 'JSON inválido en respuesta de upload', { detalle: detalle + ' · respuesta=' + (xhr.responseText || '').slice(0, 200), stack: (err as any)?.stack });
+      }
+      resolve();
+    });
+
+    xhr.addEventListener('error', () => {
+      mostrarMsg('Error de conexión al subir. Comprueba el tamaño del archivo.', 'error');
+      (window as any).logAppError?.('upload', 'Error de red al subir archivo', { detalle });
+      resolve();
+    });
+
+    xhr.addEventListener('timeout', () => {
+      mostrarMsg('La subida tardó demasiado y se canceló.', 'error');
+      (window as any).logAppError?.('upload', 'Timeout al subir archivo', { detalle });
+      resolve();
+    });
+
+    xhr.addEventListener('abort', () => {
+      (window as any).logAppError?.('upload', 'Subida cancelada por el usuario', { detalle });
+      resolve();
+    });
+
+    xhr.open('POST', '/api/upload.php');
+    xhr.send(fd);
+  });
 }
 
 // ── Añadir nuevo tema ─────────────────────────────────────────

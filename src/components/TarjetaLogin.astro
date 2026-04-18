@@ -25,6 +25,7 @@ import '../styles/TarjetaLogin.css';
       id="email"
       name="email"
       placeholder="tucorreo@ejemplo.com"
+      autocomplete="username"
     />
     <CampoFormulario
       label="Contraseña"
@@ -32,6 +33,7 @@ import '../styles/TarjetaLogin.css';
       id="password"
       name="password"
       placeholder="••••••••"
+      autocomplete="current-password"
     />
     <p id="login-error" style="display:none; font-size:0.78rem; color:#c0392b; margin:-0.25rem 0 0.25rem;">
       Email o contraseña incorrectos.
@@ -89,11 +91,12 @@ import '../styles/TarjetaLogin.css';
 
       window.location.href = datos.rol === 'admin' ? '/admin' : '/inicio';
 
-    } catch {
+    } catch (err: any) {
       errorMsg.textContent = 'Error de conexión. Inténtalo de nuevo.';
       errorMsg.style.display = 'block';
       boton.disabled = false;
       boton.textContent = 'Entrar';
+      (window as any).logAppError?.('login', 'Error de red en login', { detalle: (err && err.message) || '', stack: err && err.stack });
     }
   });
 </script>

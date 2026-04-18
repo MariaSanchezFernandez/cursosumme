@@ -5,3 +5,6 @@ dist/
 .env.*
 public/api/db-config.php
 public/uploads/
+test-results/
+playwright-report/
+tests/.auth/

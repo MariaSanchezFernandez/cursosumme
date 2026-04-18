@@ -12,7 +12,7 @@
  *   - placeholder {string}  Texto de ayuda dentro del input
  */
 import '../styles/CampoFormulario.css';
-const { label, type, id, name, placeholder } = Astro.props;
+const { label, type, id, name, placeholder, autocomplete } = Astro.props;
 ---
 
 <!-- Grupo label + input -->
@@ -23,6 +23,7 @@ const { label, type, id, name, placeholder } = Astro.props;
     id={id}
     name={name}
     placeholder={placeholder}
+    autocomplete={autocomplete}
   />
 </div>
 

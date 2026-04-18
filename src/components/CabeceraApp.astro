@@ -120,8 +120,14 @@ import '../styles/CabeceraApp.css';
       if (data.ok) {
         sessionStorage.setItem('umme_foto', data.url);
         mostrarFoto(data.url);
+      } else {
+        (window as any).logAppError?.('foto_perfil', 'Servidor rechazó foto (cabecera)', { detalle: data.mensaje || ('HTTP ' + res.status) });
+        alert('No se pudo subir la foto: ' + (data.mensaje || 'error del servidor'));
       }
-    } catch {}
+    } catch (err: any) {
+      (window as any).logAppError?.('foto_perfil', 'Error de red subiendo foto (cabecera)', { detalle: err?.message, stack: err?.stack });
+      alert('Error de conexión al subir la foto.');
+    }
 
     fileInput.value = '';
   });

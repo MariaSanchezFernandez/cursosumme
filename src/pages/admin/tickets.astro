@@ -252,11 +252,13 @@ function crearFilaTicket(ticket: any): HTMLElement {
           msgEl.textContent = data.error || 'Error al enviar la respuesta.';
           btn.disabled = false;
           btn.textContent = 'Enviar respuesta';
+          (window as any).logAppError?.('ticket_admin_responder', 'Servidor rechazó respuesta admin', { detalle: data.error || ('HTTP ' + res.status) });
         }
-      } catch {
+      } catch (err: any) {
         msgEl.textContent = 'Error de conexión.';
         btn.disabled = false;
         btn.textContent = 'Enviar respuesta';
+        (window as any).logAppError?.('ticket_admin_responder', 'Error de red respondiendo ticket admin', { detalle: err?.message, stack: err?.stack });
       }
     });
   }

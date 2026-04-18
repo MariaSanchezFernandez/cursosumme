@@ -154,8 +154,16 @@ pfFile.addEventListener('change', async () => {
   try {
     const res  = await fetch('/api/foto-perfil.php', { method: 'POST', body: fd });
     const data = await res.json();
-    if (data.ok) mostrarFoto(data.url);
-  } catch {}
+    if (data.ok) {
+      mostrarFoto(data.url);
+    } else {
+      (window as any).logAppError?.('foto_perfil', 'Servidor rechazó la foto', { detalle: data.mensaje || ('HTTP ' + res.status) });
+      alert('No se pudo subir la foto: ' + (data.mensaje || 'error del servidor'));
+    }
+  } catch (err: any) {
+    (window as any).logAppError?.('foto_perfil', 'Error de red al subir foto', { detalle: err?.message, stack: err?.stack });
+    alert('Error de conexión al subir la foto.');
+  }
   pfFile.value = '';
 });
 
@@ -188,9 +196,11 @@ btnPwd.addEventListener('click', async () => {
       (document.getElementById('pfPwdConfirm') as HTMLInputElement).value = '';
     } else {
       msgPwd.textContent = data.mensaje || 'Error al actualizar la contraseña.';
+      (window as any).logAppError?.('cambio_password', 'Servidor rechazó cambio de contraseña', { detalle: data.mensaje || ('HTTP ' + res.status) });
     }
-  } catch {
+  } catch (err: any) {
     msgPwd.textContent = 'Error de conexión.';
+    (window as any).logAppError?.('cambio_password', 'Error de red al cambiar contraseña', { detalle: err?.message, stack: err?.stack });
   }
 
   btnPwd.disabled = false;
