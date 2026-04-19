@@ -49,9 +49,9 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
                   <path d="M2 22l7-6 5 5 4-3 7 5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
                 </svg>
                 <span style="font-size:0.82rem; color:#aaa; margin-top:0.5rem;">Arrastra o haz clic para añadir portada</span>
-                <span style="font-size:0.72rem; color:#ccc;">JPG, PNG o WEBP · Máx. 5 MB</span>
+                <span style="font-size:0.72rem; color:#ccc;">Formato 16:9 (ej. 1200×675 px) · JPG, PNG o WEBP · Máx. 5 MB</span>
               </div>
-              <img id="imagen-preview" src="" alt="Portada" style="display:none; width:100%; height:100%; object-fit:contain; background:#f3f6f4;" />
+              <img id="imagen-preview" src="" alt="Portada" style="display:none; width:100%; height:100%; object-fit:cover;" />
               <button type="button" id="imagen-quitar" style="display:none; position:absolute; top:0.5rem; right:0.5rem;
                 background:rgba(0,0,0,0.55); color:#fff; border:none; border-radius:6px; padding:0.25rem 0.6rem;
                 font-size:0.75rem; cursor:pointer; font-family:inherit;">✕ Quitar</button>
@@ -299,7 +299,7 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
 .imagen-zona {
   position: relative;
   width: 100%;
-  height: 220px;
+  aspect-ratio: 16 / 9;
   border: 2px dashed #d4e0db;
   border-radius: 10px;
   background: #f9fbfa;
@@ -360,9 +360,33 @@ imagenZona.addEventListener('drop', e => { e.preventDefault(); imagenZona.style.
 imagenInput.addEventListener('change', () => { const f = imagenInput.files?.[0]; if (f) subirImagen(f); });
 imagenQuitar.addEventListener('click', e => { e.stopPropagation(); imagenUrl = ''; imagenPreview.src = ''; imagenPreview.style.display = 'none'; imagenPlaceholder.style.display = 'flex'; imagenQuitar.style.display = 'none'; imagenZona.classList.remove('con-imagen'); imagenInput.value = ''; });
 
+function comprobarRatio(file: File): Promise<{ ok: boolean; w: number; h: number }> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const ratio = img.width / img.height;
+      const target = 16 / 9;
+      const ok = Math.abs(ratio - target) / target < 0.05;
+      resolve({ ok, w: img.width, h: img.height });
+      URL.revokeObjectURL(img.src);
+    };
+    img.onerror = () => resolve({ ok: false, w: 0, h: 0 });
+    img.src = URL.createObjectURL(file);
+  });
+}
+
 async function subirImagen(file: File) {
   imagenMsg.style.display = 'block';
   imagenMsg.style.color   = '#888';
+  imagenMsg.textContent   = 'Comprobando imagen…';
+
+  const r = await comprobarRatio(file);
+  if (!r.ok && r.w > 0) {
+    imagenMsg.style.color = '#c33';
+    imagenMsg.textContent = `La imagen debe ser 16:9 (ej. 1200×675). Has subido ${r.w}×${r.h}.`;
+    return;
+  }
+
   imagenMsg.textContent   = 'Subiendo imagen…';
   const fd = new FormData();
   fd.append('archivo', file);
