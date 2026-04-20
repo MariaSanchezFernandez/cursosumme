@@ -328,6 +328,34 @@ tr:hover td { background: #fafcfb; }
   cursor: not-allowed;
 }
 
+/* Botones sutiles: navegación / cancelar (jerarquía inferior) */
+.btn-admin.sutil {
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-text-muted);
+  box-shadow: none;
+}
+.btn-admin.sutil:hover {
+  background: #f4faf8;
+  color: var(--color-text);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* Botones destructivos */
+.btn-admin.peligro {
+  border-color: #f3caca;
+  background: #fff;
+  color: #c33;
+  box-shadow: none;
+}
+.btn-admin.peligro:hover {
+  background: #fdf0f0;
+  border-color: #e99;
+  color: #a22;
+  box-shadow: 0 2px 8px rgba(195,51,51,0.10);
+}
+
 /* ── Formulario ── */
 .form-admin {
   background: #fff;
@@ -335,6 +363,84 @@ tr:hover td { background: #fafcfb; }
   border-radius: 14px;
   padding: 2rem;
   box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+}
+
+/* Bloques de formulario diferenciados visualmente */
+.bloque-form {
+  background: #fff;
+  border: 1px solid #e4ede9;
+  border-radius: 14px;
+  padding: 1.5rem 1.75rem;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+  margin-bottom: 1.15rem;
+}
+
+.bloque-form-cab {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid #f0f4f2;
+}
+
+.bloque-form-icono {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.bloque-form-icono svg { width: 18px; height: 18px; }
+
+.bloque-form-icono.info      { background: #e6f4ee; color: #1f5d3d; }
+.bloque-form-icono.media     { background: #fff3e0; color: #8a4a00; }
+.bloque-form-icono.org       { background: #eef0fb; color: #2e3a7a; }
+.bloque-form-icono.contenido { background: #fde8f0; color: #7a2660; }
+
+.bloque-form-titulo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+}
+.bloque-form-titulo h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+.bloque-form-titulo p {
+  font-size: 0.76rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.45;
+}
+
+/* Barra de acciones con jerarquía (primaria a la izquierda, secundarias a la derecha) */
+.acciones-form {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  padding: 0.9rem 0.25rem 0.25rem;
+}
+.acciones-form .acciones-izq,
+.acciones-form .acciones-der {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Estado "completado" para bloques tras guardar */
+.bloque-form.completado {
+  border-color: #b6e0cc;
+  background: #f6fcf9;
 }
 
 .form-grupo {
