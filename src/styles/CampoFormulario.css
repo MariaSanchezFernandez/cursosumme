@@ -25,3 +25,39 @@
 .field input:focus {
   border-color: var(--color-accent);
 }
+
+/* Campo de contraseña con botón para mostrar/ocultar */
+.field-pwd-wrap {
+  position: relative;
+  display: flex;
+}
+.field-pwd-wrap input {
+  flex: 1;
+  padding-right: 2.8rem;
+}
+.field-pwd-toggle {
+  position: absolute;
+  right: 0.55rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #888;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  padding: 0;
+  transition: color 0.15s, background 0.15s;
+}
+.field-pwd-toggle:hover {
+  color: var(--color-text);
+  background: rgba(0,0,0,0.04);
+}
+.field-pwd-toggle:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}

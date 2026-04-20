@@ -563,22 +563,37 @@ const temasCarga = document.getElementById('temas-carga')!;
 const temasVacio = document.getElementById('temas-vacio')!;
 
 async function cargarTemas() {
+  temasCarga.textContent   = 'Cargando temas…';
   temasCarga.style.display = 'block';
+  temasCarga.style.color   = '#aaa';
   temasLista.innerHTML     = '';
   temasVacio.style.display = 'none';
 
-  const res  = await fetch(`/api/temas.php?curso_id=${cursoId}`);
-  const data = await res.json();
-  temasCarga.style.display = 'none';
+  try {
+    const res  = await fetch(`/api/temas.php?curso_id=${cursoId}`);
+    const data = await res.json();
+    temasCarga.style.display = 'none';
 
-  if (!data.ok || data.temas.length === 0) {
-    temasVacio.style.display = 'block';
-    return;
+    if (!data.ok) {
+      temasCarga.textContent = data.mensaje || 'No se pudieron cargar los temas.';
+      temasCarga.style.color = '#c33';
+      temasCarga.style.display = 'block';
+      return;
+    }
+    if (data.temas.length === 0) {
+      temasVacio.style.display = 'block';
+      return;
+    }
+    for (const t of data.temas) {
+      temasLista.appendChild(await crearTemaCard(t));
+    }
+    actualizarDurDisplay();
+  } catch (err: any) {
+    temasCarga.textContent = 'Error al cargar los temas. Recarga la página.';
+    temasCarga.style.color = '#c33';
+    temasCarga.style.display = 'block';
+    (window as any).logAppError?.('cargar_temas', 'Fallo cargando temas', { detalle: err?.message, stack: err?.stack });
   }
-  for (const t of data.temas) {
-    temasLista.appendChild(await crearTemaCard(t));
-  }
-  actualizarDurDisplay();
 }
 
 // ── Crear card de tema ────────────────────────────────────────

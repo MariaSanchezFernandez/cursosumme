@@ -42,11 +42,35 @@ import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
         <form id="form-password">
           <div class="pf-campo">
             <label class="pf-label">Nueva contraseña</label>
-            <input id="inp-pwd1" type="password" class="pf-input" minlength="6" placeholder="Mínimo 6 caracteres" required />
+            <div class="pf-pwd-wrap">
+              <input id="inp-pwd1" type="password" class="pf-input" minlength="6" placeholder="Mínimo 6 caracteres" required />
+              <button type="button" class="pf-pwd-toggle" aria-label="Mostrar contraseña" data-pwd-target="inp-pwd1">
+                <svg class="icono-ojo" viewBox="0 0 20 20" fill="none" width="18" height="18" aria-hidden="true">
+                  <path d="M2 10s3-5 8-5 8 5 8 5-3 5-8 5-8-5-8-5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                  <circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/>
+                </svg>
+                <svg class="icono-ojo-tachado" viewBox="0 0 20 20" fill="none" width="18" height="18" aria-hidden="true" style="display:none;">
+                  <path d="M3 3l14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  <path d="M6.5 6.5C4 8 2 10 2 10s3 5 8 5c1.35 0 2.55-.35 3.6-.85M9 5.05C9.33 5.02 9.66 5 10 5c5 0 8 5 8 5s-.9 1.5-2.5 3" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            </div>
           </div>
           <div class="pf-campo">
             <label class="pf-label">Repetir contraseña</label>
-            <input id="inp-pwd2" type="password" class="pf-input" minlength="6" required />
+            <div class="pf-pwd-wrap">
+              <input id="inp-pwd2" type="password" class="pf-input" minlength="6" required />
+              <button type="button" class="pf-pwd-toggle" aria-label="Mostrar contraseña" data-pwd-target="inp-pwd2">
+                <svg class="icono-ojo" viewBox="0 0 20 20" fill="none" width="18" height="18" aria-hidden="true">
+                  <path d="M2 10s3-5 8-5 8 5 8 5-3 5-8 5-8-5-8-5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                  <circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/>
+                </svg>
+                <svg class="icono-ojo-tachado" viewBox="0 0 20 20" fill="none" width="18" height="18" aria-hidden="true" style="display:none;">
+                  <path d="M3 3l14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  <path d="M6.5 6.5C4 8 2 10 2 10s3 5 8 5c1.35 0 2.55-.35 3.6-.85M9 5.05C9.33 5.02 9.66 5 10 5c5 0 8 5 8 5s-.9 1.5-2.5 3" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            </div>
           </div>
           <div id="msg-pwd" style="display:none; font-size:0.82rem; margin-top:0.5rem;"></div>
           <button type="submit" class="btn-admin primario" style="margin-top:1rem;">
@@ -74,6 +98,21 @@ async function cargarDatos() {
   (document.getElementById('inp-email')     as HTMLInputElement).value = data.admin.email;
 }
 cargarDatos();
+
+// ── Toggle mostrar/ocultar contraseña ─────────────────────────
+document.querySelectorAll<HTMLButtonElement>('.pf-pwd-toggle').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const targetId = btn.getAttribute('data-pwd-target');
+    if (!targetId) return;
+    const input = document.getElementById(targetId) as HTMLInputElement | null;
+    if (!input) return;
+    const mostrando = input.type === 'text';
+    input.type = mostrando ? 'password' : 'text';
+    btn.setAttribute('aria-label', mostrando ? 'Mostrar contraseña' : 'Ocultar contraseña');
+    (btn.querySelector('.icono-ojo') as HTMLElement).style.display = mostrando ? '' : 'none';
+    (btn.querySelector('.icono-ojo-tachado') as HTMLElement).style.display = mostrando ? 'none' : '';
+  });
+});
 
 function mostrarMsg(id: string, texto: string, ok: boolean) {
   const el = document.getElementById(id)!;
@@ -160,5 +199,39 @@ document.getElementById('form-password')!.addEventListener('submit', async (e) =
 }
 .pf-input:focus {
   border-color: var(--color-primary);
+}
+.pf-pwd-wrap {
+  position: relative;
+  display: flex;
+}
+.pf-pwd-wrap .pf-input {
+  flex: 1;
+  padding-right: 2.6rem;
+}
+.pf-pwd-toggle {
+  position: absolute;
+  right: 0.4rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #888;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  padding: 0;
+  transition: color 0.15s, background 0.15s;
+}
+.pf-pwd-toggle:hover {
+  color: var(--color-text);
+  background: rgba(0,0,0,0.04);
+}
+.pf-pwd-toggle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
 }
 </style>

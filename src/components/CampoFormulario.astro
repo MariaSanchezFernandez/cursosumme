@@ -13,17 +13,55 @@
  */
 import '../styles/CampoFormulario.css';
 const { label, type, id, name, placeholder, autocomplete } = Astro.props;
+const esPassword = type === 'password';
 ---
 
 <!-- Grupo label + input -->
 <div class="field">
   <label for={id}>{label}</label>
-  <input
-    type={type}
-    id={id}
-    name={name}
-    placeholder={placeholder}
-    autocomplete={autocomplete}
-  />
+  {esPassword ? (
+    <div class="field-pwd-wrap">
+      <input
+        type="password"
+        id={id}
+        name={name}
+        placeholder={placeholder}
+        autocomplete={autocomplete}
+        data-pwd-input
+      />
+      <button type="button" class="field-pwd-toggle" aria-label="Mostrar contraseña" data-pwd-toggle>
+        <svg class="icono-ojo" viewBox="0 0 20 20" fill="none" width="18" height="18" aria-hidden="true">
+          <path d="M2 10s3-5 8-5 8 5 8 5-3 5-8 5-8-5-8-5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          <circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+        <svg class="icono-ojo-tachado" viewBox="0 0 20 20" fill="none" width="18" height="18" aria-hidden="true" style="display:none;">
+          <path d="M3 3l14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M6.5 6.5C4 8 2 10 2 10s3 5 8 5c1.35 0 2.55-.35 3.6-.85M9 5.05C9.33 5.02 9.66 5 10 5c5 0 8 5 8 5s-.9 1.5-2.5 3" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+  ) : (
+    <input
+      type={type}
+      id={id}
+      name={name}
+      placeholder={placeholder}
+      autocomplete={autocomplete}
+    />
+  )}
 </div>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('[data-pwd-toggle]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const wrap = btn.closest('.field-pwd-wrap') as HTMLElement;
+      const input = wrap.querySelector('[data-pwd-input]') as HTMLInputElement;
+      const mostrando = input.type === 'text';
+      input.type = mostrando ? 'password' : 'text';
+      btn.setAttribute('aria-label', mostrando ? 'Mostrar contraseña' : 'Ocultar contraseña');
+      (wrap.querySelector('.icono-ojo') as HTMLElement).style.display = mostrando ? '' : 'none';
+      (wrap.querySelector('.icono-ojo-tachado') as HTMLElement).style.display = mostrando ? 'none' : '';
+    });
+  });
+</script>
 
