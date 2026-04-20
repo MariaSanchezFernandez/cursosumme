@@ -81,9 +81,15 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
               <span style="font-size:0.72rem; color:#ccc;">Formato 16:9 (ej. 1200×675 px) · JPG, PNG o WEBP · Máx. 5 MB</span>
             </div>
             <img id="imagen-preview" src="" alt="Portada" style="display:none; width:100%; height:100%; object-fit:cover;" />
+            <div id="imagen-hover" class="imagen-hover-overlay">
+              <svg viewBox="0 0 20 20" width="16" height="16" fill="none" aria-hidden="true">
+                <path d="M4 14.5V16h1.5l8.5-8.5-1.5-1.5L4 14.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+              </svg>
+              Cambiar imagen
+            </div>
             <button type="button" id="imagen-quitar" style="display:none; position:absolute; top:0.5rem; right:0.5rem;
               background:rgba(0,0,0,0.55); color:#fff; border:none; border-radius:6px; padding:0.25rem 0.6rem;
-              font-size:0.75rem; cursor:pointer; font-family:inherit;">✕ Quitar</button>
+              font-size:0.75rem; cursor:pointer; font-family:inherit; z-index:2;">✕ Quitar</button>
             <input type="file" id="imagen-input" accept=".jpg,.jpeg,.png,.webp" style="display:none;" />
           </div>
           <div id="imagen-msg" style="font-size:0.78rem; margin-top:0.4rem; display:none;"></div>
@@ -132,13 +138,14 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
         </div>
       </div>
 
-      <!-- Acciones del formulario principal -->
-      <div class="acciones-form">
-        <div class="acciones-izq">
-          <button type="submit" id="btn-guardar" class="btn-admin primario">Guardar cambios</button>
+      <!-- Barra sticky de guardar -->
+      <div id="barra-guardar" class="barra-guardar">
+        <div class="barra-guardar-info">
+          <span id="barra-estado" class="barra-estado">Sin cambios</span>
         </div>
-        <div class="acciones-der">
+        <div class="barra-guardar-acciones">
           <a href="/admin/cursos" class="btn-admin sutil">← Volver</a>
+          <button type="submit" id="btn-guardar" class="btn-admin primario">Guardar cambios</button>
         </div>
       </div>
     </form>
@@ -366,6 +373,7 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
 .imagen-zona {
   position: relative;
   width: 100%;
+  max-width: 360px;
   aspect-ratio: 16 / 9;
   border: 2px dashed #d4e0db;
   border-radius: 10px;
@@ -380,8 +388,67 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
   overflow: hidden;
 }
 .imagen-zona:hover { border-color: var(--color-primary); background: #f0f8f4; }
-.imagen-zona.con-imagen { border-style: solid; border-color: #d4e0db; cursor: default; }
+.imagen-zona.con-imagen { border-style: solid; border-color: #d4e0db; cursor: pointer; }
 #imagen-placeholder { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; color: #999; pointer-events: none; }
+.imagen-hover-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.42);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.15s;
+  pointer-events: none;
+}
+.imagen-zona.con-imagen:hover .imagen-hover-overlay { opacity: 1; }
+
+/* Barra sticky de guardar cambios del curso */
+.barra-guardar {
+  position: sticky;
+  bottom: 1rem;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1.1rem;
+  margin-top: 1rem;
+  background: #fff;
+  border: 1px solid #e4ede9;
+  border-radius: 12px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.10);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.barra-guardar.dirty {
+  border-color: #ffb84d;
+  box-shadow: 0 6px 24px rgba(255,150,0,0.18);
+}
+.barra-guardar-info { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+.barra-estado {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #8aa09a;
+  display: flex; align-items: center; gap: 0.4rem;
+}
+.barra-guardar.dirty .barra-estado { color: #b25e00; }
+.barra-estado::before {
+  content: '';
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #cfd6d3;
+  flex-shrink: 0;
+}
+.barra-guardar.dirty .barra-estado::before { background: #ffa726; }
+.barra-guardar-acciones { display: flex; align-items: center; gap: 0.6rem; flex-shrink: 0; }
+@media (max-width: 600px) {
+  .barra-guardar { flex-direction: column; align-items: stretch; }
+  .barra-guardar-acciones { justify-content: space-between; }
+}
 </style>
 
 <script>
@@ -426,7 +493,10 @@ function quitarImagen() {
   imagenInput.value = '';
 }
 
-imagenZona.addEventListener('click', () => { if (!imagenUrl) imagenInput.click(); });
+imagenZona.addEventListener('click', (e) => {
+  if ((e.target as HTMLElement).id === 'imagen-quitar') return;
+  imagenInput.click();
+});
 imagenZona.addEventListener('dragover', e => { e.preventDefault(); imagenZona.style.borderColor = 'var(--color-primary)'; });
 imagenZona.addEventListener('dragleave', () => { imagenZona.style.borderColor = ''; });
 imagenZona.addEventListener('drop', e => { e.preventDefault(); imagenZona.style.borderColor = ''; const f = e.dataTransfer?.files[0]; if (f) subirImagen(f); });
@@ -508,6 +578,21 @@ async function cargarCurso() {
 // ── Guardar curso ─────────────────────────────────────────────
 const formCurso  = document.getElementById('form-curso') as HTMLFormElement;
 const btnGuardar = document.getElementById('btn-guardar') as HTMLButtonElement;
+const barraGuardar = document.getElementById('barra-guardar') as HTMLElement;
+const barraEstado  = document.getElementById('barra-estado') as HTMLElement;
+
+function marcarDirty() {
+  barraGuardar.classList.add('dirty');
+  barraEstado.textContent = 'Cambios sin guardar';
+}
+function marcarLimpio() {
+  barraGuardar.classList.remove('dirty');
+  barraEstado.textContent = 'Sin cambios';
+}
+formCurso.addEventListener('input', marcarDirty);
+formCurso.addEventListener('change', marcarDirty);
+document.getElementById('descripcion-editor')!.addEventListener('input', marcarDirty);
+
 formCurso.addEventListener('submit', async (e) => {
   e.preventDefault();
   btnGuardar.disabled    = true;
@@ -533,6 +618,7 @@ formCurso.addEventListener('submit', async (e) => {
       (window as any).logAppError?.('editar_curso', 'Servidor rechazó guardar curso', { detalle: data.mensaje || ('HTTP ' + res.status) });
     }
     mostrarMsg(data.ok ? '✓ Cambios guardados.' : (data.mensaje || 'Error'), data.ok ? 'ok' : 'error');
+    if (data.ok) marcarLimpio();
   } catch (err: any) {
     (window as any).logAppError?.('editar_curso', 'Error de red al guardar curso', { detalle: err?.message, stack: err?.stack });
     mostrarMsg('Error de conexión al guardar.', 'error');
