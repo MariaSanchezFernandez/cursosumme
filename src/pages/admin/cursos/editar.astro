@@ -501,7 +501,7 @@ imagenZona.addEventListener('dragover', e => { e.preventDefault(); imagenZona.st
 imagenZona.addEventListener('dragleave', () => { imagenZona.style.borderColor = ''; });
 imagenZona.addEventListener('drop', e => { e.preventDefault(); imagenZona.style.borderColor = ''; const f = e.dataTransfer?.files[0]; if (f) subirImagen(f); });
 imagenInput.addEventListener('change', () => { const f = imagenInput.files?.[0]; if (f) subirImagen(f); });
-imagenQuitar.addEventListener('click', e => { e.stopPropagation(); quitarImagen(); });
+imagenQuitar.addEventListener('click', e => { e.stopPropagation(); quitarImagen(); if (typeof marcarDirty === 'function') marcarDirty(); });
 
 function comprobarRatio(file: File): Promise<{ ok: boolean; w: number; h: number }> {
   return new Promise((resolve) => {
@@ -539,6 +539,7 @@ async function subirImagen(file: File) {
     if (!data.ok) throw new Error(data.mensaje);
     mostrarImagen(data.ruta);
     imagenMsg.style.display = 'none';
+    if (typeof marcarDirty === 'function') marcarDirty();
   } catch (err: any) {
     imagenMsg.style.color = '#c33';
     imagenMsg.textContent = err.message || 'Error al subir la imagen';
@@ -580,23 +581,40 @@ const formCurso  = document.getElementById('form-curso') as HTMLFormElement;
 const btnGuardar = document.getElementById('btn-guardar') as HTMLButtonElement;
 const barraGuardar = document.getElementById('barra-guardar') as HTMLElement;
 const barraEstado  = document.getElementById('barra-estado') as HTMLElement;
+let cursoDirty = false;
 
-function marcarDirty() {
+function contarTemasDirty(): number {
+  return document.querySelectorAll('.tema-card[data-dirty="1"]').length;
+}
+function refrescarBarraEstado() {
+  const nTemas = contarTemasDirty();
+  const hayCambios = cursoDirty || nTemas > 0;
+  if (!hayCambios) {
+    barraGuardar.classList.remove('dirty');
+    barraEstado.textContent = 'Sin cambios';
+    return;
+  }
   barraGuardar.classList.add('dirty');
-  barraEstado.textContent = 'Cambios sin guardar';
+  const partes: string[] = [];
+  if (cursoDirty) partes.push('curso');
+  if (nTemas === 1) partes.push('1 tema');
+  else if (nTemas > 1) partes.push(`${nTemas} temas`);
+  barraEstado.textContent = `Cambios sin guardar (${partes.join(' + ')})`;
+}
+function marcarDirty() {
+  cursoDirty = true;
+  refrescarBarraEstado();
 }
 function marcarLimpio() {
-  barraGuardar.classList.remove('dirty');
-  barraEstado.textContent = 'Sin cambios';
+  cursoDirty = false;
+  document.querySelectorAll<HTMLElement>('.tema-card[data-dirty="1"]').forEach(c => { c.dataset.dirty = ''; });
+  refrescarBarraEstado();
 }
 formCurso.addEventListener('input', marcarDirty);
 formCurso.addEventListener('change', marcarDirty);
 document.getElementById('descripcion-editor')!.addEventListener('input', marcarDirty);
 
-formCurso.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  btnGuardar.disabled    = true;
-  btnGuardar.textContent = 'Guardando…';
+async function guardarCurso(): Promise<boolean> {
   try {
     const res  = await fetch('/api/cursos.php', {
       method: 'PUT', headers: {'Content-Type':'application/json'},
@@ -616,12 +634,43 @@ formCurso.addEventListener('submit', async (e) => {
     const data = await res.json();
     if (!data.ok) {
       (window as any).logAppError?.('editar_curso', 'Servidor rechazó guardar curso', { detalle: data.mensaje || ('HTTP ' + res.status) });
+      mostrarMsg(data.mensaje || 'Error al guardar el curso', 'error');
+      return false;
     }
-    mostrarMsg(data.ok ? '✓ Cambios guardados.' : (data.mensaje || 'Error'), data.ok ? 'ok' : 'error');
-    if (data.ok) marcarLimpio();
+    return true;
   } catch (err: any) {
     (window as any).logAppError?.('editar_curso', 'Error de red al guardar curso', { detalle: err?.message, stack: err?.stack });
     mostrarMsg('Error de conexión al guardar.', 'error');
+    return false;
+  }
+}
+
+formCurso.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const temasDirty = Array.from(document.querySelectorAll<HTMLElement>('.tema-card[data-dirty="1"]'));
+  if (!cursoDirty && temasDirty.length === 0) {
+    mostrarMsg('No hay cambios que guardar.', 'ok');
+    return;
+  }
+  btnGuardar.disabled    = true;
+  btnGuardar.textContent = 'Guardando…';
+  let okCurso = true;
+  if (cursoDirty) okCurso = await guardarCurso();
+  let okTemas = 0, falloTemas = 0;
+  for (const card of temasDirty) {
+    const fn = (card as any).guardarTema as (() => Promise<boolean>) | undefined;
+    if (!fn) continue;
+    const ok = await fn();
+    if (ok) okTemas++; else falloTemas++;
+  }
+  refrescarBarraEstado();
+  if (okCurso && falloTemas === 0) {
+    const total = (cursoDirty ? 1 : 0) + okTemas;
+    if (cursoDirty) cursoDirty = false;
+    refrescarBarraEstado();
+    mostrarMsg(`✓ Guardado (${total} ${total === 1 ? 'cambio' : 'cambios'}).`, 'ok');
+  } else if (falloTemas > 0) {
+    mostrarMsg(`Algunos temas no se pudieron guardar (${falloTemas}).`, 'error');
   }
   btnGuardar.disabled    = false;
   btnGuardar.textContent = 'Guardar cambios';
@@ -823,41 +872,58 @@ async function crearTemaCard(tema: any): Promise<HTMLElement> {
   editPanel.querySelector('.btn-cancelar-editar')!.addEventListener('click', () => {
     editPanel.style.display = 'none';
   });
-  editPanel.querySelector('.btn-guardar-tema')!.addEventListener('click', async () => {
+  async function guardarTema(): Promise<boolean> {
     const titulo      = (editPanel.querySelector('.input-titulo-tema') as HTMLInputElement).value.trim();
     const duracion    = (editPanel.querySelector('.input-dur-tema')    as HTMLInputElement).value.trim();
     const descEl = editPanel.querySelector('.input-desc-tema') as HTMLElement;
     const descripcion = descEl.innerHTML.trim() === '<br>' ? '' : descEl.innerHTML.trim();
-    if (!titulo) return;
+    if (!titulo) return false;
     const res  = await fetch('/api/temas.php', {
       method: 'PUT', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ id: tema.id, titulo, descripcion, duracion, orden: tema.orden, color: tema.color || null }),
     });
     const data = await res.json();
-    if (data.ok) {
-      tema.titulo = titulo; tema.duracion = duracion; tema.descripcion = descripcion;
-      (cabecera.querySelector('.tema-titulo-txt') as HTMLElement).textContent = titulo;
-      const pill = cabecera.querySelector('.tema-dur-pill') as HTMLElement;
-      pill.textContent   = duracion ? duracion + ' min' : '';
-      pill.style.display = duracion ? '' : 'none';
-      // Actualizar preview de descripción
-      const wrap = cabecera.querySelector('.tema-titulo-wrap') as HTMLElement;
-      let descEl = wrap.querySelector('.tema-desc-preview') as HTMLElement | null;
-      if (descripcion) {
-        if (!descEl) {
-          descEl = document.createElement('span');
-          descEl.className = 'tema-desc-preview';
-          wrap.appendChild(descEl);
-        }
-        descEl.textContent = descripcion;
-      } else if (descEl) {
-        descEl.remove();
+    if (!data.ok) {
+      mostrarMsg(data.mensaje || `Error al guardar "${titulo}"`, 'error');
+      return false;
+    }
+    tema.titulo = titulo; tema.duracion = duracion; tema.descripcion = descripcion;
+    (cabecera.querySelector('.tema-titulo-txt') as HTMLElement).textContent = titulo;
+    const pill = cabecera.querySelector('.tema-dur-pill') as HTMLElement;
+    pill.textContent   = duracion ? duracion + ' min' : '';
+    pill.style.display = duracion ? '' : 'none';
+    const wrap = cabecera.querySelector('.tema-titulo-wrap') as HTMLElement;
+    let descPrev = wrap.querySelector('.tema-desc-preview') as HTMLElement | null;
+    if (descripcion) {
+      if (!descPrev) {
+        descPrev = document.createElement('span');
+        descPrev.className = 'tema-desc-preview';
+        wrap.appendChild(descPrev);
       }
+      descPrev.textContent = descripcion;
+    } else if (descPrev) {
+      descPrev.remove();
+    }
+    card.dataset.dirty = '';
+    actualizarDurDisplay();
+    return true;
+  }
+  (card as any).guardarTema = guardarTema;
+
+  const marcarTemaDirty = () => {
+    card.dataset.dirty = '1';
+    marcarDirty();
+  };
+  editPanel.querySelector('.input-titulo-tema')!.addEventListener('input', marcarTemaDirty);
+  editPanel.querySelector('.input-dur-tema')!.addEventListener('input', marcarTemaDirty);
+  (editPanel.querySelector('.input-desc-tema') as HTMLElement).addEventListener('input', marcarTemaDirty);
+
+  editPanel.querySelector('.btn-guardar-tema')!.addEventListener('click', async () => {
+    const ok = await guardarTema();
+    if (ok) {
       editPanel.style.display = 'none';
-      actualizarDurDisplay();
       mostrarMsg('✓ Tema actualizado.', 'ok');
-    } else {
-      mostrarMsg(data.mensaje || 'Error al actualizar', 'error');
+      refrescarBarraEstado();
     }
   });
 
