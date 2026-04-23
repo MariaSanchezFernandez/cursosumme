@@ -1097,6 +1097,104 @@ function leerDuracionVideo(archivo: File): Promise<number> {
   });
 }
 
+// Chunk de 800 MB: por debajo del límite nginx de IONOS (1024 MB) con margen
+// para overhead de multipart, y reduce el número de peticiones para vídeos grandes.
+const CHUNK_SIZE = 800 * 1024 * 1024;
+
+function actualizarDuracionTrasSubida(cuerpo: HTMLElement, tema: any, durMin: number): void {
+  const card      = cuerpo.closest('.tema-card') as HTMLElement;
+  const editPanel = card.querySelector('.tema-editar-panel') as HTMLElement;
+  const inputDur  = editPanel.querySelector('.input-dur-tema') as HTMLInputElement;
+  if (!inputDur.value || inputDur.value === '0') {
+    inputDur.value = String(durMin);
+    const pill = card.querySelector('.tema-dur-pill') as HTMLElement;
+    if (pill) { pill.textContent = durMin + ' min'; pill.style.display = ''; }
+    fetch('/api/temas.php', {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ id: tema.id, titulo: tema.titulo, duracion: String(durMin), orden: tema.orden }),
+    }).then(() => actualizarDurDisplay());
+  }
+}
+
+function subirArchivoChunked(
+  cuerpo: HTMLElement,
+  tema: any,
+  archivo: File,
+  durMin: number,
+  onProgress?: (pct: number) => void
+): Promise<void> {
+  return new Promise(async (resolve) => {
+    const uploadId    = (crypto as any).randomUUID?.()?.replace(/-/g, '') ??
+                        (Date.now().toString(36) + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)).slice(0, 32);
+    const totalChunks = Math.ceil(archivo.size / CHUNK_SIZE);
+    const detalle     = `video · ${archivo.name} · ${(archivo.size/1024/1024).toFixed(1)} MB · tema=${tema.id} · chunks=${totalChunks}`;
+
+    for (let i = 0; i < totalChunks; i++) {
+      const inicio = i * CHUNK_SIZE;
+      const fin    = Math.min(inicio + CHUNK_SIZE, archivo.size);
+      const blob   = archivo.slice(inicio, fin);
+
+      const fd = new FormData();
+      fd.append('upload_id',       uploadId);
+      fd.append('chunk_index',     String(i));
+      fd.append('total_chunks',    String(totalChunks));
+      fd.append('tema_id',         String(tema.id));
+      fd.append('nombre_original', archivo.name);
+      if (i === totalChunks - 1 && durMin > 0) fd.append('duracion', String(durMin));
+      fd.append('chunk', blob, archivo.name + '.part' + i);
+
+      const bytesPrevios  = inicio;
+      const totalBytes    = archivo.size;
+      const esUltimo      = (i === totalChunks - 1);
+
+      const resultado = await new Promise<{ ok: boolean; data?: any; status?: number; texto?: string }>((res) => {
+        const xhr = new XMLHttpRequest();
+        if (onProgress) {
+          xhr.upload.addEventListener('progress', (e) => {
+            if (e.lengthComputable) {
+              const subidoAhora = bytesPrevios + e.loaded;
+              onProgress(Math.min(99, Math.round((subidoAhora / totalBytes) * 100)));
+            }
+          });
+        }
+        xhr.addEventListener('load',  () => {
+          if (xhr.status < 200 || xhr.status >= 300) { res({ ok: false, status: xhr.status, texto: xhr.responseText }); return; }
+          try { res({ ok: true, data: JSON.parse(xhr.responseText) }); }
+          catch { res({ ok: false, texto: xhr.responseText }); }
+        });
+        xhr.addEventListener('error',   () => res({ ok: false, texto: 'network' }));
+        xhr.addEventListener('timeout', () => res({ ok: false, texto: 'timeout' }));
+        xhr.addEventListener('abort',   () => res({ ok: false, texto: 'abort' }));
+        xhr.open('POST', '/api/upload-chunk.php');
+        xhr.send(fd);
+      });
+
+      if (!resultado.ok) {
+        const msg = `Fallo al subir el chunk ${i + 1}/${totalChunks}${resultado.status ? ` (HTTP ${resultado.status})` : ''}`;
+        mostrarMsg(msg, 'error');
+        (window as any).logAppError?.('upload', msg, { detalle: detalle + ' · respuesta=' + (resultado.texto || '').slice(0, 200) });
+        resolve(); return;
+      }
+
+      if (!resultado.data?.ok) {
+        mostrarMsg(resultado.data?.mensaje || `Error al procesar el chunk ${i + 1}`, 'error');
+        (window as any).logAppError?.('upload', `Chunk ${i} rechazado: ${resultado.data?.mensaje || 'sin mensaje'}`, { detalle });
+        resolve(); return;
+      }
+
+      if (esUltimo) {
+        const lista = cuerpo.querySelector('.mat-lista-video') as HTMLElement;
+        lista.appendChild(crearFilaMat(resultado.data.material));
+        if (durMin > 0) actualizarDuracionTrasSubida(cuerpo, tema, durMin);
+        if (onProgress) onProgress(100);
+        mostrarMsg('✓ Vídeo subido correctamente.', 'ok');
+      }
+    }
+
+    resolve();
+  });
+}
+
 function subirArchivo(
   cuerpo: HTMLElement,
   tema: any,
@@ -1111,6 +1209,12 @@ function subirArchivo(
         const seg = await leerDuracionVideo(archivo);
         durMin = seg > 0 ? Math.ceil(seg / 60) : 0;
       } catch { durMin = 0; }
+    }
+
+    // Vídeos grandes → chunked para esquivar el límite nginx de 1 GB
+    if (tipo === 'video' && archivo.size >= CHUNK_SIZE) {
+      await subirArchivoChunked(cuerpo, tema, archivo, durMin, onProgress);
+      resolve(); return;
     }
 
     const fd = new FormData();
@@ -1148,20 +1252,7 @@ function subirArchivo(
         ) as HTMLElement;
         lista.appendChild(crearFilaMat(data.material));
 
-        if (tipo === 'video' && durMin > 0) {
-          const card      = cuerpo.closest('.tema-card') as HTMLElement;
-          const editPanel = card.querySelector('.tema-editar-panel') as HTMLElement;
-          const inputDur  = editPanel.querySelector('.input-dur-tema') as HTMLInputElement;
-          if (!inputDur.value || inputDur.value === '0') {
-            inputDur.value = String(durMin);
-            const pill = card.querySelector('.tema-dur-pill') as HTMLElement;
-            if (pill) { pill.textContent = durMin + ' min'; pill.style.display = ''; }
-            fetch('/api/temas.php', {
-              method: 'PUT', headers: {'Content-Type':'application/json'},
-              body: JSON.stringify({ id: tema.id, titulo: tema.titulo, duracion: String(durMin), orden: tema.orden }),
-            }).then(() => actualizarDurDisplay());
-          }
-        }
+        if (tipo === 'video' && durMin > 0) actualizarDuracionTrasSubida(cuerpo, tema, durMin);
         mostrarMsg(`✓ ${tipo === 'video' ? 'Vídeo' : 'Archivo'} subido correctamente.`, 'ok');
       } catch (err) {
         mostrarMsg('Error al procesar la respuesta del servidor.', 'error');

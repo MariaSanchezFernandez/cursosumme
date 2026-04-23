@@ -94,7 +94,11 @@ async function main() {
   const sftp = new SftpClient();
 
   try {
-    await sftp.connect({ host, port, username: user, password });
+    await sftp.connect({
+      host, port, username: user, password,
+      tryKeyboard: true,
+      onKeyboardInteractive: (_name, _instr, _lang, _prompts, finish) => finish([password]),
+    });
     console.log('  Conectado. Sincronizando dist/ → servidor...');
     await sftp.uploadDir(localDist, remotePath);
     console.log('\n  Despliegue completado con exito.');
