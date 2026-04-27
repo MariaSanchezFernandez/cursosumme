@@ -21,3 +21,13 @@
   font-size: 0.75rem;
   color: #bbb;
 }
+
+@media (max-width: 640px) {
+  .footer {
+    padding: 0.9rem 1rem;
+    flex-direction: column;
+    gap: 0.35rem;
+    text-align: center;
+  }
+  .footer-logo, .footer-copy { font-size: 0.72rem; }
+}

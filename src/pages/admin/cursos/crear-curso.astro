@@ -106,7 +106,7 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
             </div>
           </div>
 
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+          <div class="grid-2col">
             <div class="form-grupo" style="margin-bottom:0;">
               <label class="form-label" for="etiqueta">Categoría</label>
               <input class="form-input" type="text" id="etiqueta" placeholder="Ej. Derechos, Salud…" required />
@@ -391,6 +391,12 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
   gap: 0.25rem;
   color: #999;
   pointer-events: none;
+}
+
+/* Grid de 2 columnas que se apila en móvil */
+.grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 640px) {
+  .grid-2col { grid-template-columns: 1fr; }
 }
 </style>
 

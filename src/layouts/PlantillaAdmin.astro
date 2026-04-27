@@ -13,7 +13,7 @@ const { titulo, paginaActual } = Astro.props;
 <html lang="es">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{titulo} — Cursos Umme Admin</title>
   </head>
   <body>
@@ -76,8 +76,11 @@ const { titulo, paginaActual } = Astro.props;
 
     <div class="admin-layout">
 
+      <!-- Overlay (solo móvil, cubre el contenido cuando el drawer está abierto) -->
+      <div id="sidebarOverlay" class="sidebar-overlay" aria-hidden="true"></div>
+
       <!-- Sidebar -->
-      <aside class="sidebar">
+      <aside class="sidebar" id="sidebarAdmin">
         <div class="sidebar-logo">
           <a href="/admin">
             <span class="logo-marca">Cursos</span>
@@ -172,6 +175,11 @@ const { titulo, paginaActual } = Astro.props;
       <!-- Contenido -->
       <div class="admin-contenido">
         <header class="admin-header">
+          <button id="btn-menu" class="btn-menu-mobile" aria-label="Abrir menú" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
           <span class="admin-header-titulo">{titulo}</span>
           <div class="admin-header-acciones">
             <button id="btn-logout" class="btn-admin">
@@ -209,6 +217,35 @@ const { titulo, paginaActual } = Astro.props;
     // Nombre del admin en el sidebar
     var _nombreEl = document.getElementById('sidebarNombreAdmin');
     if (_nombreEl && _s.nombre) _nombreEl.textContent = _s.nombre;
+
+    // Drawer móvil: abrir/cerrar sidebar
+    var _sidebar = document.getElementById('sidebarAdmin');
+    var _overlay = document.getElementById('sidebarOverlay');
+    var _btnMenu = document.getElementById('btn-menu');
+    function abrirDrawer() {
+      _sidebar.classList.add('abierto');
+      _overlay.classList.add('activo');
+      _btnMenu.setAttribute('aria-expanded', 'true');
+      document.body.style.overflow = 'hidden';
+    }
+    function cerrarDrawer() {
+      _sidebar.classList.remove('abierto');
+      _overlay.classList.remove('activo');
+      _btnMenu.setAttribute('aria-expanded', 'false');
+      document.body.style.overflow = '';
+    }
+    if (_btnMenu) _btnMenu.addEventListener('click', abrirDrawer);
+    if (_overlay) _overlay.addEventListener('click', cerrarDrawer);
+    // Cerrar al pulsar cualquier enlace dentro del sidebar
+    if (_sidebar) {
+      _sidebar.querySelectorAll('a').forEach(function (a) {
+        a.addEventListener('click', cerrarDrawer);
+      });
+    }
+    // Restaurar overflow al pasar a desktop
+    window.addEventListener('resize', function () {
+      if (window.innerWidth > 768) cerrarDrawer();
+    });
 
     // Logout
     document.getElementById('btn-logout').addEventListener('click', function () {

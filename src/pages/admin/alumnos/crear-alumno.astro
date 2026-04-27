@@ -11,7 +11,7 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
 
         <p class="seccion-titulo" style="margin-bottom:1.25rem;">Datos del alumno</p>
 
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+        <div class="grid-2col">
           <div class="form-grupo">
             <label class="form-label" for="nombre">Nombre</label>
             <input class="form-input" type="text" id="nombre" name="nombre" placeholder="Ej. Ana" required />
@@ -27,7 +27,7 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
           <input class="form-input" type="email" id="email" name="email" placeholder="alumna@ejemplo.com" required />
         </div>
 
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+        <div class="grid-2col">
           <div class="form-grupo" style="margin:0;">
             <label class="form-label" for="fechaAlta">Fecha de alta</label>
             <input class="form-input" type="date" id="fechaAlta" name="fechaAlta" required />
@@ -125,6 +125,11 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
   letter-spacing: 0.1em;
   color: #bbb;
   margin: 1rem 0 0.5rem;
+}
+
+.grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 640px) {
+  .grid-2col { grid-template-columns: 1fr; }
 }
 </style>
 
