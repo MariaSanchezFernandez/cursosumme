@@ -76,6 +76,9 @@ import '../styles/TarjetaLogin.css';
       const datos = await respuesta.json();
 
       if (!datos.ok) {
+        // Si la API trae un mensaje (rate-limit, mantenimiento, etc.), mostrarlo;
+        // si no, usar el texto genérico "Email o contraseña incorrectos".
+        errorMsg.textContent = datos.mensaje || 'Email o contraseña incorrectos.';
         errorMsg.style.display = 'block';
         boton.disabled = false;
         boton.textContent = 'Entrar';
