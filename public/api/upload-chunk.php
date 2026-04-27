@@ -49,7 +49,7 @@ if (!isset($_FILES['chunk']) || $_FILES['chunk']['error'] !== UPLOAD_ERR_OK) {
 }
 
 $extension = strtolower(pathinfo($nombreOrig, PATHINFO_EXTENSION));
-if (!in_array($extension, ['mp4', 'webm', 'mov', 'avi', 'm4v'])) {
+if (!in_array($extension, ['mp4', 'webm', 'mov', 'avi', 'm4v', 'mkv'])) {
     echo json_encode(['ok' => false, 'mensaje' => "Tipo de vídeo no permitido (.{$extension})"]);
     exit;
 }
