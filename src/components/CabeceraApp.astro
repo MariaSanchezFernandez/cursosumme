@@ -132,11 +132,12 @@ import '../styles/CabeceraApp.css';
     fileInput.value = '';
   });
 
-  // Cerrar sesión
+  // Cerrar sesión (limpia también la sesión persistente "Recordarme")
   document.getElementById('btnSalir')!.addEventListener('click', () => {
     sessionStorage.removeItem('umme_session');
     sessionStorage.removeItem('umme_foto');
     sessionStorage.removeItem('umme_badge');
+    localStorage.removeItem('umme_session');
     window.location.replace('/');
   });
 </script>

@@ -39,3 +39,21 @@
 .forgot-link:hover {
   color: var(--color-text);
 }
+
+.login-recordarme {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0.25rem 0 0.5rem;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+.login-recordarme input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+}

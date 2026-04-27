@@ -10,6 +10,25 @@ import '../styles/global.css';
     <title>Cursos Umme</title>
   </head>
   <body>
+    <!-- Hidratar sesión "Recordarme": copiar localStorage → sessionStorage si la sesión sigue vigente -->
+    <script is:inline>
+    (function () {
+      try {
+        if (sessionStorage.getItem('umme_session')) return;
+        var raw = localStorage.getItem('umme_session');
+        if (!raw) return;
+        var s = JSON.parse(raw);
+        if (!s || !s.exp || Date.now() > s.exp) {
+          localStorage.removeItem('umme_session');
+          return;
+        }
+        sessionStorage.setItem('umme_session', raw);
+      } catch (e) {
+        try { localStorage.removeItem('umme_session'); } catch (e2) {}
+      }
+    })();
+    </script>
+
     <!-- Captura global de errores JS -->
     <script is:inline>
     (function () {

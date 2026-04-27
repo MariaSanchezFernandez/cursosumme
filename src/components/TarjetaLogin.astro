@@ -35,6 +35,10 @@ import '../styles/TarjetaLogin.css';
       placeholder="••••••••"
       autocomplete="current-password"
     />
+    <label class="login-recordarme">
+      <input type="checkbox" id="recordarme" />
+      <span>Recordarme en este dispositivo (15 días)</span>
+    </label>
     <p id="login-error" style="display:none; font-size:0.78rem; color:#c0392b; margin:-0.25rem 0 0.25rem;">
       Email o contraseña incorrectos.
     </p>
@@ -78,16 +82,22 @@ import '../styles/TarjetaLogin.css';
         return;
       }
 
-      // Crear sesión en sessionStorage (expira en 8 horas)
+      // Sesión: 15 días si "Recordarme" está marcado (localStorage),
+      // 8 horas en caso contrario (sessionStorage, se borra al cerrar el navegador).
+      const recordar  = (form.querySelector('#recordarme') as HTMLInputElement).checked;
+      const duracion  = recordar ? 15 * 24 * 60 * 60 * 1000 : 8 * 60 * 60 * 1000;
       const sesion = {
         userId: datos.id,
         rol: datos.rol,
         email: datos.email,
         nombre: datos.nombre,
         token: datos.token,
-        exp: Date.now() + 8 * 60 * 60 * 1000,
+        exp: Date.now() + duracion,
       };
-      sessionStorage.setItem('umme_session', JSON.stringify(sesion));
+      const raw = JSON.stringify(sesion);
+      sessionStorage.setItem('umme_session', raw);
+      if (recordar) localStorage.setItem('umme_session', raw);
+      else          localStorage.removeItem('umme_session');
 
       window.location.href = datos.rol === 'admin' ? '/admin' : '/inicio';
 

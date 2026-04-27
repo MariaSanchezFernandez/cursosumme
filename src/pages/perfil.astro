@@ -120,6 +120,7 @@ import '../styles/global.css';
       const s = JSON.parse(raw);
       if (!s || Date.now() > s.exp) {
         sessionStorage.removeItem('umme_session');
+        localStorage.removeItem('umme_session');
         window.location.replace('/');
       }
     } catch { window.location.replace('/'); }
@@ -133,9 +134,10 @@ const s = (() => { try { return JSON.parse(sessionStorage.getItem('umme_session'
 document.getElementById('pfNombre')!.textContent = s.nombre || '—';
 document.getElementById('pfEmail')!.textContent  = s.email  || '—';
 
-// Salir
+// Salir (limpia también la sesión persistente "Recordarme")
 document.getElementById('btnSalirPerfil')!.addEventListener('click', () => {
   sessionStorage.removeItem('umme_session');
+  localStorage.removeItem('umme_session');
   window.location.replace('/');
 });
 

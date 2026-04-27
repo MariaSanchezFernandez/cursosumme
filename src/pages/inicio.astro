@@ -71,6 +71,7 @@ import '../styles/TarjetaCurso.css';
       const s = JSON.parse(raw);
       if (!s || Date.now() > s.exp) {
         sessionStorage.removeItem('umme_session');
+        localStorage.removeItem('umme_session');
         window.location.replace('/');
       }
     } catch { window.location.replace('/'); }

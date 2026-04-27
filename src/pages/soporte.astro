@@ -73,6 +73,7 @@ import PiePagina from '../components/PiePagina.astro';
       var s = JSON.parse(raw);
       if (!s || Date.now() > s.exp) {
         sessionStorage.removeItem('umme_session');
+        localStorage.removeItem('umme_session');
         window.location.replace('/');
         return;
       }
