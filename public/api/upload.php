@@ -89,6 +89,7 @@ $tamanoKb = (int)ceil($_FILES['archivo']['size'] / 1024);
 
 // Insertar en base de datos
 require_once __DIR__ . '/db-connect.php';
+require_once __DIR__ . '/log-helper.php';
 $pdo = obtenerPDO();
 
 $stmt = $pdo->prepare(
@@ -110,6 +111,9 @@ if ($tipo === 'video' && $duracion !== null && $duracion > 0) {
     $stmtDur = $pdo->prepare('UPDATE temas SET duracion = :dur WHERE id = :id');
     $stmtDur->execute([':dur' => $duracion, ':id' => $temaId]);
 }
+
+$adminId = isset($_POST['admin_id']) ? (int)$_POST['admin_id'] : 0;
+registrar_log($pdo, 'material_subido', ucfirst($tipo) . ' "' . $nombreOriginal . '" subido al tema ID ' . $temaId, $adminId);
 
 echo json_encode([
     'ok'       => true,

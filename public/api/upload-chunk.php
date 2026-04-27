@@ -137,6 +137,7 @@ borrarTmp($tmpDir);
 
 // Registrar en BD
 require_once __DIR__ . '/db-connect.php';
+require_once __DIR__ . '/log-helper.php';
 $pdo = obtenerPDO();
 $tamanoKb = (int)ceil($totalBytes / 1024);
 $stmt = $pdo->prepare(
@@ -156,6 +157,9 @@ if ($duracion > 0) {
     $stmtDur = $pdo->prepare('UPDATE temas SET duracion = :dur WHERE id = :id');
     $stmtDur->execute([':dur' => $duracion, ':id' => $temaId]);
 }
+
+$adminId = isset($_POST['admin_id']) ? (int)$_POST['admin_id'] : 0;
+registrar_log($pdo, 'material_subido', 'Vídeo "' . $nombreOrig . '" subido al tema ID ' . $temaId . ' (chunked, ' . round($totalBytes / 1024 / 1024) . ' MB)', $adminId);
 
 echo json_encode([
     'ok' => true,

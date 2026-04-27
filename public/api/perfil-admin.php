@@ -7,6 +7,7 @@ header('Access-Control-Allow-Headers: Content-Type');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
 require_once __DIR__ . '/db-connect.php';
+require_once __DIR__ . '/log-helper.php';
 $pdo = obtenerPDO();
 
 // ── GET: datos del admin ──────────────────────────────────────
@@ -51,6 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     $stmt = $pdo->prepare('UPDATE usuarios SET nombre = ?, apellidos = ?, email = ? WHERE id = ? AND rol = "admin"');
     $stmt->execute([$nombre, $apellidos, $email, $id]);
 
+    registrar_log($pdo, 'perfil_actualizado', "Perfil admin actualizado ({$email})", $id);
     echo json_encode(['ok' => true]);
     exit;
 }

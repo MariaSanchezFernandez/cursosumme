@@ -15,6 +15,7 @@ header('Access-Control-Allow-Headers: Content-Type');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
 require_once __DIR__ . '/db-connect.php';
+require_once __DIR__ . '/log-helper.php';
 $pdo = obtenerPDO();
 
 $metodo = $_SERVER['REQUEST_METHOD'];
@@ -69,7 +70,10 @@ if ($metodo === 'POST') {
         ':orden'       => $orden,
         ':color'       => null,
     ]);
-    echo json_encode(['ok' => true, 'id' => $pdo->lastInsertId(), 'orden' => $orden]);
+    $temaId  = $pdo->lastInsertId();
+    $adminId = isset($body['admin_id']) ? (int)$body['admin_id'] : 0;
+    registrar_log($pdo, 'tema_creado', 'Tema "' . trim($body['titulo']) . '" creado en curso ID ' . (int)$body['curso_id'], $adminId);
+    echo json_encode(['ok' => true, 'id' => $temaId, 'orden' => $orden]);
     exit;
 }
 
@@ -92,6 +96,8 @@ if ($metodo === 'PUT') {
         ':color'       => !empty($body['color']) ? trim($body['color']) : null,
         ':id'          => (int)$body['id'],
     ]);
+    $adminIdPut = isset($body['admin_id']) ? (int)$body['admin_id'] : 0;
+    registrar_log($pdo, 'tema_editado', 'Tema "' . trim($body['titulo'] ?? '') . '" editado (ID ' . (int)$body['id'] . ')', $adminIdPut);
     echo json_encode(['ok' => true]);
     exit;
 }
@@ -108,6 +114,11 @@ if ($metodo === 'DELETE') {
         echo json_encode(['ok' => false, 'mensaje' => 'Falta el id del tema']);
         exit;
     }
+    // Recuperar título antes de borrar para el log
+    $stmtTit = $pdo->prepare('SELECT titulo FROM temas WHERE id = :id');
+    $stmtTit->execute([':id' => $id]);
+    $tituloTema = (string)$stmtTit->fetchColumn();
+
     // Eliminar archivos físicos de los materiales del tema
     $stmtMat = $pdo->prepare('SELECT ruta FROM materiales WHERE tema_id = :tema_id');
     $stmtMat->execute([':tema_id' => $id]);
@@ -120,6 +131,8 @@ if ($metodo === 'DELETE') {
     // El FK CASCADE eliminará los materiales en BD
     $stmt = $pdo->prepare('DELETE FROM temas WHERE id = :id');
     $stmt->execute([':id' => $id]);
+
+    registrar_log($pdo, 'tema_eliminado', 'Tema "' . $tituloTema . '" eliminado (ID ' . $id . ')', 0);
     echo json_encode(['ok' => true]);
     exit;
 }

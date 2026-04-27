@@ -14,8 +14,16 @@ import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
         <option value="curso_creado">Cursos creados</option>
         <option value="curso_editado">Cursos editados</option>
         <option value="curso_eliminado">Cursos eliminados</option>
+        <option value="tema_creado">Temas creados</option>
+        <option value="tema_editado">Temas editados</option>
+        <option value="tema_eliminado">Temas eliminados</option>
+        <option value="material_subido">Materiales subidos</option>
+        <option value="material_eliminado">Materiales eliminados</option>
         <option value="ticket_creado">Tickets abiertos</option>
         <option value="ticket_respondido">Tickets respondidos</option>
+        <option value="ticket_eliminado">Tickets eliminados</option>
+        <option value="password_cambiada">Contraseña cambiada</option>
+        <option value="password_reseteada">Contraseña reseteada</option>
         <option value="perfil_actualizado">Perfil actualizado</option>
       </select>
     </div>
@@ -40,25 +48,41 @@ import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
 
 <script>
 const iconos: Record<string, string> = {
-  alumno_creado:      '👤',
-  alumno_actualizado: '✏️',
-  curso_creado:       '📚',
-  curso_editado:      '✏️',
-  curso_eliminado:    '🗑️',
-  ticket_creado:      '💬',
-  ticket_respondido:  '↩️',
-  perfil_actualizado: '⚙️',
+  alumno_creado:       '👤',
+  alumno_actualizado:  '✏️',
+  curso_creado:        '📚',
+  curso_editado:       '✏️',
+  curso_eliminado:     '🗑️',
+  tema_creado:         '📑',
+  tema_editado:        '✏️',
+  tema_eliminado:      '🗑️',
+  material_subido:     '📎',
+  material_eliminado:  '🗑️',
+  ticket_creado:       '💬',
+  ticket_respondido:   '↩️',
+  ticket_eliminado:    '🗑️',
+  password_cambiada:   '🔑',
+  password_reseteada:  '🔑',
+  perfil_actualizado:  '⚙️',
 };
 
 const etiquetas: Record<string, string> = {
-  alumno_creado:      'Alumno creado',
-  alumno_actualizado: 'Alumno actualizado',
-  curso_creado:       'Curso creado',
-  curso_editado:      'Curso editado',
-  curso_eliminado:    'Curso eliminado',
-  ticket_creado:      'Ticket abierto',
-  ticket_respondido:  'Ticket respondido',
-  perfil_actualizado: 'Perfil actualizado',
+  alumno_creado:       'Alumno creado',
+  alumno_actualizado:  'Alumno actualizado',
+  curso_creado:        'Curso creado',
+  curso_editado:       'Curso editado',
+  curso_eliminado:     'Curso eliminado',
+  tema_creado:         'Tema creado',
+  tema_editado:        'Tema editado',
+  tema_eliminado:      'Tema eliminado',
+  material_subido:     'Material subido',
+  material_eliminado:  'Material eliminado',
+  ticket_creado:       'Ticket abierto',
+  ticket_respondido:   'Ticket respondido',
+  ticket_eliminado:    'Ticket eliminado',
+  password_cambiada:   'Contraseña cambiada',
+  password_reseteada:  'Contraseña reseteada',
+  perfil_actualizado:  'Perfil actualizado',
 };
 
 let todosLogs: any[] = [];

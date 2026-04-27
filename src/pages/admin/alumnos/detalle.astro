@@ -41,6 +41,23 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
     </div>
   </div>
 
+  <!-- Cambiar contraseña del alumno -->
+  <div id="pwd-wrap" style="display:none; margin-bottom:1.75rem;">
+    <p class="seccion-titulo" style="margin-bottom:0.75rem;">Contraseña del alumno</p>
+    <p style="font-size:0.78rem; color:#888; margin:0 0 0.6rem;">
+      No es posible ver la contraseña actual (está cifrada). Aquí puedes asignar una nueva.
+    </p>
+    <div style="display:flex; gap:0.6rem; align-items:center; flex-wrap:wrap;">
+      <input id="inp-nueva-pwd" type="text" autocomplete="new-password" placeholder="Mínimo 6 caracteres"
+        class="form-input" style="max-width:280px; height:38px; font-family:ui-monospace, monospace;" />
+      <button id="btn-generar-pwd" class="btn-admin" style="height:38px; font-size:0.78rem;">Generar</button>
+      <button id="btn-cambiar-pwd" class="btn-admin primario" style="height:38px; font-size:0.8rem;">Guardar contraseña</button>
+    </div>
+    <p id="pwd-aviso" style="display:none; font-size:0.78rem; margin-top:0.6rem;
+      padding:0.5rem 0.75rem; border-radius:7px; background:#fff8e6; color:#a06010;
+      border:1px solid #f3dfb6;"></p>
+  </div>
+
   <!-- Progreso del alumno -->
   <div id="progreso-wrap" style="display:none; margin-bottom:2rem;">
     <p class="seccion-titulo" style="margin-bottom:0.75rem;">Progreso del alumno</p>
@@ -175,6 +192,43 @@ async function cargar() {
   inpBaja.addEventListener('change', actualizarBadge);
 
   accesoWrap.style.display = 'block';
+
+  // ── Cambiar contraseña del alumno ─────────────────────────
+  const pwdWrap     = document.getElementById('pwd-wrap') as HTMLElement;
+  const inpNueva    = document.getElementById('inp-nueva-pwd') as HTMLInputElement;
+  const btnGenerar  = document.getElementById('btn-generar-pwd') as HTMLButtonElement;
+  const btnCambiar  = document.getElementById('btn-cambiar-pwd') as HTMLButtonElement;
+  const pwdAviso    = document.getElementById('pwd-aviso') as HTMLElement;
+  pwdWrap.style.display = 'block';
+
+  btnGenerar.addEventListener('click', () => {
+    // 12 caracteres alfanuméricos legibles (sin 0/O, 1/I/l)
+    const abc = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    let pwd = '';
+    for (let i = 0; i < 12; i++) pwd += abc[Math.floor(Math.random() * abc.length)];
+    inpNueva.value = pwd;
+    inpNueva.focus();
+  });
+
+  btnCambiar.addEventListener('click', async () => {
+    const nueva = inpNueva.value.trim();
+    if (nueva.length < 6) { mostrarMsg('La contraseña debe tener al menos 6 caracteres.', 'error'); return; }
+    const sesion = JSON.parse(localStorage.getItem('umme_sesion') || '{}');
+    btnCambiar.disabled = true; btnCambiar.textContent = 'Guardando…';
+    const res  = await fetch('/api/cambiar-password.php', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ usuario_id: alumnoId, password_nueva: nueva, actor_id: Number(sesion.userId || 0) }),
+    });
+    const data = await res.json();
+    btnCambiar.disabled = false; btnCambiar.textContent = 'Guardar contraseña';
+    if (data.ok) {
+      mostrarMsg('✓ Contraseña actualizada.', 'ok');
+      pwdAviso.textContent = `Nueva contraseña: ${nueva} — cópiala ahora, no se podrá ver de nuevo.`;
+      pwdAviso.style.display = 'block';
+    } else {
+      mostrarMsg(data.mensaje || 'Error al cambiar la contraseña.', 'error');
+    }
+  });
 
   document.getElementById('btn-guardar-fechas')!.addEventListener('click', async () => {
     const btn = document.getElementById('btn-guardar-fechas') as HTMLButtonElement;

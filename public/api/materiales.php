@@ -13,6 +13,7 @@ header('Access-Control-Allow-Headers: Content-Type');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
 require_once __DIR__ . '/db-connect.php';
+require_once __DIR__ . '/log-helper.php';
 $pdo = obtenerPDO();
 
 $metodo = $_SERVER['REQUEST_METHOD'];
@@ -59,8 +60,8 @@ if ($metodo === 'DELETE') {
         echo json_encode(['ok' => false, 'mensaje' => 'Falta el id del material']);
         exit;
     }
-    // Obtener ruta para eliminar el archivo físico
-    $stmt = $pdo->prepare('SELECT ruta FROM materiales WHERE id = :id');
+    // Obtener nombre/tipo/ruta para log y eliminar archivo físico
+    $stmt = $pdo->prepare('SELECT nombre, tipo, ruta FROM materiales WHERE id = :id');
     $stmt->execute([':id' => $id]);
     $mat = $stmt->fetch();
     if ($mat) {
@@ -69,6 +70,10 @@ if ($metodo === 'DELETE') {
     }
     $stmt = $pdo->prepare('DELETE FROM materiales WHERE id = :id');
     $stmt->execute([':id' => $id]);
+
+    if ($mat) {
+        registrar_log($pdo, 'material_eliminado', ucfirst($mat['tipo']) . ' "' . $mat['nombre'] . '" eliminado', 0);
+    }
     echo json_encode(['ok' => true]);
     exit;
 }
