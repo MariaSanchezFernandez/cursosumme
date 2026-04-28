@@ -40,13 +40,13 @@ $rol = $authStmt->fetchColumn();
 if (!$rol) { http_response_code(401); exit; }
 
 if ($rol === 'admin') {
-    $stmt = $pdo->prepare('SELECT ruta FROM materiales WHERE id = ? AND tipo = "video"');
+    $stmt = $pdo->prepare('SELECT ruta, nombre FROM materiales WHERE id = ? AND tipo = "video"');
     $stmt->execute([$materialId]);
     $mat = $stmt->fetch();
 } else {
     // Alumno: verificar que está matriculado en el curso del material
     $stmt = $pdo->prepare(
-        'SELECT m.ruta FROM materiales m
+        'SELECT m.ruta, m.nombre FROM materiales m
          INNER JOIN temas t ON t.id = m.tema_id
          INNER JOIN usuarios_cursos uc ON uc.curso_id = t.curso_id
          INNER JOIN cursos c ON c.id = t.curso_id
@@ -75,6 +75,42 @@ header('Content-Encoding: identity');
 header('Accept-Ranges: bytes');
 header('Cache-Control: no-store, no-cache');
 header('X-Content-Type-Options: nosniff');
+
+// Modo descarga: solo permitido para admin. Fuerza al navegador a
+// guardar el archivo con su nombre original en lugar de reproducirlo
+// en línea. Los alumnos NO pueden descargar aunque pasen ?descarga=1
+// (la condición exige $rol === 'admin', validado por token).
+if (!empty($_GET['descarga']) && $rol === 'admin') {
+    // Saneamiento del nombre antes de meterlo en una cabecera HTTP:
+    //  - quitar CR/LF/comillas/backslashes (response-splitting)
+    //  - quitar separadores de ruta y secuencias ".." (path injection
+    //    en el lado cliente al sugerir un nombre de archivo)
+    //  - colapsar a un fallback seguro si queda vacío
+    $bruto        = $mat['nombre'] ?? 'video.mp4';
+    $sinControl   = preg_replace('/[\x00-\x1F\x7F"\\\\]/', '', $bruto);
+    $sinSlash     = str_replace(['/', '\\'], '', $sinControl);
+    $nombreSeguro = trim(str_replace('..', '', $sinSlash));
+    if ($nombreSeguro === '') {
+        $nombreSeguro = 'video.mp4';
+    }
+
+    // RFC 6266: filename para clientes legacy + filename* UTF-8
+    $nombreUtf8 = rawurlencode($nombreSeguro);
+    header("Content-Disposition: attachment; filename=\"$nombreSeguro\"; filename*=UTF-8''$nombreUtf8");
+
+    // Solo registramos la descarga si NO es una petición Range:
+    // los reproductores de algunos navegadores piden por chunks y
+    // no queremos N entradas en el log por un solo "Descargar".
+    if (!isset($_SERVER['HTTP_RANGE'])) {
+        require_once __DIR__ . '/log-helper.php';
+        registrar_log(
+            $pdo,
+            'video_descargado',
+            'Descargado vídeo "' . $nombreSeguro . '" (material ID ' . $materialId . ')',
+            $usuarioId,
+        );
+    }
+}
 
 // Soporte de range requests (necesario para seek en el reproductor)
 if (isset($_SERVER['HTTP_RANGE'])) {

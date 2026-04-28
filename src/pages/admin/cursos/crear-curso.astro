@@ -330,6 +330,15 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
   color: #c33; font-size: 0.65rem; flex-shrink: 0; padding: 0;
 }
 .mat-del:hover { background: #fdf0f0; }
+.mat-rename, .mat-descarga {
+  width: 22px; height: 22px; border-radius: 5px;
+  border: 1px solid #e8eeec; background: #fff;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: #666; flex-shrink: 0; padding: 0; text-decoration: none;
+}
+.mat-rename:hover, .mat-descarga:hover {
+  background: var(--color-light); border-color: var(--color-primary); color: var(--color-text);
+}
 
 /* Zona de subida */
 .upload-row {
@@ -416,6 +425,17 @@ function urlMaterial(mat: { id: number; tipo: string; ruta: string }): string {
     if (!ses.userId || !ses.token) return mat.ruta;
     return `/api/video.php?material_id=${mat.id}&usuario_id=${ses.userId}&token=${encodeURIComponent(ses.token)}`;
   } catch { return mat.ruta; }
+}
+
+// URL para forzar descarga del vídeo. Solo el admin puede usarla; el
+// servidor valida el rol contra BD antes de aceptar el flag &descarga=1
+// y registra cada descarga en el log de actividad.
+function urlDescargaVideo(mat: { id: number }): string {
+  try {
+    const ses = JSON.parse(sessionStorage.getItem('umme_session') || '{}');
+    if (!ses.userId || !ses.token) return '';
+    return `/api/video.php?material_id=${mat.id}&usuario_id=${ses.userId}&token=${encodeURIComponent(ses.token)}&descarga=1`;
+  } catch { return ''; }
 }
 
 const msgGlobal = document.getElementById('msg-global') as HTMLDivElement;
@@ -832,10 +852,19 @@ function crearFilaMat(mat: any): HTMLElement {
   div.className = 'mat-fila';
 
   function renderNormal() {
+    // Botón descarga solo para vídeos (los documentos ya se sirven directos).
+    const btnDescargaHTML = mat.tipo === 'video'
+      ? `<a class="mat-descarga" href="${urlDescargaVideo(mat)}" download="${mat.nombre}" title="Descargar">
+           <svg viewBox="0 0 14 14" fill="none" width="13" height="13">
+             <path d="M7 1.5v8M3.5 6L7 9.5 10.5 6M2 12h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+           </svg>
+         </a>`
+      : '';
     div.innerHTML = `
       <span class="mat-icono">${icono}</span>
       <a href="${urlMaterial(mat)}" target="_blank" class="mat-nombre" title="${mat.nombre}">${mat.nombre}</a>
       <span class="mat-tam">${kb}</span>
+      ${btnDescargaHTML}
       <button class="mat-rename" title="Renombrar">
         <svg viewBox="0 0 14 14" fill="none" width="13" height="13">
           <path d="M9.5 2.5l2 2-7 7H2.5v-2l7-7z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>

@@ -16,6 +16,10 @@ const ADMIN_EMAIL = process.env.TEST_ADMIN_EMAIL || process.env.TEST_ALUMNO_EMAI
 const ADMIN_PASS  = process.env.TEST_ADMIN_PASS  || process.env.TEST_ALUMNO_PASS;
 const TOKEN_FALSO = 'a'.repeat(64); // 64 hex chars, formato válido pero inexistente en BD
 
+// Modo serial: cada login regenera el token del usuario en BD, así que
+// dos tests con login en paralelo se invalidan el token mutuamente.
+test.describe.configure({ mode: 'serial' });
+
 test.describe('Seguridad de /api/video.php', () => {
   test('sin token → 401', async ({ request }) => {
     const res = await request.get('/api/video.php?material_id=43&usuario_id=1');
@@ -67,5 +71,28 @@ test.describe('Seguridad de /api/video.php', () => {
     );
     expect([200, 206]).toContain(res.status());
     expect(res.headers()['content-type']).toContain('video/');
+  });
+
+  test('admin con &descarga=1 → respuesta incluye Content-Disposition: attachment', async ({ request }) => {
+    test.skip(!ADMIN_EMAIL || !ADMIN_PASS, 'Credenciales no configuradas');
+    const login = await request.post('/api/login.php', {
+      data: { email: ADMIN_EMAIL, contrasena: ADMIN_PASS },
+    });
+    const data = await login.json();
+    expect(data.ok).toBe(true);
+
+    const res = await request.get(
+      `/api/video.php?material_id=43&usuario_id=${data.id}&token=${data.token}&descarga=1`,
+      { headers: { Range: 'bytes=0-1023' } },
+    );
+    expect([200, 206]).toContain(res.status());
+    const cd = res.headers()['content-disposition'] ?? '';
+    expect(cd, 'debe forzar attachment con nombre').toContain('attachment');
+    expect(cd).toMatch(/filename=/);
+  });
+
+  test('descarga sin token → 401 (no se puede descargar sin estar autenticado)', async ({ request }) => {
+    const res = await request.get('/api/video.php?material_id=43&usuario_id=1&descarga=1');
+    expect(res.status()).toBe(401);
   });
 });
