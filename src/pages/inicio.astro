@@ -475,7 +475,7 @@ function seleccionarTema(tema: any, liEl: HTMLElement) {
 
   const videoMat = (tema.materiales ?? []).find((m: any) => m.tipo === 'video');
   if (videoMat) {
-    videoPlayer.src                = `/api/video.php?material_id=${videoMat.id}&usuario_id=${sesion.userId}`;
+    videoPlayer.src                = `/api/video.php?material_id=${videoMat.id}&usuario_id=${sesion.userId}&token=${encodeURIComponent(sesion.token || '')}`;
     videoPlayer.style.display      = 'block';
     videoPlaceholder.style.display = 'none';
   } else {

@@ -97,7 +97,9 @@ if (!empty($usuario['fecha_baja']) && $usuario['fecha_baja'] < date('Y-m-d')) {
 $pdo->prepare('DELETE FROM login_intentos WHERE ip = :ip')->execute([':ip' => $ip]);
 
 $token   = bin2hex(random_bytes(32)); // 64 chars
-$expira  = date('Y-m-d H:i:s', strtotime('+8 hours'));
+// 15 días: cubre tanto la sesión efímera de 8 h como la persistente
+// del checkbox "Recordarme" (15 días en localStorage).
+$expira  = date('Y-m-d H:i:s', strtotime('+15 days'));
 $pdo->prepare('UPDATE usuarios SET token_sesion = :t, token_expira = :e WHERE id = :id')
     ->execute([':t' => $token, ':e' => $expira, ':id' => $usuario['id']]);
 

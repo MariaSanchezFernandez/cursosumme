@@ -11,17 +11,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
 $materialId = isset($_GET['material_id']) ? (int)$_GET['material_id'] : 0;
 $usuarioId  = isset($_GET['usuario_id'])  ? (int)$_GET['usuario_id']  : 0;
+$token      = isset($_GET['token'])       ? (string)$_GET['token']    : '';
 
 if (!$materialId || !$usuarioId) { http_response_code(400); exit; }
 
 require_once __DIR__ . '/db-connect.php';
 $pdo = obtenerPDO();
 
-// Si quien pide el vídeo es admin, le dejamos ver cualquier vídeo (para
-// previsualizar materiales subidos sin necesidad de estar matriculado).
-$rolStmt = $pdo->prepare('SELECT rol FROM usuarios WHERE id = ?');
-$rolStmt->execute([$usuarioId]);
-$rol = $rolStmt->fetchColumn();
+// Verificación de identidad real: el cliente debe presentar el token
+// emitido por /api/login.php. Sin token válido + no expirado, 401.
+// Esto cierra el agujero de poder pasar usuario_id=1 (un admin
+// conocido) y colarse para ver vídeos. El token también se acepta
+// vía Authorization: Bearer <token> para llamadas de JS.
+$auth = isset($_SERVER['HTTP_AUTHORIZATION']) ? trim($_SERVER['HTTP_AUTHORIZATION']) : '';
+if ($token === '' && stripos($auth, 'Bearer ') === 0) {
+    $token = substr($auth, 7);
+}
+if ($token === '' || !preg_match('/^[a-f0-9]{64}$/', $token)) {
+    http_response_code(401); exit;
+}
+
+$authStmt = $pdo->prepare(
+    'SELECT rol FROM usuarios
+     WHERE id = :id AND token_sesion = :t AND token_expira > NOW()'
+);
+$authStmt->execute([':id' => $usuarioId, ':t' => $token]);
+$rol = $authStmt->fetchColumn();
+if (!$rol) { http_response_code(401); exit; }
 
 if ($rol === 'admin') {
     $stmt = $pdo->prepare('SELECT ruta FROM materiales WHERE id = ? AND tipo = "video"');

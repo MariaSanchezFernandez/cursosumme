@@ -405,15 +405,16 @@ let cursoId = 0;
 let imagenUrl = '';
 
 // El directorio /uploads/videos/ está bloqueado por .htaccess. Para
-// previsualizar un vídeo subido, hay que pasar por /api/video.php
-// con el id del admin de la sesión (el endpoint deja a admins ver
-// cualquier vídeo). Documentos sí se sirven directos.
+// previsualizar un vídeo subido, hay que pasar por /api/video.php,
+// que valida el token de sesión emitido por /api/login.php. Sin
+// token válido el endpoint responde 401 — así nadie puede colarse
+// pasando un usuario_id de admin. Documentos sí se sirven directos.
 function urlMaterial(mat: { id: number; tipo: string; ruta: string }): string {
   if (mat.tipo !== 'video') return mat.ruta;
   try {
     const ses = JSON.parse(sessionStorage.getItem('umme_session') || '{}');
-    if (!ses.userId) return mat.ruta;
-    return `/api/video.php?material_id=${mat.id}&usuario_id=${ses.userId}`;
+    if (!ses.userId || !ses.token) return mat.ruta;
+    return `/api/video.php?material_id=${mat.id}&usuario_id=${ses.userId}&token=${encodeURIComponent(ses.token)}`;
   } catch { return mat.ruta; }
 }
 
