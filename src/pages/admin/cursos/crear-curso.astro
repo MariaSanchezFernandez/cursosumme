@@ -404,6 +404,19 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
 let cursoId = 0;
 let imagenUrl = '';
 
+// El directorio /uploads/videos/ está bloqueado por .htaccess. Para
+// previsualizar un vídeo subido, hay que pasar por /api/video.php
+// con el id del admin de la sesión (el endpoint deja a admins ver
+// cualquier vídeo). Documentos sí se sirven directos.
+function urlMaterial(mat: { id: number; tipo: string; ruta: string }): string {
+  if (mat.tipo !== 'video') return mat.ruta;
+  try {
+    const ses = JSON.parse(sessionStorage.getItem('umme_session') || '{}');
+    if (!ses.userId) return mat.ruta;
+    return `/api/video.php?material_id=${mat.id}&usuario_id=${ses.userId}`;
+  } catch { return mat.ruta; }
+}
+
 const msgGlobal = document.getElementById('msg-global') as HTMLDivElement;
 function mostrarMsg(texto: string, tipo: 'ok' | 'error') {
   msgGlobal.textContent      = texto;
@@ -820,7 +833,7 @@ function crearFilaMat(mat: any): HTMLElement {
   function renderNormal() {
     div.innerHTML = `
       <span class="mat-icono">${icono}</span>
-      <a href="${mat.ruta}" target="_blank" class="mat-nombre" title="${mat.nombre}">${mat.nombre}</a>
+      <a href="${urlMaterial(mat)}" target="_blank" class="mat-nombre" title="${mat.nombre}">${mat.nombre}</a>
       <span class="mat-tam">${kb}</span>
       <button class="mat-rename" title="Renombrar">
         <svg viewBox="0 0 14 14" fill="none" width="13" height="13">

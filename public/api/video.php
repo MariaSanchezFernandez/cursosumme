@@ -17,17 +17,29 @@ if (!$materialId || !$usuarioId) { http_response_code(400); exit; }
 require_once __DIR__ . '/db-connect.php';
 $pdo = obtenerPDO();
 
-// Verificar que el usuario tiene acceso al curso que contiene este material
-$stmt = $pdo->prepare(
-    'SELECT m.ruta FROM materiales m
-     INNER JOIN temas t ON t.id = m.tema_id
-     INNER JOIN usuarios_cursos uc ON uc.curso_id = t.curso_id
-     INNER JOIN cursos c ON c.id = t.curso_id
-     WHERE m.id = :mid AND m.tipo = "video"
-       AND uc.usuario_id = :uid AND c.activo = 1'
-);
-$stmt->execute([':mid' => $materialId, ':uid' => $usuarioId]);
-$mat = $stmt->fetch();
+// Si quien pide el vídeo es admin, le dejamos ver cualquier vídeo (para
+// previsualizar materiales subidos sin necesidad de estar matriculado).
+$rolStmt = $pdo->prepare('SELECT rol FROM usuarios WHERE id = ?');
+$rolStmt->execute([$usuarioId]);
+$rol = $rolStmt->fetchColumn();
+
+if ($rol === 'admin') {
+    $stmt = $pdo->prepare('SELECT ruta FROM materiales WHERE id = ? AND tipo = "video"');
+    $stmt->execute([$materialId]);
+    $mat = $stmt->fetch();
+} else {
+    // Alumno: verificar que está matriculado en el curso del material
+    $stmt = $pdo->prepare(
+        'SELECT m.ruta FROM materiales m
+         INNER JOIN temas t ON t.id = m.tema_id
+         INNER JOIN usuarios_cursos uc ON uc.curso_id = t.curso_id
+         INNER JOIN cursos c ON c.id = t.curso_id
+         WHERE m.id = :mid AND m.tipo = "video"
+           AND uc.usuario_id = :uid AND c.activo = 1'
+    );
+    $stmt->execute([':mid' => $materialId, ':uid' => $usuarioId]);
+    $mat = $stmt->fetch();
+}
 
 if (!$mat) { http_response_code(403); exit; }
 
