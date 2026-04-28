@@ -172,6 +172,31 @@ test.describe('Recordarme: flujo end-to-end con credenciales', () => {
     await ctx2.close();
   });
 
+  test('Recordarme + volver a / lleva directamente al área privada (sin pasar por el formulario)', async ({ browser }) => {
+    // Reproduce el caso real: la usuaria abre el navegador y va a la home,
+    // no directamente a /admin o /inicio. Si "Recordarme" funciona, no
+    // debe ver el formulario de login: debe redirigirse al área privada.
+    const ctx1  = await browser.newContext();
+    const page1 = await ctx1.newPage();
+    const destino = await loginYDetectarDestino(page1, true);
+
+    const storageState = await ctx1.storageState();
+    await ctx1.close();
+
+    const ctx2  = await browser.newContext({ storageState });
+    const page2 = await ctx2.newPage();
+
+    // Voy a la home (igual que cuando abres cursosumme.es en el navegador)
+    await page2.goto('/');
+    // Tras hidratar la sesión persistente, la home debe redirigir al área
+    await page2.waitForURL((url) => url.pathname.replace(/\/+$/, '') === destino, {
+      timeout: 10_000,
+    });
+    expect(new URL(page2.url()).pathname.replace(/\/+$/, '')).toBe(destino);
+
+    await ctx2.close();
+  });
+
   test('login con checkbox DESMARCADO → al "cerrar y reabrir" el navegador, la sesión se pierde', async ({ browser }) => {
     const ctx1  = await browser.newContext();
     const page1 = await ctx1.newPage();

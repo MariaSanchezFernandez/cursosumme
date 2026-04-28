@@ -12,6 +12,26 @@ import '../styles/index.css';
 ---
 
 <Plantilla>
+  <!-- Si ya hay sesión vigente (efímera o "Recordarme"), saltar el formulario
+       y llevar al usuario directamente a su área privada. La hidratación de
+       Plantilla ya copió localStorage→sessionStorage si correspondía, así que
+       basta con leer sessionStorage. -->
+  <script is:inline>
+  (function () {
+    try {
+      var raw = sessionStorage.getItem('umme_session');
+      if (!raw) return;
+      var s = JSON.parse(raw);
+      if (!s || !s.exp || Date.now() > s.exp) {
+        sessionStorage.removeItem('umme_session');
+        localStorage.removeItem('umme_session');
+        return;
+      }
+      window.location.replace(s.rol === 'admin' ? '/admin' : '/inicio');
+    } catch (e) {}
+  })();
+  </script>
+
   <FondoLogin />
   <main class="login-page">
     <TarjetaLogin />
