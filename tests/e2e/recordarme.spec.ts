@@ -114,16 +114,36 @@ test.describe('Recordarme: flujo end-to-end con credenciales', () => {
     'Define TEST_ALUMNO_EMAIL y TEST_ALUMNO_PASS para correr este flujo',
   );
 
+  // Tras hacer login, según el rol del usuario el sitio redirige a
+  // /inicio (alumno) o /admin (admin). El test detecta la URL real
+  // de destino y la reutiliza en el segundo paso, así sirve para
+  // cualquiera de los dos roles.
+  async function loginYDetectarDestino(
+    page: import('@playwright/test').Page,
+    marcarRecordarme: boolean,
+  ): Promise<string> {
+    await page.goto('/');
+    await page.locator('#email').fill(ALUMNO_EMAIL!);
+    await page.locator('#password').fill(ALUMNO_PASS!);
+    if (marcarRecordarme) await page.locator('#recordarme').check();
+    await page.locator('button[type="submit"]').click();
+
+    // Esperamos hasta que la URL deje de ser la del login.
+    await page.waitForURL((url) => url.pathname !== '/' && url.pathname !== '', {
+      timeout: 15_000,
+    });
+    // Astro sirve index.html, así que las rutas vienen con barra final
+    // (`/admin/`, `/inicio/`). Normalizamos para comparar y para reusar.
+    const destino = new URL(page.url()).pathname.replace(/\/+$/, '') || '/';
+    expect(['/inicio', '/admin']).toContain(destino);
+    return destino;
+  }
+
   test('login con checkbox MARCADO → la sesión persiste tras "cerrar y reabrir" el navegador', async ({ browser }) => {
     // 1) Primer contexto: hago login marcando "Recordarme"
     const ctx1  = await browser.newContext();
     const page1 = await ctx1.newPage();
-    await page1.goto('/');
-    await page1.locator('#email').fill(ALUMNO_EMAIL!);
-    await page1.locator('#password').fill(ALUMNO_PASS!);
-    await page1.locator('#recordarme').check();
-    await page1.locator('button[type="submit"]').click();
-    await page1.waitForURL('**/inicio', { timeout: 15_000 });
+    const destino = await loginYDetectarDestino(page1, true);
 
     // 2) La sesión debe estar tanto en sessionStorage como en localStorage
     const localTrasLogin   = await page1.evaluate(() => localStorage.getItem('umme_session'));
@@ -141,9 +161,9 @@ test.describe('Recordarme: flujo end-to-end con credenciales', () => {
     const page2 = await ctx2.newPage();
 
     // 5) Voy directo al área privada. Si "Recordarme" funciona, NO me echa al login.
-    await page2.goto('/inicio');
+    await page2.goto(destino);
     await page2.waitForLoadState('networkidle');
-    expect(page2.url(), 'tras reabrir el navegador, /inicio debe seguir abierta').toContain('/inicio');
+    expect(page2.url(), `tras reabrir el navegador, ${destino} debe seguir abierta`).toContain(destino);
 
     // Y el script de hidratación habrá rellenado sessionStorage de nuevo
     const sessionRehidratada = await page2.evaluate(() => sessionStorage.getItem('umme_session'));
@@ -155,12 +175,7 @@ test.describe('Recordarme: flujo end-to-end con credenciales', () => {
   test('login con checkbox DESMARCADO → al "cerrar y reabrir" el navegador, la sesión se pierde', async ({ browser }) => {
     const ctx1  = await browser.newContext();
     const page1 = await ctx1.newPage();
-    await page1.goto('/');
-    await page1.locator('#email').fill(ALUMNO_EMAIL!);
-    await page1.locator('#password').fill(ALUMNO_PASS!);
-    // Sin marcar el checkbox
-    await page1.locator('button[type="submit"]').click();
-    await page1.waitForURL('**/inicio', { timeout: 15_000 });
+    const destino = await loginYDetectarDestino(page1, false);
 
     // Sin "Recordarme": NO debe haber sesión en localStorage
     const localTrasLogin = await page1.evaluate(() => localStorage.getItem('umme_session'));
@@ -172,10 +187,10 @@ test.describe('Recordarme: flujo end-to-end con credenciales', () => {
     const ctx2  = await browser.newContext({ storageState });
     const page2 = await ctx2.newPage();
 
-    // Sin sesión persistente, /inicio debe redirigir al login
-    await page2.goto('/inicio');
-    await page2.waitForURL('**/', { timeout: 10_000 });
-    expect(page2.url().replace(/\/$/, '')).toBe('http://cursosumme.es');
+    // Sin sesión persistente, el área privada debe redirigir al login (/)
+    await page2.goto(destino);
+    await page2.waitForURL((url) => url.pathname === '/', { timeout: 10_000 });
+    expect(new URL(page2.url()).pathname).toBe('/');
 
     await ctx2.close();
   });
