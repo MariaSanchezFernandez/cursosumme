@@ -59,18 +59,59 @@ $MAX_TOTAL = 2048 * 1024 * 1024;
 
 // Directorio temporal para los chunks de este upload
 $docRoot = rtrim($_SERVER['DOCUMENT_ROOT'], '/');
-$tmpDir  = $docRoot . "/uploads/.tmp-uploads/{$uploadId}";
+$tmpRoot = $docRoot . '/uploads/.tmp-uploads';
+$tmpDir  = $tmpRoot . '/' . $uploadId;
+
+// Limpieza preventiva: en uploads previos abortados quedan dirs
+// huérfanos en .tmp-uploads consumiendo cuota. Se borran los que
+// llevan inactivos > 6 h (uploads grandes pueden tardar minutos,
+// pero ninguno legítimo dura tantas horas).
+if (is_dir($tmpRoot) && $chunkIndex === 0) {
+    $umbral = time() - 6 * 3600;
+    foreach (glob($tmpRoot . '/*', GLOB_ONLYDIR) ?: [] as $orfano) {
+        if (@filemtime($orfano) > $umbral) {
+            continue;
+        }
+        foreach (glob($orfano . '/*') ?: [] as $f) {
+            @unlink($f);
+        }
+        @rmdir($orfano);
+    }
+}
 if (!is_dir($tmpDir)) {
-    if (!mkdir($tmpDir, 0755, true) && !is_dir($tmpDir)) {
-        echo json_encode(['ok' => false, 'mensaje' => 'No se pudo crear el directorio temporal']);
+    if (!@mkdir($tmpDir, 0755, true) && !is_dir($tmpDir)) {
+        $err = error_get_last();
+        echo json_encode([
+            'ok'          => false,
+            'mensaje'     => 'No se pudo crear el directorio temporal',
+            'diagnostico' => [
+                'tmp_root_existe'  => is_dir($tmpRoot),
+                'tmp_root_escribe' => is_writable($tmpRoot),
+                'doc_root'         => $docRoot,
+                'php_error'        => $err['message'] ?? null,
+                'disco_libre_mb'   => (int)floor(@disk_free_space($docRoot) / 1024 / 1024),
+            ],
+        ]);
         exit;
     }
 }
 
 // Mover el chunk recibido a su posición
 $chunkPath = $tmpDir . '/' . $chunkIndex . '.part';
-if (!move_uploaded_file($_FILES['chunk']['tmp_name'], $chunkPath)) {
-    echo json_encode(['ok' => false, 'mensaje' => 'No se pudo guardar el chunk']);
+if (!@move_uploaded_file($_FILES['chunk']['tmp_name'], $chunkPath)) {
+    $err = error_get_last();
+    echo json_encode([
+        'ok'          => false,
+        'mensaje'     => 'No se pudo guardar el chunk',
+        'diagnostico' => [
+            'tmp_dir_existe'  => is_dir($tmpDir),
+            'tmp_dir_escribe' => is_writable($tmpDir),
+            'tmp_existe'      => is_file($_FILES['chunk']['tmp_name']),
+            'tmp_size'        => @filesize($_FILES['chunk']['tmp_name']),
+            'php_error'       => $err['message'] ?? null,
+            'disco_libre_mb'  => (int)floor(@disk_free_space($tmpDir) / 1024 / 1024),
+        ],
+    ]);
     exit;
 }
 

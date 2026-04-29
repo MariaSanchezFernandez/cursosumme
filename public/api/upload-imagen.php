@@ -49,15 +49,31 @@ if ($_FILES['archivo']['size'] > 5 * 1024 * 1024) {
 
 $dirDestino = rtrim($_SERVER['DOCUMENT_ROOT'], '/') . '/uploads/imagenes/';
 if (!is_dir($dirDestino)) {
-    mkdir($dirDestino, 0755, true);
+    @mkdir($dirDestino, 0755, true);
 }
 
 $nombreFinal = 'portada_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $extension;
 $rutaFisica  = $dirDestino . $nombreFinal;
 $rutaWeb     = '/uploads/imagenes/' . $nombreFinal;
 
-if (!move_uploaded_file($_FILES['archivo']['tmp_name'], $rutaFisica)) {
-    echo json_encode(['ok' => false, 'mensaje' => 'No se pudo guardar la imagen en el servidor']);
+// Diagnóstico: si falla el move, devolvemos detalles concretos para
+// poder distinguir entre permisos, espacio en disco, ruta inexistente,
+// archivo origen perdido, etc. Solo se exponen al admin (UI bajo guard
+// de rol), nunca al alumno.
+if (!@move_uploaded_file($_FILES['archivo']['tmp_name'], $rutaFisica)) {
+    $err  = error_get_last();
+    $diag = [
+        'destino_existe'  => is_dir($dirDestino),
+        'destino_escribe' => is_writable($dirDestino),
+        'tmp_existe'      => is_file($_FILES['archivo']['tmp_name']),
+        'tmp_size'        => @filesize($_FILES['archivo']['tmp_name']),
+        'php_error'       => $err['message'] ?? null,
+    ];
+    echo json_encode([
+        'ok'         => false,
+        'mensaje'    => 'No se pudo guardar la imagen en el servidor',
+        'diagnostico' => $diag,
+    ]);
     exit;
 }
 

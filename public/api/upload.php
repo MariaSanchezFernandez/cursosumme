@@ -80,8 +80,21 @@ $nombreFinal  = 'tema' . $temaId . '_' . time() . '_' . $nombreSeguro;
 $rutaFisica   = $dirDestino . $nombreFinal;
 $rutaWeb      = "/uploads/{$subdirectorio}/{$nombreFinal}";
 
-if (!move_uploaded_file($_FILES['archivo']['tmp_name'], $rutaFisica)) {
-    echo json_encode(['ok' => false, 'mensaje' => 'No se pudo guardar el archivo en el servidor']);
+if (!@move_uploaded_file($_FILES['archivo']['tmp_name'], $rutaFisica)) {
+    $err  = error_get_last();
+    $diag = [
+        'destino_existe'  => is_dir($dirDestino),
+        'destino_escribe' => is_writable($dirDestino),
+        'tmp_existe'      => is_file($_FILES['archivo']['tmp_name']),
+        'tmp_size'        => @filesize($_FILES['archivo']['tmp_name']),
+        'php_error'       => $err['message'] ?? null,
+        'disco_libre_mb'  => (int)floor(@disk_free_space($dirDestino) / 1024 / 1024),
+    ];
+    echo json_encode([
+        'ok'          => false,
+        'mensaje'     => 'No se pudo guardar el archivo en el servidor',
+        'diagnostico' => $diag,
+    ]);
     exit;
 }
 

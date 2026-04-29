@@ -561,14 +561,21 @@ async function subirImagen(file: File) {
   try {
     const res  = await fetch('/api/upload-imagen.php', { method: 'POST', body: fd });
     const data = await res.json();
-    if (!data.ok) throw new Error(data.mensaje);
+    if (!data.ok) {
+      const e: Error & { diagnostico?: unknown } = new Error(data.mensaje);
+      e.diagnostico = data.diagnostico;
+      throw e;
+    }
     mostrarImagen(data.ruta);
     imagenMsg.style.display = 'none';
     if (typeof marcarDirty === 'function') marcarDirty();
   } catch (err: any) {
     imagenMsg.style.color = '#c33';
     imagenMsg.textContent = err.message || 'Error al subir la imagen';
-    (window as any).logAppError?.('upload_imagen', 'Fallo subiendo imagen de curso', { detalle: err?.message, stack: err?.stack });
+    const detalle = err?.diagnostico
+      ? `${err.message ?? ''} · diag=${JSON.stringify(err.diagnostico)}`
+      : err?.message;
+    (window as any).logAppError?.('upload_imagen', 'Fallo subiendo imagen de curso', { detalle, stack: err?.stack });
   }
 }
 
@@ -1212,7 +1219,10 @@ function subirArchivoChunked(
 
       if (!resultado.data?.ok) {
         mostrarMsg(resultado.data?.mensaje || `Error al procesar el chunk ${i + 1}`, 'error');
-        (window as any).logAppError?.('upload', `Chunk ${i} rechazado: ${resultado.data?.mensaje || 'sin mensaje'}`, { detalle });
+        const detalleConDiag = resultado.data?.diagnostico
+          ? `${detalle} · diag=${JSON.stringify(resultado.data.diagnostico)}`
+          : detalle;
+        (window as any).logAppError?.('upload', `Chunk ${i} rechazado: ${resultado.data?.mensaje || 'sin mensaje'}`, { detalle: detalleConDiag });
         resolve(); return;
       }
 
@@ -1277,7 +1287,10 @@ function subirArchivo(
         const data = JSON.parse(xhr.responseText);
         if (!data.ok) {
           mostrarMsg(data.mensaje || 'Error al subir el archivo', 'error');
-          (window as any).logAppError?.('upload', `Upload rechazado: ${data.mensaje || 'sin mensaje'}`, { detalle });
+          const detalleConDiag = data.diagnostico
+            ? `${detalle} · diag=${JSON.stringify(data.diagnostico)}`
+            : detalle;
+          (window as any).logAppError?.('upload', `Upload rechazado: ${data.mensaje || 'sin mensaje'}`, { detalle: detalleConDiag });
           resolve(); return;
         }
 
