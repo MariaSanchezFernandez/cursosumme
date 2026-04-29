@@ -27,7 +27,7 @@ if ($metodo === 'GET') {
         exit;
     }
     $stmt = $pdo->prepare(
-        'SELECT id, tipo, nombre, ruta, tamano_kb, subido_en FROM materiales WHERE tema_id = :tema_id ORDER BY subido_en ASC'
+        'SELECT id, tipo, nombre, ruta, tamano_kb, duracion_seg, subido_en FROM materiales WHERE tema_id = :tema_id ORDER BY subido_en ASC'
     );
     $stmt->execute([':tema_id' => $temaId]);
     echo json_encode(['ok' => true, 'materiales' => $stmt->fetchAll()]);

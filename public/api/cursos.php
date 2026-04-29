@@ -21,9 +21,17 @@ $metodo = $_SERVER['REQUEST_METHOD'];
 
 // ── GET ──────────────────────────────────────────────────────
 if ($metodo === 'GET') {
+    // duracion_seg = suma de duracion_seg de cada material en cada
+    // tema del curso. Se usa una subquery porque hacer LEFT JOIN a
+    // materiales junto al de temas multiplicaría filas y rompería
+    // el COUNT(t.id) AS num_temas.
     $stmt = $pdo->query(
         'SELECT c.id, c.titulo, c.descripcion, c.etiqueta, c.nivel, c.duracion, c.pack, c.pack_color, c.color, c.imagen, c.activo, c.creado_en,
-                COUNT(t.id) AS num_temas
+                COUNT(t.id) AS num_temas,
+                (SELECT COALESCE(SUM(m.duracion_seg), 0)
+                 FROM materiales m
+                 INNER JOIN temas tt ON tt.id = m.tema_id
+                 WHERE tt.curso_id = c.id) AS duracion_seg
          FROM cursos c
          LEFT JOIN temas t ON t.curso_id = c.id
          GROUP BY c.id

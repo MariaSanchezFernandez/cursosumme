@@ -301,7 +301,7 @@ function renderCursos(cursos: any[]) {
 
     listaCursosPack.forEach((curso: any) => {
       const numTemas = curso.temas?.length ?? 0;
-      const durTotal = calcularDuracionTotal(curso.temas ?? []);
+      const durTotal = calcularDuracionTotal(curso.temas ?? [], curso.duracion_seg);
 
       const completados = (curso.temas ?? []).filter((t: any) => visitedIds.has(Number(t.id))).length;
       const pct = numTemas > 0 ? Math.round(completados / numTemas * 100) : 0;
@@ -344,17 +344,50 @@ function renderCursos(cursos: any[]) {
   });
 }
 
-// ── Duración total del curso (suma de minutos de temas) ───────
-function calcularDuracionTotal(temas: any[]): string {
-  let totalMin = 0;
-  for (const t of temas) {
-    const num = parseInt(t.duracion);
-    if (!isNaN(num)) totalMin += num;
-  }
-  if (!totalMin) return '';
-  const h = Math.floor(totalMin / 60);
-  const m = totalMin % 60;
+// ── Formato humano de una duración en segundos ───────────────
+// Redondea al minuto más cercano y devuelve "2h 5min" / "45 min" /
+// "" para 0 segundos. Es la fuente única de verdad de cómo se
+// presenta una duración al alumno.
+function formatearDuracion(segundos: number): string {
+  if (!segundos || segundos <= 0) return '';
+  const mins = Math.round(segundos / 60);
+  if (mins <= 0) return '';
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
   return h > 0 ? (m > 0 ? `${h}h ${m}min` : `${h}h`) : `${m} min`;
+}
+
+// ── Duración total del curso ─────────────────────────────────
+// 1º: si la API trae curso.duracion_seg (calculada en BD a partir
+//     de los vídeos), úsala — es exacta.
+// 2º: si no, sumar duracion_seg de cada tema.
+// 3º: por compatibilidad con cursos antiguos sin vídeos
+//     instrumentados, si no hay segundos pero los temas tienen
+//     t.duracion textual, sumar los minutos parseados.
+function calcularDuracionTotal(temas: any[], cursoSeg?: number): string {
+  if (cursoSeg && cursoSeg > 0) return formatearDuracion(cursoSeg);
+  let totalSeg = 0;
+  let totalMinFallback = 0;
+  for (const t of temas) {
+    if (typeof t.duracion_seg === 'number' && t.duracion_seg > 0) {
+      totalSeg += t.duracion_seg;
+    } else {
+      const n = parseInt(t.duracion);
+      if (!isNaN(n)) totalMinFallback += n;
+    }
+  }
+  if (totalSeg > 0) return formatearDuracion(totalSeg + totalMinFallback * 60);
+  if (totalMinFallback > 0) return formatearDuracion(totalMinFallback * 60);
+  return '';
+}
+
+// Duración a mostrar para un tema concreto: prefiere los segundos
+// reales si existen, si no cae al texto manual t.duracion.
+function duracionTemaTexto(t: any): string {
+  if (typeof t.duracion_seg === 'number' && t.duracion_seg > 0) {
+    return formatearDuracion(t.duracion_seg);
+  }
+  return t.duracion ? `${t.duracion} min` : '';
 }
 
 // ── Abrir panel de detalle ────────────────────────────────────
@@ -397,7 +430,7 @@ function abrirCurso(curso: any, articleEl: HTMLElement) {
         </span>
         <span class="tema-info">
           <span class="tema-texto">${idx + 1}. ${tema.titulo}</span>
-          ${tema.duracion ? `<span class="tema-dur">${tema.duracion} min</span>` : ''}
+          ${(() => { const d = duracionTemaTexto(tema); return d ? `<span class="tema-dur">${d}</span>` : ''; })()}
         </span>
       </button>
     `;
@@ -433,7 +466,7 @@ function abrirCurso(curso: any, articleEl: HTMLElement) {
         <span class="intro-tema-titulo">${tema.titulo}</span>
         ${tema.descripcion?.trim() ? `<span class="intro-tema-desc">${stripHtml(tema.descripcion.trim(), 80)}</span>` : ''}
         <span class="intro-tema-dur">
-          ${tieneVideo ? '▶ Video · ' : ''}${tema.duracion ? tema.duracion + ' min' : ''}
+          ${tieneVideo ? '▶ Video · ' : ''}${duracionTemaTexto(tema)}
         </span>
       </span>
       <svg viewBox="0 0 16 16" fill="none" width="14" height="14" style="flex-shrink:0;color:#ccc">

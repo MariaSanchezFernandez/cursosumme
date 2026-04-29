@@ -38,6 +38,11 @@ ejecutar($pdo, 'ALTER TABLE cursos ADD COLUMN IF NOT EXISTS descripcion TEXT    
 ejecutar($pdo, 'ALTER TABLE temas  ADD COLUMN IF NOT EXISTS descripcion TEXT         DEFAULT NULL', 'descripcion en temas', $resultados);
 ejecutar($pdo, 'ALTER TABLE temas  ADD COLUMN IF NOT EXISTS color       VARCHAR(20)  DEFAULT NULL', 'color en temas', $resultados);
 ejecutar($pdo, 'ALTER TABLE temas  ADD COLUMN IF NOT EXISTS duracion    VARCHAR(50)  NOT NULL DEFAULT \'\'', 'duracion en temas', $resultados);
+// duracion_seg en materiales: la duración real del vídeo en segundos.
+// Permite que la duración por tema y por curso se calcule sumando, en
+// lugar de almacenarse manualmente en temas.duracion (que se queda
+// como override opcional).
+ejecutar($pdo, 'ALTER TABLE materiales ADD COLUMN IF NOT EXISTS duracion_seg INT DEFAULT NULL', 'duracion_seg en materiales', $resultados);
 ejecutar($pdo, 'ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS fecha_baja DATE DEFAULT NULL', 'fecha_baja en usuarios', $resultados);
 ejecutar($pdo, 'ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS foto_perfil VARCHAR(255) DEFAULT NULL', 'foto_perfil en usuarios', $resultados);
 ejecutar($pdo, 'ALTER TABLE cursos  ADD COLUMN IF NOT EXISTS imagen      VARCHAR(500) DEFAULT NULL', 'imagen en cursos', $resultados);

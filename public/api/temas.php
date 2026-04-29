@@ -32,9 +32,14 @@ if ($metodo === 'GET') {
         echo json_encode(['ok' => false, 'mensaje' => 'Falta curso_id']);
         exit;
     }
+    // duracion_seg se calcula sumando los segundos de los vídeos del
+    // tema. Es lo que se debe usar en el cliente; t.duracion sólo
+    // funciona como override manual cuando alguien lo escribe en el
+    // formulario admin.
     $stmt = $pdo->prepare(
         'SELECT t.id, t.titulo, t.descripcion, t.duracion, t.orden, t.color,
-                COUNT(m.id) AS num_materiales
+                COUNT(m.id) AS num_materiales,
+                COALESCE(SUM(m.duracion_seg), 0) AS duracion_seg
          FROM temas t
          LEFT JOIN materiales m ON m.tema_id = t.id
          WHERE t.curso_id = :curso_id

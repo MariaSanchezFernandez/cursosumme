@@ -19,9 +19,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$temaId   = (int)($_POST['tema_id'] ?? 0);
-$tipo     = $_POST['tipo'] ?? '';
-$duracion = isset($_POST['duracion']) ? (int)$_POST['duracion'] : null;
+$temaId      = (int)($_POST['tema_id'] ?? 0);
+$tipo        = $_POST['tipo'] ?? '';
+$duracionSeg = isset($_POST['duracion_seg']) ? (int)$_POST['duracion_seg'] : 0;
 
 if (!$temaId || !in_array($tipo, ['video', 'documento'])) {
     http_response_code(400);
@@ -105,25 +105,24 @@ require_once __DIR__ . '/db-connect.php';
 require_once __DIR__ . '/log-helper.php';
 $pdo = obtenerPDO();
 
+// Insertamos el material con su duración exacta en segundos. La
+// duración del tema y del curso ya no se almacenan: se calculan en
+// las APIs sumando los duracion_seg de los materiales del tema/curso.
+$durSegPersistir = ($tipo === 'video' && $duracionSeg > 0) ? $duracionSeg : null;
 $stmt = $pdo->prepare(
-    'INSERT INTO materiales (tema_id, tipo, nombre, ruta, tamano_kb)
-     VALUES (:tema_id, :tipo, :nombre, :ruta, :tamano_kb)'
+    'INSERT INTO materiales (tema_id, tipo, nombre, ruta, tamano_kb, duracion_seg)
+     VALUES (:tema_id, :tipo, :nombre, :ruta, :tamano_kb, :duracion_seg)'
 );
 $stmt->execute([
-    ':tema_id'   => $temaId,
-    ':tipo'      => $tipo,
-    ':nombre'    => $nombreOriginal,
-    ':ruta'      => $rutaWeb,
-    ':tamano_kb' => $tamanoKb,
+    ':tema_id'      => $temaId,
+    ':tipo'         => $tipo,
+    ':nombre'       => $nombreOriginal,
+    ':ruta'         => $rutaWeb,
+    ':tamano_kb'    => $tamanoKb,
+    ':duracion_seg' => $durSegPersistir,
 ]);
 
 $materialId = $pdo->lastInsertId();
-
-// Si es un vídeo y se proporcionó duración, actualizarla en el tema
-if ($tipo === 'video' && $duracion !== null && $duracion > 0) {
-    $stmtDur = $pdo->prepare('UPDATE temas SET duracion = :dur WHERE id = :id');
-    $stmtDur->execute([':dur' => $duracion, ':id' => $temaId]);
-}
 
 $adminId = isset($_POST['admin_id']) ? (int)$_POST['admin_id'] : 0;
 registrar_log($pdo, 'material_subido', ucfirst($tipo) . ' "' . $nombreOriginal . '" subido al tema ID ' . $temaId, $adminId);

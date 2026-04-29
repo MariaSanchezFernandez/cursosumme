@@ -708,16 +708,26 @@ formCurso.addEventListener('submit', async (e) => {
   btnGuardar.textContent = 'Guardar cambios';
 });
 
-// ── Duración total ────────────────────────────────────────────
+// ── Duración total del curso ─────────────────────────────────
+// Para cada tema:
+//  - Si el admin ha escrito un valor manual en "Duración (min)", se
+//    usa ese (override).
+//  - Si no, se usa la suma de segundos de los vídeos del tema, que
+//    se mantiene en card.dataset.duracionSegCalc (poblado al cargar
+//    desde la API y al subir/eliminar materiales).
 function calcularDuracionTotal(): string {
-  let totalMin = 0;
-  document.querySelectorAll<HTMLInputElement>('.input-dur-tema').forEach(inp => {
-    const n = parseInt(inp.value);
-    if (!isNaN(n) && n > 0) totalMin += n;
+  let totalSeg = 0;
+  document.querySelectorAll<HTMLElement>('.tema-card').forEach(card => {
+    const inputDur  = card.querySelector('.input-dur-tema') as HTMLInputElement | null;
+    const manualMin = inputDur ? parseInt(inputDur.value) : NaN;
+    if (!isNaN(manualMin) && manualMin > 0) {
+      totalSeg += manualMin * 60;
+      return;
+    }
+    const calc = parseInt(card.dataset.duracionSegCalc || '0', 10) || 0;
+    if (calc > 0) totalSeg += calc;
   });
-  if (!totalMin) return '';
-  const h = Math.floor(totalMin / 60), m = totalMin % 60;
-  return h > 0 ? (m > 0 ? `${h}h ${m}min` : `${h}h`) : `${m} min`;
+  return formatearMinutos(totalSeg);
 }
 function actualizarDurDisplay() {
   const el = document.getElementById('duracion-display')!;
@@ -769,8 +779,19 @@ async function crearTemaCard(tema: any): Promise<HTMLElement> {
   card.className      = 'tema-card';
   card.dataset.temaId = tema.id;
 
+  // duracion_seg llega calculado por la API. Lo guardamos en el
+  // dataset para que actualizarDuracionTrasSubida pueda acumular y
+  // calcularDuracionTotal pueda sumar el total del curso sin tener
+  // que volver a llamar a la API.
+  const durSegCalc = Number(tema.duracion_seg) || 0;
+  card.dataset.duracionSegCalc = String(durSegCalc);
+
   const colorBadge = colorActual || 'var(--color-light)';
-  const durLabel   = tema.duracion ? `${tema.duracion} min` : '';
+  // Pill: prefiere la duración calculada de los vídeos; si no hay
+  // vídeos pero el admin escribió un valor manual, usa el manual.
+  const durLabel = durSegCalc > 0
+    ? formatearMinutos(durSegCalc)
+    : (tema.duracion ? `${tema.duracion} min` : '');
 
   // ── Cabecera ──
   const cabecera = document.createElement('div');
@@ -807,8 +828,8 @@ async function crearTemaCard(tema: any): Promise<HTMLElement> {
         <input class="form-input input-titulo-tema" type="text" value="${tema.titulo}" />
       </div>
       <div class="form-grupo" style="flex:1; min-width:100px; margin:0;">
-        <label class="form-label">Duración (min)</label>
-        <input class="form-input input-dur-tema" type="number" min="0" value="${tema.duracion || ''}" placeholder="Ej. 45" />
+        <label class="form-label" title="Si lo dejas vacío, se calcula desde la duración de los vídeos.">Duración manual (min)</label>
+        <input class="form-input input-dur-tema" type="number" min="0" value="${tema.duracion || ''}" placeholder="${durSegCalc > 0 ? `Auto: ${formatearMinutos(durSegCalc)}` : 'Ej. 45'}" />
       </div>
     </div>
     <div class="form-grupo" style="margin:0;">
@@ -1080,7 +1101,26 @@ function crearFilaMat(mat: any): HTMLElement {
       if (!confirm(`¿Eliminar "${mat.nombre}"?`)) return;
       const res  = await fetch(`/api/materiales.php?id=${mat.id}`, { method: 'DELETE' });
       const data = await res.json();
-      if (data.ok) div.remove(); else mostrarMsg('Error al eliminar', 'error');
+      if (!data.ok) { mostrarMsg('Error al eliminar', 'error'); return; }
+      div.remove();
+      // Si era un vídeo con duración, restamos del total del tema y
+      // refrescamos pill + display del curso para reflejarlo al
+      // momento (la BD ya queda consistente al borrar el material).
+      if (mat.tipo === 'video' && Number(mat.duracion_seg) > 0) {
+        const card = div.closest('.tema-card') as HTMLElement | null;
+        if (card) {
+          const previo = parseInt(card.dataset.duracionSegCalc || '0', 10) || 0;
+          const nuevo  = Math.max(0, previo - Number(mat.duracion_seg));
+          card.dataset.duracionSegCalc = String(nuevo);
+          const pill = card.querySelector('.tema-dur-pill') as HTMLElement | null;
+          if (pill) {
+            const txt = formatearMinutos(nuevo);
+            pill.textContent = txt;
+            pill.style.display = txt ? '' : 'none';
+          }
+          actualizarDurDisplay();
+        }
+      }
     });
   }
 
@@ -1142,26 +1182,51 @@ function leerDuracionVideo(archivo: File): Promise<number> {
 // para overhead de multipart, y reduce el número de peticiones para vídeos grandes.
 const CHUNK_SIZE = 800 * 1024 * 1024;
 
-function actualizarDuracionTrasSubida(cuerpo: HTMLElement, tema: any, durMin: number): void {
-  const card      = cuerpo.closest('.tema-card') as HTMLElement;
-  const editPanel = card.querySelector('.tema-editar-panel') as HTMLElement;
-  const inputDur  = editPanel.querySelector('.input-dur-tema') as HTMLInputElement;
-  if (!inputDur.value || inputDur.value === '0') {
-    inputDur.value = String(durMin);
-    const pill = card.querySelector('.tema-dur-pill') as HTMLElement;
-    if (pill) { pill.textContent = durMin + ' min'; pill.style.display = ''; }
-    fetch('/api/temas.php', {
-      method: 'PUT', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ id: tema.id, titulo: tema.titulo, duracion: String(durMin), orden: tema.orden }),
-    }).then(() => actualizarDurDisplay());
+// Tras subir un vídeo, refresco la pill de duración del tema y la
+// total del curso. Acumulamos los segundos del nuevo material sobre
+// los que ya tenía el tema (para que aparezca al instante; la fuente
+// real es la BD, que devolverá el SUM exacto al recargar). Nunca se
+// sobrescribe el override manual del input "Duración".
+function actualizarDuracionTrasSubida(
+  cuerpo: HTMLElement,
+  tema: any,
+  durSeg: number,
+  materialId?: number,
+): void {
+  const card = cuerpo.closest('.tema-card') as HTMLElement;
+  // Acumulador de segundos calculados por tema, visible para
+  // calcularDuracionTotal() al sumar el total del curso.
+  const previo = parseInt(card.dataset.duracionSegCalc || '0', 10) || 0;
+  const nuevo  = previo + durSeg;
+  card.dataset.duracionSegCalc = String(nuevo);
+  if (materialId) {
+    const ids = (card.dataset.materialIdsConDur ?? '').split(',').filter(Boolean);
+    ids.push(String(materialId));
+    card.dataset.materialIdsConDur = ids.join(',');
   }
+
+  const pill = card.querySelector('.tema-dur-pill') as HTMLElement;
+  if (pill) {
+    pill.textContent = formatearMinutos(nuevo);
+    pill.style.display = '';
+  }
+  actualizarDurDisplay();
+}
+
+// Formatea segundos a "Xh Ymin" / "Z min" para la UI admin.
+function formatearMinutos(segundos: number): string {
+  if (!segundos || segundos <= 0) return '';
+  const mins = Math.round(segundos / 60);
+  if (mins <= 0) return '';
+  const h = Math.floor(mins / 60), m = mins % 60;
+  return h > 0 ? (m > 0 ? `${h}h ${m}min` : `${h}h`) : `${m} min`;
 }
 
 function subirArchivoChunked(
   cuerpo: HTMLElement,
   tema: any,
   archivo: File,
-  durMin: number,
+  durSeg: number,
   onProgress?: (pct: number) => void
 ): Promise<void> {
   return new Promise(async (resolve) => {
@@ -1181,7 +1246,9 @@ function subirArchivoChunked(
       fd.append('total_chunks',    String(totalChunks));
       fd.append('tema_id',         String(tema.id));
       fd.append('nombre_original', archivo.name);
-      if (i === totalChunks - 1 && durMin > 0) fd.append('duracion', String(durMin));
+      // Sólo el chunk final lleva duración: el servidor la asigna al
+      // material recién insertado en el ensamblado.
+      if (i === totalChunks - 1 && durSeg > 0) fd.append('duracion_seg', String(durSeg));
       fd.append('chunk', blob, archivo.name + '.part' + i);
 
       const bytesPrevios  = inicio;
@@ -1229,7 +1296,7 @@ function subirArchivoChunked(
       if (esUltimo) {
         const lista = cuerpo.querySelector('.mat-lista-video') as HTMLElement;
         lista.appendChild(crearFilaMat(resultado.data.material));
-        if (durMin > 0) actualizarDuracionTrasSubida(cuerpo, tema, durMin);
+        if (durSeg > 0) actualizarDuracionTrasSubida(cuerpo, tema, durSeg, resultado.data.material?.id);
         if (onProgress) onProgress(100);
         mostrarMsg('✓ Vídeo subido correctamente.', 'ok');
       }
@@ -1247,17 +1314,20 @@ function subirArchivo(
   onProgress?: (pct: number) => void
 ): Promise<void> {
   return new Promise(async (resolve) => {
-    let durMin = 0;
+    // Leemos los segundos exactos del vídeo y los enviamos al servidor:
+    // se persisten en materiales.duracion_seg, que es lo que después
+    // suma temas.php / mis-cursos.php para calcular duración por tema
+    // y por curso. Nada de redondeos en cliente.
+    let durSeg = 0;
     if (tipo === 'video') {
       try {
-        const seg = await leerDuracionVideo(archivo);
-        durMin = seg > 0 ? Math.ceil(seg / 60) : 0;
-      } catch { durMin = 0; }
+        durSeg = await leerDuracionVideo(archivo);
+      } catch { durSeg = 0; }
     }
 
     // Vídeos grandes → chunked para esquivar el límite nginx de 1 GB
     if (tipo === 'video' && archivo.size >= CHUNK_SIZE) {
-      await subirArchivoChunked(cuerpo, tema, archivo, durMin, onProgress);
+      await subirArchivoChunked(cuerpo, tema, archivo, durSeg, onProgress);
       resolve(); return;
     }
 
@@ -1265,7 +1335,7 @@ function subirArchivo(
     fd.append('archivo', archivo);
     fd.append('tema_id', String(tema.id));
     fd.append('tipo',    tipo);
-    if (durMin > 0) fd.append('duracion', String(durMin));
+    if (durSeg > 0) fd.append('duracion_seg', String(durSeg));
 
     const xhr = new XMLHttpRequest();
 
@@ -1299,7 +1369,11 @@ function subirArchivo(
         ) as HTMLElement;
         lista.appendChild(crearFilaMat(data.material));
 
-        if (tipo === 'video' && durMin > 0) actualizarDuracionTrasSubida(cuerpo, tema, durMin);
+        // Actualizamos la duración mostrada del tema y del curso en
+        // la UI. La fuente de verdad es el material recién insertado:
+        // tomamos sus segundos y los acumulamos sobre los que ya tenía
+        // el tema. Nunca se sobrescribe el override manual.
+        if (tipo === 'video' && durSeg > 0) actualizarDuracionTrasSubida(cuerpo, tema, durSeg, data.material?.id);
         mostrarMsg(`✓ ${tipo === 'video' ? 'Vídeo' : 'Archivo'} subido correctamente.`, 'ok');
       } catch (err) {
         mostrarMsg('Error al procesar la respuesta del servidor.', 'error');

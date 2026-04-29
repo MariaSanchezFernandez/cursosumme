@@ -49,12 +49,17 @@ if (empty($cursos)) {
 $cursoIds = array_column($cursos, 'id');
 $placeholders = implode(',', array_fill(0, count($cursoIds), '?'));
 
-// Temas de todos esos cursos
+// Temas de los cursos del alumno. duracion_seg sale de la suma de
+// duraciones reales de los vídeos (materiales.duracion_seg).
+// La columna t.duracion se mantiene como override manual opcional.
 $stmtTemas = $pdo->prepare(
-    "SELECT id, curso_id, titulo, descripcion, duracion, orden
-     FROM temas
-     WHERE curso_id IN ({$placeholders})
-     ORDER BY curso_id ASC, orden ASC, id ASC"
+    "SELECT t.id, t.curso_id, t.titulo, t.descripcion, t.duracion, t.orden,
+            COALESCE(SUM(m.duracion_seg), 0) AS duracion_seg
+     FROM temas t
+     LEFT JOIN materiales m ON m.tema_id = t.id
+     WHERE t.curso_id IN ({$placeholders})
+     GROUP BY t.id
+     ORDER BY t.curso_id ASC, t.orden ASC, t.id ASC"
 );
 $stmtTemas->execute($cursoIds);
 $temasRows = $stmtTemas->fetchAll();
@@ -92,9 +97,13 @@ foreach ($temasRows as $t) {
     $temasPorCurso[$t['curso_id']][] = $t;
 }
 
-// Unir todo
+// Unir temas con curso y calcular duracion_seg total del curso
+// como suma de duracion_seg de cada tema. Así el cliente recibe
+// las dos magnitudes ya calculadas y solo tiene que formatearlas.
 foreach ($cursos as &$c) {
-    $c['temas'] = $temasPorCurso[$c['id']] ?? [];
+    $temasC = $temasPorCurso[$c['id']] ?? [];
+    $c['temas']        = $temasC;
+    $c['duracion_seg'] = array_sum(array_column($temasC, 'duracion_seg'));
 }
 unset($c);
 

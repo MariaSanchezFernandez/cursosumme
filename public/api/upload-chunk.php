@@ -27,7 +27,7 @@ $chunkIndex  = isset($_POST['chunk_index'])  ? (int)$_POST['chunk_index']  : -1;
 $totalChunks = isset($_POST['total_chunks']) ? (int)$_POST['total_chunks'] : 0;
 $temaId      = isset($_POST['tema_id'])      ? (int)$_POST['tema_id']      : 0;
 $nombreOrig  = $_POST['nombre_original'] ?? '';
-$duracion    = isset($_POST['duracion'])     ? (int)$_POST['duracion']     : 0;
+$duracionSeg = isset($_POST['duracion_seg']) ? (int)$_POST['duracion_seg'] : 0;
 
 // upload_id debe ser hex/alfanumérico (evitar path traversal)
 if (!preg_match('/^[a-zA-Z0-9]{16,64}$/', $uploadId)) {
@@ -182,22 +182,20 @@ require_once __DIR__ . '/log-helper.php';
 $pdo = obtenerPDO();
 $tamanoKb = (int)ceil($totalBytes / 1024);
 $stmt = $pdo->prepare(
-    'INSERT INTO materiales (tema_id, tipo, nombre, ruta, tamano_kb)
-     VALUES (:tema_id, :tipo, :nombre, :ruta, :tamano_kb)'
+    'INSERT INTO materiales (tema_id, tipo, nombre, ruta, tamano_kb, duracion_seg)
+     VALUES (:tema_id, :tipo, :nombre, :ruta, :tamano_kb, :duracion_seg)'
 );
 $stmt->execute([
-    ':tema_id'   => $temaId,
-    ':tipo'      => 'video',
-    ':nombre'    => $nombreOrig,
-    ':ruta'      => $rutaWeb,
-    ':tamano_kb' => $tamanoKb,
+    ':tema_id'      => $temaId,
+    ':tipo'         => 'video',
+    ':nombre'       => $nombreOrig,
+    ':ruta'         => $rutaWeb,
+    ':tamano_kb'    => $tamanoKb,
+    ':duracion_seg' => $duracionSeg > 0 ? $duracionSeg : null,
 ]);
 $materialId = $pdo->lastInsertId();
-
-if ($duracion > 0) {
-    $stmtDur = $pdo->prepare('UPDATE temas SET duracion = :dur WHERE id = :id');
-    $stmtDur->execute([':dur' => $duracion, ':id' => $temaId]);
-}
+// La duración del tema ya no se actualiza desde el upload: se calcula
+// en las APIs (temas.php / mis-cursos.php) sumando duracion_seg.
 
 $adminId = isset($_POST['admin_id']) ? (int)$_POST['admin_id'] : 0;
 registrar_log($pdo, 'material_subido', 'Vídeo "' . $nombreOrig . '" subido al tema ID ' . $temaId . ' (chunked, ' . round($totalBytes / 1024 / 1024) . ' MB)', $adminId);

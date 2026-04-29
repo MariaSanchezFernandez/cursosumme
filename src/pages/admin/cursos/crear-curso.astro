@@ -576,15 +576,31 @@ form.addEventListener('submit', async (e) => {
 });
 
 // ── Duración total ─────────────────────────────────────────────
-function calcularDuracionTotal(): string {
-  let total = 0;
-  document.querySelectorAll<HTMLInputElement>('.input-dur-tema').forEach(inp => {
-    const n = parseInt(inp.value);
-    if (!isNaN(n) && n > 0) total += n;
-  });
-  if (!total) return '';
-  const h = Math.floor(total / 60), m = total % 60;
+// Formatea segundos a "Xh Ymin" / "Z min" / "" para la UI admin.
+function formatearMinutosCC(segundos: number): string {
+  if (!segundos || segundos <= 0) return '';
+  const mins = Math.round(segundos / 60);
+  if (mins <= 0) return '';
+  const h = Math.floor(mins / 60), m = mins % 60;
   return h > 0 ? (m > 0 ? `${h}h ${m}min` : `${h}h`) : `${m} min`;
+}
+
+// Suma duraciones por tema. Para cada tema:
+//   - si hay override manual en .input-dur-tema → minutos × 60.
+//   - si no → segundos calculados de los vídeos (data-duracion-seg-calc).
+function calcularDuracionTotal(): string {
+  let totalSeg = 0;
+  document.querySelectorAll<HTMLElement>('.tema-card').forEach(card => {
+    const inputDur  = card.querySelector('.input-dur-tema') as HTMLInputElement | null;
+    const manualMin = inputDur ? parseInt(inputDur.value) : NaN;
+    if (!isNaN(manualMin) && manualMin > 0) {
+      totalSeg += manualMin * 60;
+      return;
+    }
+    const calc = parseInt(card.dataset.duracionSegCalc || '0', 10) || 0;
+    if (calc > 0) totalSeg += calc;
+  });
+  return formatearMinutosCC(totalSeg);
 }
 
 async function guardarDuracionCurso() {
@@ -650,12 +666,22 @@ async function crearTemaCard(tema: any): Promise<HTMLElement> {
   card.className      = 'tema-card';
   card.dataset.temaId = tema.id;
 
+  // duracion_seg viene calculado de la API (suma de los vídeos del
+  // tema). Lo guardamos para poder acumular al subir más vídeos sin
+  // sobrescribir el override manual.
+  const durSegCalc = Number(tema.duracion_seg) || 0;
+  card.dataset.duracionSegCalc = String(durSegCalc);
+
   const colorBadge = 'var(--color-light)';
+  // Pill: prefiere segundos calculados; fallback al override textual.
+  const pillTexto = durSegCalc > 0
+    ? formatearMinutosCC(durSegCalc)
+    : (tema.duracion ? `${tema.duracion} min` : '');
   card.innerHTML = `
     <div class="tema-card-cabecera">
       <div class="tema-badge" id="tema-badge-${tema.id}" style="background:${colorBadge}">${String(tema.orden).padStart(2,'0')}</div>
       <span class="tema-titulo-txt">${tema.titulo}</span>
-      ${tema.duracion ? `<span class="tema-dur-pill" id="dur-label-${tema.id}">${tema.duracion} min</span>` : `<span class="tema-dur-pill" id="dur-label-${tema.id}" style="display:none;"></span>`}
+      <span class="tema-dur-pill" id="dur-label-${tema.id}" style="${pillTexto ? '' : 'display:none;'}">${pillTexto}</span>
       <div class="tema-acciones">
         <button class="btn-tema-accion btn-editar-tema" title="Editar tema">
           <svg viewBox="0 0 14 14" fill="none" width="15" height="15">
@@ -678,7 +704,7 @@ async function crearTemaCard(tema: any): Promise<HTMLElement> {
         </div>
         <div class="form-grupo" style="flex:1; min-width:100px; margin:0;">
           <label class="form-label">Duración (min)</label>
-          <input class="form-input input-dur-tema" type="number" min="0" value="${tema.duracion || ''}" placeholder="Ej. 45" />
+          <input class="form-input input-dur-tema" type="number" min="0" value="${tema.duracion || ''}" placeholder="${durSegCalc > 0 ? `Auto: ${formatearMinutosCC(durSegCalc)}` : 'Ej. 45'}" />
         </div>
       </div>
       <div class="form-grupo" style="margin:0;">
@@ -877,7 +903,25 @@ function crearFilaMat(mat: any): HTMLElement {
       if (!confirm(`¿Eliminar "${mat.nombre}"?`)) return;
       const res  = await fetch(`/api/materiales.php?id=${mat.id}`, { method: 'DELETE' });
       const data = await res.json();
-      if (data.ok) div.remove(); else mostrarMsg('Error al eliminar', 'error');
+      if (!data.ok) { mostrarMsg('Error al eliminar', 'error'); return; }
+      div.remove();
+      // Si era un vídeo con duración, restamos del total del tema y
+      // refrescamos pill + duración del curso al instante.
+      if (mat.tipo === 'video' && Number(mat.duracion_seg) > 0) {
+        const card = div.closest('.tema-card') as HTMLElement | null;
+        if (card) {
+          const previo = parseInt(card.dataset.duracionSegCalc || '0', 10) || 0;
+          const nuevo  = Math.max(0, previo - Number(mat.duracion_seg));
+          card.dataset.duracionSegCalc = String(nuevo);
+          const pill = card.querySelector('.tema-dur-pill') as HTMLElement | null;
+          if (pill) {
+            const txt = formatearMinutosCC(nuevo);
+            pill.textContent = txt;
+            pill.style.display = txt ? '' : 'none';
+          }
+          await guardarDuracionCurso();
+        }
+      }
     });
   }
 
@@ -933,17 +977,19 @@ function subirArchivo(
   onProgress?: (pct: number) => void
 ): Promise<void> {
   return new Promise(async (resolve) => {
-    let durMin = 0;
+    // Segundos exactos del vídeo (sin redondear): se persisten en
+    // materiales.duracion_seg y la duración por tema/curso se calcula
+    // ya en BD sumando estos valores.
+    let durSeg = 0;
     if (tipo === 'video') {
-      const seg = await leerDuracionVideo(archivo);
-      durMin = seg > 0 ? Math.ceil(seg / 60) : 0;
+      durSeg = await leerDuracionVideo(archivo);
     }
 
     const fd = new FormData();
     fd.append('archivo', archivo);
     fd.append('tema_id', String(tema.id));
     fd.append('tipo',    tipo);
-    if (durMin > 0) fd.append('duracion', String(durMin));
+    if (durSeg > 0) fd.append('duracion_seg', String(durSeg));
 
     const xhr = new XMLHttpRequest();
 
@@ -972,18 +1018,20 @@ function subirArchivo(
         const lista = card.querySelector(tipo === 'video' ? `.mat-lista-video-${tema.id}` : `.mat-lista-doc-${tema.id}`) as HTMLElement;
         lista.appendChild(crearFilaMat(data.material));
 
-        if (tipo === 'video' && durMin > 0) {
-          const inputDur = card.querySelector('.input-dur-tema') as HTMLInputElement;
-          if (!inputDur.value || inputDur.value === '0') {
-            inputDur.value = String(durMin);
-            const durLabel = document.getElementById(`dur-label-${tema.id}`);
-            if (durLabel) { durLabel.textContent = durMin + ' min'; durLabel.style.display = ''; }
-            await fetch('/api/temas.php', {
-              method: 'PUT', headers: {'Content-Type':'application/json'},
-              body: JSON.stringify({ id: tema.id, titulo: tema.titulo, duracion: String(durMin), orden: tema.orden }),
-            });
-            await guardarDuracionCurso();
+        // Refresco optimista de la pill de duración del tema y del
+        // curso. La verdad la mantiene la BD (SUM de duracion_seg al
+        // recargar); aquí solo acumulamos para que se vea al instante
+        // sin sobrescribir un override manual del input.
+        if (tipo === 'video' && durSeg > 0) {
+          const previo = parseInt(card.dataset.duracionSegCalc || '0', 10) || 0;
+          const nuevo  = previo + durSeg;
+          card.dataset.duracionSegCalc = String(nuevo);
+          const durLabel = document.getElementById(`dur-label-${tema.id}`);
+          if (durLabel) {
+            durLabel.textContent = formatearMinutosCC(nuevo);
+            durLabel.style.display = '';
           }
+          await guardarDuracionCurso();
         }
         mostrarMsg(`✓ ${tipo === 'video' ? 'Vídeo' : 'Archivo'} subido.`, 'ok');
       } catch (err) {
