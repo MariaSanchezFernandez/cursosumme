@@ -54,8 +54,8 @@ if (!in_array($extension, ['mp4', 'webm', 'mov', 'avi', 'm4v', 'mkv'])) {
     exit;
 }
 
-// Tamaño máximo total: 2 GB (~ PHP upload_max_filesize)
-$MAX_TOTAL = 2048 * 1024 * 1024;
+// Tamaño máximo total: 3.5 GB (~ PHP upload_max_filesize)
+$MAX_TOTAL = 3584 * 1024 * 1024;
 
 // Directorio temporal para los chunks de este upload
 $docRoot = rtrim($_SERVER['DOCUMENT_ROOT'], '/');
@@ -164,7 +164,7 @@ for ($i = 0; $i < $totalChunks; $i++) {
             fclose($in); fclose($out);
             @unlink($rutaFisica);
             borrarTmp($tmpDir);
-            echo json_encode(['ok' => false, 'mensaje' => 'El vídeo ensamblado supera 2 GB']);
+            echo json_encode(['ok' => false, 'mensaje' => 'El vídeo ensamblado supera 3.5 GB']);
             exit;
         }
         fwrite($out, $buf);

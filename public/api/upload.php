@@ -57,11 +57,11 @@ if (!in_array($extension, $ext_permitidas[$tipo])) {
     exit;
 }
 
-// Tamaño máximo: 2 GB para video, 100 MB para documentos
+// Tamaño máximo: 3.5 GB para video, 100 MB para documentos
 // (el límite real lo impone upload_max_filesize/post_max_size en .user.ini)
-$maxBytes = $tipo === 'video' ? 2048 * 1024 * 1024 : 100 * 1024 * 1024;
+$maxBytes = $tipo === 'video' ? 3584 * 1024 * 1024 : 100 * 1024 * 1024;
 if ($_FILES['archivo']['size'] > $maxBytes) {
-    $limite = $tipo === 'video' ? '2 GB' : '100 MB';
+    $limite = $tipo === 'video' ? '3.5 GB' : '100 MB';
     echo json_encode(['ok' => false, 'mensaje' => "El archivo supera el límite de {$limite}"]);
     exit;
 }

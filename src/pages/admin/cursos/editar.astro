@@ -985,11 +985,11 @@ async function crearTemaCard(tema: any): Promise<HTMLElement> {
     const input = formVideo.querySelector('.input-video') as HTMLInputElement;
     if (!input.files?.length) return;
     const archivo = input.files[0];
-    const MAX_VIDEO = 2048 * 1024 * 1024;
+    const MAX_VIDEO = 3584 * 1024 * 1024;
     if (archivo.size > MAX_VIDEO) {
       const mb = (archivo.size / 1024 / 1024).toFixed(0);
-      mostrarMsg(`El vídeo pesa ${mb} MB y supera el límite de 2 GB. Comprímelo antes de subirlo.`, 'error');
-      (window as any).logAppError?.('upload', `Vídeo rechazado en cliente (${mb} MB > 2 GB)`, { detalle: archivo.name + ' · tema=' + tema.id });
+      mostrarMsg(`El vídeo pesa ${mb} MB y supera el límite de 3.5 GB. Comprímelo antes de subirlo.`, 'error');
+      (window as any).logAppError?.('upload', `Vídeo rechazado en cliente (${mb} MB > 3.5 GB)`, { detalle: archivo.name + ' · tema=' + tema.id });
       input.value = '';
       return;
     }
