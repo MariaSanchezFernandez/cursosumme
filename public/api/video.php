@@ -67,8 +67,18 @@ $mime = mime_content_type($rutaFisica) ?: 'video/mp4';
 
 // Desactivar compresión de salida para que Content-Length sea correcto
 // (sin esto el navegador no puede determinar la duración del vídeo)
-if (ob_get_level()) ob_end_clean();
+while (ob_get_level()) {
+    ob_end_clean();
+}
 ini_set('zlib.output_compression', '0');
+ini_set('output_buffering', '0');
+ini_set('implicit_flush', '1');
+
+// Las descargas de cientos de MB tardan minutos: sin esto PHP corta
+// por max_execution_time y el archivo llega truncado/corrupto. 0 = sin
+// límite mientras el cliente siga conectado.
+@set_time_limit(0);
+ignore_user_abort(false);
 
 header("Content-Type: $mime");
 header('Content-Encoding: identity');
@@ -112,9 +122,14 @@ if (!empty($_GET['descarga']) && $rol === 'admin') {
     }
 }
 
-// Soporte de range requests (necesario para seek en el reproductor)
+// Tamaño de chunk para streaming. 256 KB es buen compromiso entre
+// llamadas a fread (pocas) y consumo de memoria por petición (acotado).
+$CHUNK = 256 * 1024;
+
+// Soporte de range requests (necesario para seek en el reproductor y
+// para que el navegador pueda reanudar descargas grandes).
 if (isset($_SERVER['HTTP_RANGE'])) {
-    [$unit, $range] = explode('=', $_SERVER['HTTP_RANGE'], 2);
+    [, $range]      = explode('=', $_SERVER['HTTP_RANGE'], 2);
     [$start, $end]  = array_pad(explode('-', $range, 2), 2, '');
     $start = (int)$start;
     $end   = ($end !== '') ? (int)$end : $size - 1;
@@ -128,13 +143,32 @@ if (isset($_SERVER['HTTP_RANGE'])) {
     $fp = fopen($rutaFisica, 'rb');
     fseek($fp, $start);
     $remaining = $length;
-    while ($remaining > 0 && !feof($fp)) {
-        $chunk = fread($fp, min(8192, $remaining));
+    while ($remaining > 0 && !feof($fp) && !connection_aborted()) {
+        $chunk = fread($fp, min($CHUNK, $remaining));
+        if ($chunk === false || $chunk === '') {
+            break;
+        }
         echo $chunk;
+        @flush();
         $remaining -= strlen($chunk);
     }
     fclose($fp);
 } else {
+    // Descarga / streaming completos: NO usar readfile() porque para
+    // archivos grandes (cientos de MB) tiende a buffer todo el contenido
+    // en memoria y a chocar con max_execution_time / memory_limit, lo
+    // que provoca archivos truncados ("descargado corrupto"). En su
+    // lugar leemos en chunks y vaciamos buffers periódicamente.
     header("Content-Length: $size");
-    readfile($rutaFisica);
+    $fp = fopen($rutaFisica, 'rb');
+    if ($fp === false) { http_response_code(500); exit; }
+    while (!feof($fp) && !connection_aborted()) {
+        $chunk = fread($fp, $CHUNK);
+        if ($chunk === false || $chunk === '') {
+            break;
+        }
+        echo $chunk;
+        @flush();
+    }
+    fclose($fp);
 }
