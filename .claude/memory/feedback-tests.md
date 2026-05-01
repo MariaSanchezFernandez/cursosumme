@@ -10,3 +10,5 @@ En CursosUmme usamos Playwright para tests E2E de los flujos críticos (login, c
 - Recordárselo al añadir features — forma parte del "done".
 - Correr `npx playwright test` antes de desplegar cambios grandes.
 - Los tests deben usar un usuario de prueba dedicado (no datos reales de alumnos/cursos).
+
+**Atención — uploads (2026-05-01):** el protocolo de subida cambió de `multipart/form-data` a raw body (`Content-Type: application/octet-stream`) con metadata en query params. Cualquier test E2E de subida de vídeo o documento que usara FormData necesita actualizarse para usar el nuevo protocolo.

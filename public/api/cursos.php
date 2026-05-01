@@ -25,7 +25,7 @@ if ($metodo === 'GET') {
     // tema del curso. Se usa una subquery porque hacer LEFT JOIN a
     // materiales junto al de temas multiplicaría filas y rompería
     // el COUNT(t.id) AS num_temas.
-    $stmt = $pdo->query(
+    $cursos = $pdo->query(
         'SELECT c.id, c.titulo, c.descripcion, c.etiqueta, c.nivel, c.duracion, c.pack, c.pack_color, c.color, c.imagen, c.activo, c.creado_en,
                 COUNT(t.id) AS num_temas,
                 (SELECT COALESCE(SUM(m.duracion_seg), 0)
@@ -36,8 +36,36 @@ if ($metodo === 'GET') {
          LEFT JOIN temas t ON t.curso_id = c.id
          GROUP BY c.id
          ORDER BY c.pack IS NULL, c.pack, c.creado_en DESC'
-    );
-    echo json_encode(['ok' => true, 'cursos' => $stmt->fetchAll()]);
+    )->fetchAll();
+
+    // Estadísticas de alumnos y progreso medio por curso.
+    // progreso_medio = total temas completados / (alumnos × temas totales) × 100
+    $statsRaw = $pdo->query(
+        'SELECT t.curso_id,
+                COUNT(DISTINCT uc.usuario_id)                                              AS alumnos_count,
+                COALESCE(ROUND(
+                    COUNT(p.tema_id) /
+                    NULLIF(COUNT(DISTINCT uc.usuario_id) * COUNT(DISTINCT t.id), 0) * 100
+                ), 0)                                                                      AS progreso_medio
+         FROM temas t
+         JOIN usuarios_cursos uc ON uc.curso_id = t.curso_id
+         LEFT JOIN progresos p   ON p.tema_id = t.id AND p.usuario_id = uc.usuario_id
+         GROUP BY t.curso_id'
+    )->fetchAll(PDO::FETCH_ASSOC);
+
+    $stats = [];
+    foreach ($statsRaw as $row) {
+        $stats[(int)$row['curso_id']] = $row;
+    }
+
+    foreach ($cursos as &$c) {
+        $s = $stats[(int)$c['id']] ?? [];
+        $c['alumnos_count']  = (int)($s['alumnos_count']  ?? 0);
+        $c['progreso_medio'] = (int)($s['progreso_medio'] ?? 0);
+    }
+    unset($c);
+
+    echo json_encode(['ok' => true, 'cursos' => $cursos]);
     exit;
 }
 

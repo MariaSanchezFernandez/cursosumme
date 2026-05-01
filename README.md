@@ -31,7 +31,7 @@ Plataforma de formación online privada para la academia Umme. Permite gestionar
 - **Dashboard**: estadísticas en tiempo real (alumnos, cursos activos, packs, tickets abiertos)
 - **Alumnos**: listado con búsqueda, creación, edición, asignación de cursos y control de fechas de acceso
 - **Cursos**: CRUD completo con título, descripción con editor enriquecido (H2/H3/negrita/listas), imagen de portada, nivel, etiqueta, pack y colores personalizables
-- **Temas y materiales**: añadir/reordenar/eliminar temas; subida de vídeos (hasta 2 GB) y documentos/audios (hasta 100 MB) con barra de progreso real
+- **Temas y materiales**: añadir/reordenar/eliminar temas; subida de vídeos (hasta 3.5 GB) y documentos/audios (hasta 100 MB) con barra de progreso real
 - **Soporte**: ver todos los tickets, responder, cambiar estado (abierto → respondido → cerrado), eliminar conversaciones
 - **Log de cambios**: auditoría de todas las acciones (alumnos, cursos, tickets)
 - **Log de errores JS**: captura global de errores de frontend de todos los usuarios, con filtros y detalle
@@ -55,7 +55,8 @@ cursosumme/
 │   │   ├── cursos.php               # CRUD cursos (incluye imagen de portada)
 │   │   ├── temas.php                # CRUD temas
 │   │   ├── materiales.php           # CRUD materiales
-│   │   ├── upload.php               # Subida de vídeos (2 GB) y documentos/audios (100 MB)
+│   │   ├── upload.php               # Subida de documentos/audios (100 MB) — raw body stream
+│   │   ├── upload-chunk.php         # Subida de vídeos por chunks (3.5 GB) — raw body stream, sin /tmp
 │   │   ├── upload-imagen.php        # Subida de imágenes de portada de curso (5 MB)
 │   │   ├── video.php                # Proxy seguro de streaming (range requests)
 │   │   ├── mis-cursos.php           # Cursos del alumno (GET)
@@ -233,14 +234,14 @@ Hace build y sube `dist/` al servidor por SFTP automáticamente.
 
 ## Límites de subida
 
-| Tipo | Límite en nuestro código | Notas |
-|------|--------------------------|-------|
-| Vídeo | 2 GB | Validación en cliente y servidor |
+| Tipo | Límite | Notas |
+|------|--------|-------|
+| Vídeo | 3.5 GB | Validación en cliente y servidor; subida por chunks de 800 MB |
 | Documento / audio | 100 MB | Validación en cliente y servidor |
 | Imagen de portada de curso | 5 MB | Solo jpg/jpeg/png/webp |
 | Foto de perfil | (gestionada por `foto-perfil.php`) | |
 
-El límite **real** viene impuesto por PHP del servidor (`upload_max_filesize`, `post_max_size`). En IONOS hosting compartido el valor por defecto suele ser 128 MB. El archivo [`public/api/.user.ini`](public/api/.user.ini) solicita 2048 MB / 512 MB de memoria / 600 s de timeout — IONOS lo recorta al máximo permitido por tu plan.
+Los vídeos se suben en chunks de 800 MB vía `upload-chunk.php` y los documentos en una sola petición vía `upload.php`. Ambos usan **raw body streaming** (`php://input`) — el archivo se escribe directamente al destino sin pasar por `/tmp`, evitando problemas de cuota de disco en IONOS. El límite por chunk (800 MB) está por debajo del límite de nginx de IONOS (1 GB).
 
 Para comprobar los límites efectivos en producción, acceder a:
 

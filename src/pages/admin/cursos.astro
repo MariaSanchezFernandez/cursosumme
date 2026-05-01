@@ -6,7 +6,11 @@ import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
 
   <!-- Barra superior -->
   <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:0.75rem;">
-    <div style="display:flex; gap:0.5rem; flex-wrap:wrap;" id="filtros-pack"></div>
+    <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap; flex:1;">
+      <div style="display:flex; gap:0.5rem; flex-wrap:wrap;" id="filtros-pack"></div>
+      <input id="buscador-cursos" type="search" placeholder="Buscar curso…" autocomplete="off"
+        style="border:1px solid var(--color-borde); border-radius:6px; padding:0.35rem 0.7rem; font-size:0.82rem; width:200px; outline:none;">
+    </div>
     <div style="display:flex; gap:0.5rem;">
       <button id="btn-nuevo-pack" class="btn-admin">
         <svg viewBox="0 0 16 16" fill="none">
@@ -183,7 +187,10 @@ import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
   border-top: 1px solid #f0f4f2;
   background: #fafcfb;
 }
+.curso-stats { display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
 .curso-temas { font-size: 0.75rem; color: var(--color-text-muted); }
+.curso-stat-sep { font-size: 0.7rem; color: var(--color-text-muted); opacity: 0.5; }
+.curso-progreso-badge { font-size: 0.72rem; font-weight: 700; background: #e8f4ee; color: #2e7d55; border-radius: 20px; padding: 0.1rem 0.5rem; }
 .curso-card-acciones { display: flex; gap: 0.4rem; align-items: center; }
 .btn-card-del {
   width: 30px; height: 30px; border-radius: 8px; padding: 0;
@@ -270,13 +277,29 @@ function crearBtnFiltro(texto: string, pack: string, activo: boolean): HTMLButto
 }
 
 // ── Renderizar tarjetas ────────────────────────────────────────
+let filtroPack = 'todos';
+let filtroTexto = '';
+
+document.getElementById('buscador-cursos')!.addEventListener('input', (e) => {
+  filtroTexto = (e.target as HTMLInputElement).value.trim().toLowerCase();
+  renderizarCursos(filtroPack);
+});
+
 function renderizarCursos(filtro: string) {
+  filtroPack = filtro;
   const contenido = document.getElementById('contenido-cursos')!;
   contenido.innerHTML = '';
 
   let lista: any[] = todosLosCursos;
   if (filtro === '__sin_pack__') lista = todosLosCursos.filter((c: any) => !c.pack);
   else if (filtro !== 'todos')   lista = todosLosCursos.filter((c: any) => c.pack === filtro);
+
+  if (filtroTexto) {
+    lista = lista.filter((c: any) =>
+      c.titulo.toLowerCase().includes(filtroTexto) ||
+      (c.etiqueta || '').toLowerCase().includes(filtroTexto)
+    );
+  }
 
   const grupos = new Map<string, any[]>();
   for (const c of lista) {
@@ -385,7 +408,12 @@ function renderizarCursos(filtro: string) {
           </div>
         </div>
         <div class="curso-card-footer">
-          <span class="curso-temas"><strong>${c.num_temas}</strong> tema${c.num_temas != 1 ? 's' : ''}</span>
+          <div class="curso-stats">
+            <span class="curso-temas"><strong>${c.num_temas}</strong> tema${c.num_temas != 1 ? 's' : ''}</span>
+            <span class="curso-stat-sep">·</span>
+            <span class="curso-temas"><strong>${c.alumnos_count}</strong> alumno${c.alumnos_count != 1 ? 's' : ''}</span>
+            ${c.alumnos_count > 0 ? `<span class="curso-stat-sep">·</span><span class="curso-progreso-badge" title="Progreso medio de los alumnos">${c.progreso_medio}%</span>` : ''}
+          </div>
           <div class="curso-card-acciones">
             <button class="btn-color-curso btn-card-color" title="Color del curso" style="width:30px;height:30px;border-radius:50%;border:2px solid rgba(0,0,0,0.15);cursor:pointer;flex-shrink:0;padding:0;background:${acento};position:relative;"></button>
             <a href="/admin/cursos/editar?id=${c.id}" class="btn-admin" style="font-size:0.75rem; padding:0; height:30px; line-height:30px; display:inline-flex; align-items:center; padding:0 0.7rem;">

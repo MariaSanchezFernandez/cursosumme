@@ -95,7 +95,7 @@ fclose($src);
 fclose($dst);
 
 if ($written === false) {
-    if ($chunkIndex === 0) @unlink($partPath);
+    @unlink($partPath);
     $err = error_get_last();
     echo json_encode([
         'ok'          => false,

@@ -13,3 +13,5 @@ Ver [../AGENTS.md](../AGENTS.md): documentar al inicio de cada archivo, leer ant
 @.claude/memory/feedback-deploy.md
 @.claude/memory/reference-url.md
 @.claude/memory/project-stripe.md
+@.claude/memory/feedback-uploads.md
+@.claude/memory/reference-ionos.md

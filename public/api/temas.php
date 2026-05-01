@@ -9,7 +9,7 @@
 
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
@@ -103,6 +103,32 @@ if ($metodo === 'PUT') {
     ]);
     $adminIdPut = isset($body['admin_id']) ? (int)$body['admin_id'] : 0;
     registrar_log($pdo, 'tema_editado', 'Tema "' . trim($body['titulo'] ?? '') . '" editado (ID ' . (int)$body['id'] . ')', $adminIdPut);
+    echo json_encode(['ok' => true]);
+    exit;
+}
+
+// ── PATCH — reordenar temas ──────────────────────────────────
+// Body: { ordenes: [{id, orden}, …] }
+if ($metodo === 'PATCH') {
+    $body = json_decode(file_get_contents('php://input'), true);
+    if (empty($body['ordenes']) || !is_array($body['ordenes'])) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'mensaje' => 'Falta el array ordenes']);
+        exit;
+    }
+    $stmt = $pdo->prepare('UPDATE temas SET orden = :orden WHERE id = :id');
+    $pdo->beginTransaction();
+    try {
+        foreach ($body['ordenes'] as $item) {
+            $stmt->execute([':orden' => (int)$item['orden'], ':id' => (int)$item['id']]);
+        }
+        $pdo->commit();
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'mensaje' => 'Error al guardar el orden']);
+        exit;
+    }
     echo json_encode(['ok' => true]);
     exit;
 }

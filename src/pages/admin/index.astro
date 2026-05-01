@@ -26,6 +26,14 @@ import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
       <p class="stat-card-valor" id="stat-sin-cursos">—</p>
       <p class="stat-card-sub">alumnos pendientes</p>
     </div>
+    <div class="stat-card" id="stat-card-cuota" style="display:none;">
+      <p class="stat-card-label">Archivos en servidor</p>
+      <p class="stat-card-valor" id="stat-cuota-valor">—</p>
+      <p class="stat-card-sub" id="stat-cuota-sub">de 262.144 permitidos</p>
+      <div style="margin-top:0.6rem; height:5px; border-radius:3px; background:#eee; overflow:hidden;">
+        <div id="stat-cuota-barra" style="height:100%; border-radius:3px; width:0%; transition:width 0.4s;"></div>
+      </div>
+    </div>
   </div>
 
   <!-- Soporte: tickets abiertos -->
@@ -234,4 +242,27 @@ async function cargarDashboard() {
 }
 
 cargarDashboard();
+
+// ── Indicador de cuota ────────────────────────────────────────
+async function cargarCuota() {
+  try {
+    const res  = await fetch('/api/info-limites.php');
+    const data = await res.json();
+    const archivos = data.archivos_uploads ?? 0;
+    const limite   = data.archivos_limite  ?? 262144;
+    const pct      = data.archivos_uso_pct ?? 0;
+
+    const card  = document.getElementById('stat-card-cuota')!;
+    const valor = document.getElementById('stat-cuota-valor')!;
+    const barra = document.getElementById('stat-cuota-barra') as HTMLElement;
+
+    valor.textContent = archivos.toLocaleString('es-ES');
+    barra.style.width = Math.min(pct, 100) + '%';
+    barra.style.background = pct >= 80 ? '#c0392b' : pct >= 60 ? '#e67e22' : '#3aaa74';
+
+    card.style.display = 'block';
+  } catch { /* silencioso */ }
+}
+
+cargarCuota();
 </script>
