@@ -1,17 +1,17 @@
 <?php
 // ─────────────────────────────────────────────────────────────
-// api/upload-chunk.php  —  Subida de vídeos por chunks
-// Método: POST multipart/form-data
-// Campos: upload_id (string), chunk_index (int), total_chunks (int),
-//         tema_id (int), nombre_original (string), duracion (int|null),
-//         chunk (file)
-// Respuesta OK intermedia: { "ok": true, "recibido": chunk_index }
-// Respuesta OK final:      { "ok": true, "material": {...} }
+// api/upload-chunk.php  —  Subida de vídeos por chunks (raw stream)
 //
-// Pensado para esquivar el límite de 1 GB del nginx de IONOS:
-// el cliente trocea el archivo en partes < 1 GB y cada parte viaja
-// en su propia petición. Al recibir la última, se concatenan en
-// un solo archivo y se registra en BD como un material normal.
+// Parámetros en query string:
+//   upload_id, chunk_index, total_chunks, total_size,
+//   tema_id, nombre_original, duracion_seg (solo último chunk)
+//
+// Cuerpo de la petición: bytes crudos del chunk
+//   (Content-Type: application/octet-stream)
+//
+// El chunk se escribe directamente sobre un archivo .part en
+// uploads/videos/, sin pasar por /tmp. Al recibir el último chunk
+// se renombra al nombre final y se registra en BD.
 // ─────────────────────────────────────────────────────────────
 
 header('Content-Type: application/json; charset=utf-8');
@@ -22,29 +22,22 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$uploadId    = $_POST['upload_id']     ?? '';
-$chunkIndex  = isset($_POST['chunk_index'])  ? (int)$_POST['chunk_index']  : -1;
-$totalChunks = isset($_POST['total_chunks']) ? (int)$_POST['total_chunks'] : 0;
-$temaId      = isset($_POST['tema_id'])      ? (int)$_POST['tema_id']      : 0;
-$nombreOrig  = $_POST['nombre_original'] ?? '';
-$duracionSeg = isset($_POST['duracion_seg']) ? (int)$_POST['duracion_seg'] : 0;
+$uploadId    = $_GET['upload_id']             ?? '';
+$chunkIndex  = isset($_GET['chunk_index'])    ? (int)$_GET['chunk_index']  : -1;
+$totalChunks = isset($_GET['total_chunks'])   ? (int)$_GET['total_chunks'] : 0;
+$totalSize   = isset($_GET['total_size'])     ? (int)$_GET['total_size']   : 0;
+$temaId      = isset($_GET['tema_id'])        ? (int)$_GET['tema_id']      : 0;
+$nombreOrig  = $_GET['nombre_original']       ?? '';
+$duracionSeg = isset($_GET['duracion_seg'])   ? (int)$_GET['duracion_seg'] : 0;
 
-// upload_id debe ser hex/alfanumérico (evitar path traversal)
 if (!preg_match('/^[a-zA-Z0-9]{16,64}$/', $uploadId)) {
     http_response_code(400);
     echo json_encode(['ok' => false, 'mensaje' => 'upload_id inválido']);
     exit;
 }
-
 if ($chunkIndex < 0 || $totalChunks < 1 || $chunkIndex >= $totalChunks || $temaId <= 0 || $nombreOrig === '') {
     http_response_code(400);
     echo json_encode(['ok' => false, 'mensaje' => 'Parámetros inválidos']);
-    exit;
-}
-
-if (!isset($_FILES['chunk']) || $_FILES['chunk']['error'] !== UPLOAD_ERR_OK) {
-    http_response_code(400);
-    echo json_encode(['ok' => false, 'mensaje' => 'Chunk no recibido correctamente']);
     exit;
 }
 
@@ -54,138 +47,114 @@ if (!in_array($extension, ['mp4', 'webm', 'mov', 'avi', 'm4v', 'mkv'])) {
     exit;
 }
 
-// Tamaño máximo total: 3.5 GB (~ PHP upload_max_filesize)
-$MAX_TOTAL = 3584 * 1024 * 1024;
+$docRoot   = rtrim($_SERVER['DOCUMENT_ROOT'], '/');
+$dirVideos = $docRoot . '/uploads/videos/';
+$partPath  = $dirVideos . $uploadId . '.part';
 
-// Directorio temporal para los chunks de este upload
-$docRoot = rtrim($_SERVER['DOCUMENT_ROOT'], '/');
-$tmpRoot = $docRoot . '/uploads/.tmp-uploads';
-$tmpDir  = $tmpRoot . '/' . $uploadId;
+// Crear directorio si no existe
+if (!is_dir($dirVideos) && !mkdir($dirVideos, 0755, true) && !is_dir($dirVideos)) {
+    echo json_encode([
+        'ok'          => false,
+        'mensaje'     => 'No se pudo crear el directorio de vídeos',
+        'diagnostico' => ['disco_libre_mb' => (int)floor(@disk_free_space($docRoot . '/uploads/') / 1024 / 1024)],
+    ]);
+    exit;
+}
 
-// Limpieza preventiva: en uploads previos abortados quedan dirs
-// huérfanos en .tmp-uploads consumiendo cuota. Se borran los que
-// llevan inactivos > 6 h (uploads grandes pueden tardar minutos,
-// pero ninguno legítimo dura tantas horas).
-if (is_dir($tmpRoot) && $chunkIndex === 0) {
+// Limpiar archivos .part huérfanos (> 6 h) al iniciar un nuevo upload
+if ($chunkIndex === 0) {
     $umbral = time() - 6 * 3600;
-    foreach (glob($tmpRoot . '/*', GLOB_ONLYDIR) ?: [] as $orfano) {
-        if (@filemtime($orfano) > $umbral) {
-            continue;
+    foreach (glob($dirVideos . '*.part') ?: [] as $orfano) {
+        if (@filemtime($orfano) < $umbral) {
+            @unlink($orfano);
         }
-        foreach (glob($orfano . '/*') ?: [] as $f) {
-            @unlink($f);
-        }
-        @rmdir($orfano);
-    }
-}
-if (!is_dir($tmpDir)) {
-    if (!@mkdir($tmpDir, 0755, true) && !is_dir($tmpDir)) {
-        $err = error_get_last();
-        echo json_encode([
-            'ok'          => false,
-            'mensaje'     => 'No se pudo crear el directorio temporal',
-            'diagnostico' => [
-                'tmp_root_existe'  => is_dir($tmpRoot),
-                'tmp_root_escribe' => is_writable($tmpRoot),
-                'doc_root'         => $docRoot,
-                'php_error'        => $err['message'] ?? null,
-                'disco_libre_mb'   => (int)floor(@disk_free_space($docRoot) / 1024 / 1024),
-            ],
-        ]);
-        exit;
     }
 }
 
-// Mover el chunk recibido a su posición
-$chunkPath = $tmpDir . '/' . $chunkIndex . '.part';
-if (!@move_uploaded_file($_FILES['chunk']['tmp_name'], $chunkPath)) {
+// Abrir fichero parcial: crear en chunk 0, añadir al final en los siguientes
+$dst = @fopen($partPath, $chunkIndex === 0 ? 'wb' : 'ab');
+if (!$dst) {
     $err = error_get_last();
     echo json_encode([
         'ok'          => false,
-        'mensaje'     => 'No se pudo guardar el chunk',
+        'mensaje'     => 'No se pudo abrir el archivo temporal de vídeo',
         'diagnostico' => [
-            'tmp_dir_existe'  => is_dir($tmpDir),
-            'tmp_dir_escribe' => is_writable($tmpDir),
-            'tmp_existe'      => is_file($_FILES['chunk']['tmp_name']),
-            'tmp_size'        => @filesize($_FILES['chunk']['tmp_name']),
-            'php_error'       => $err['message'] ?? null,
-            'disco_libre_mb'  => (int)floor(@disk_free_space($tmpDir) / 1024 / 1024),
+            'directorio_existe'  => is_dir($dirVideos),
+            'directorio_escribe' => is_writable($dirVideos),
+            'php_error'          => $err['message'] ?? null,
+            'disco_libre_mb'     => (int)floor(@disk_free_space($dirVideos) / 1024 / 1024),
         ],
     ]);
     exit;
 }
 
-// Si no es el último chunk, responder y salir
+// Escribir el chunk leyendo directamente del cuerpo de la petición (sin /tmp)
+$src     = fopen('php://input', 'rb');
+$written = @stream_copy_to_stream($src, $dst);
+fclose($src);
+fclose($dst);
+
+if ($written === false) {
+    if ($chunkIndex === 0) @unlink($partPath);
+    $err = error_get_last();
+    echo json_encode([
+        'ok'          => false,
+        'mensaje'     => 'Error al escribir el chunk en disco',
+        'diagnostico' => [
+            'php_error'      => $err['message'] ?? null,
+            'disco_libre_mb' => (int)floor(@disk_free_space($dirVideos) / 1024 / 1024),
+        ],
+    ]);
+    exit;
+}
+
+// Chunk intermedio: confirmar y esperar el siguiente
 if ($chunkIndex < $totalChunks - 1) {
     echo json_encode(['ok' => true, 'recibido' => $chunkIndex]);
     exit;
 }
 
-// ─── Último chunk: verificar que estén todos y ensamblar ───
-for ($i = 0; $i < $totalChunks; $i++) {
-    if (!file_exists($tmpDir . '/' . $i . '.part')) {
-        echo json_encode(['ok' => false, 'mensaje' => "Falta el chunk {$i}, cancela y reintenta"]);
-        exit;
-    }
-}
+// ─── Último chunk: validar tamaño y renombrar ───────────────
+$partSize = filesize($partPath);
 
-// Preparar ruta final
-$dirDestino = $docRoot . '/uploads/videos/';
-if (!is_dir($dirDestino) && !mkdir($dirDestino, 0755, true) && !is_dir($dirDestino)) {
-    echo json_encode(['ok' => false, 'mensaje' => 'No se pudo crear el directorio de vídeos']);
+if ($totalSize > 0 && abs($partSize - $totalSize) > 1024) {
+    @unlink($partPath);
+    echo json_encode(['ok' => false, 'mensaje' => 'El tamaño del vídeo no coincide. Vuelve a intentarlo.']);
     exit;
 }
+
+if ($partSize > 3584 * 1024 * 1024) {
+    @unlink($partPath);
+    echo json_encode(['ok' => false, 'mensaje' => 'El vídeo supera el límite de 3.5 GB']);
+    exit;
+}
+
 $nombreSeguro = preg_replace('/[^a-zA-Z0-9._-]/', '_', $nombreOrig);
 $nombreFinal  = 'tema' . $temaId . '_' . time() . '_' . $nombreSeguro;
-$rutaFisica   = $dirDestino . $nombreFinal;
+$rutaFisica   = $dirVideos . $nombreFinal;
 $rutaWeb      = '/uploads/videos/' . $nombreFinal;
 
-// Concatenar chunks en el archivo final
-$out = fopen($rutaFisica, 'wb');
-if (!$out) {
-    echo json_encode(['ok' => false, 'mensaje' => 'No se pudo abrir el archivo final para escritura']);
+if (!rename($partPath, $rutaFisica)) {
+    @unlink($partPath);
+    $err = error_get_last();
+    echo json_encode([
+        'ok'          => false,
+        'mensaje'     => 'No se pudo finalizar el archivo. Inténtalo de nuevo.',
+        'diagnostico' => ['php_error' => $err['message'] ?? null],
+    ]);
     exit;
 }
-$totalBytes = 0;
-for ($i = 0; $i < $totalChunks; $i++) {
-    $part = $tmpDir . '/' . $i . '.part';
-    $in   = fopen($part, 'rb');
-    if (!$in) {
-        fclose($out);
-        @unlink($rutaFisica);
-        echo json_encode(['ok' => false, 'mensaje' => "No se pudo leer el chunk {$i}"]);
-        exit;
-    }
-    while (!feof($in)) {
-        $buf = fread($in, 1024 * 1024);
-        if ($buf === false) break;
-        $totalBytes += strlen($buf);
-        if ($totalBytes > $MAX_TOTAL) {
-            fclose($in); fclose($out);
-            @unlink($rutaFisica);
-            borrarTmp($tmpDir);
-            echo json_encode(['ok' => false, 'mensaje' => 'El vídeo ensamblado supera 3.5 GB']);
-            exit;
-        }
-        fwrite($out, $buf);
-    }
-    fclose($in);
-}
-fclose($out);
 
-// Limpieza de chunks temporales
-borrarTmp($tmpDir);
-
-// Registrar en BD
+// Registrar en base de datos
 require_once __DIR__ . '/db-connect.php';
 require_once __DIR__ . '/log-helper.php';
 $pdo = obtenerPDO();
-$tamanoKb = (int)ceil($totalBytes / 1024);
-$stmt = $pdo->prepare(
+
+$tamanoKb = (int)ceil($partSize / 1024);
+$pdo->prepare(
     'INSERT INTO materiales (tema_id, tipo, nombre, ruta, tamano_kb, duracion_seg)
      VALUES (:tema_id, :tipo, :nombre, :ruta, :tamano_kb, :duracion_seg)'
-);
-$stmt->execute([
+)->execute([
     ':tema_id'      => $temaId,
     ':tipo'         => 'video',
     ':nombre'       => $nombreOrig,
@@ -193,15 +162,14 @@ $stmt->execute([
     ':tamano_kb'    => $tamanoKb,
     ':duracion_seg' => $duracionSeg > 0 ? $duracionSeg : null,
 ]);
-$materialId = $pdo->lastInsertId();
-// La duración del tema ya no se actualiza desde el upload: se calcula
-// en las APIs (temas.php / mis-cursos.php) sumando duracion_seg.
+$materialId = (int)$pdo->lastInsertId();
 
-$adminId = isset($_POST['admin_id']) ? (int)$_POST['admin_id'] : 0;
-registrar_log($pdo, 'material_subido', 'Vídeo "' . $nombreOrig . '" subido al tema ID ' . $temaId . ' (chunked, ' . round($totalBytes / 1024 / 1024) . ' MB)', $adminId);
+registrar_log($pdo, 'material_subido',
+    'Vídeo "' . $nombreOrig . '" subido al tema ID ' . $temaId .
+    ' (stream, ' . round($partSize / 1024 / 1024) . ' MB)', 0);
 
 echo json_encode([
-    'ok' => true,
+    'ok'       => true,
     'material' => [
         'id'        => $materialId,
         'nombre'    => $nombreOrig,
@@ -210,9 +178,3 @@ echo json_encode([
         'tipo'      => 'video',
     ],
 ]);
-
-function borrarTmp(string $dir): void {
-    if (!is_dir($dir)) return;
-    foreach (glob($dir . '/*') as $f) @unlink($f);
-    @rmdir($dir);
-}

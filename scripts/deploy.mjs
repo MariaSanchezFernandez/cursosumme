@@ -6,10 +6,12 @@
  * Uso:
  *   npm run deploy
  *
- * Antes de ejecutar, crea un archivo .env en la raíz
- * del proyecto copiando .env.example y rellenando los valores.
- * La contraseña se puede poner en .env (SFTP_PASS) o se pedirá
- * por pantalla si no está definida.
+ * PRERREQUISITOS (verificar antes de desplegar en un equipo nuevo):
+ *   1. .env relleno con DB_* y SFTP_* — copiar de .env.example y completar
+ *   2. public/api/db-config.php existente localmente — está en .gitignore
+ *      pero el build lo incluye en dist/ y lo sube al servidor
+ *   3. SFTP_REMOTE_PATH=/ — la raíz SFTP ES la raíz web; cualquier otro
+ *      valor sube los archivos a una carpeta que la web no sirve
  * -------------------------------------------------
  */
 

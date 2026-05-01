@@ -1240,16 +1240,15 @@ function subirArchivoChunked(
       const fin    = Math.min(inicio + CHUNK_SIZE, archivo.size);
       const blob   = archivo.slice(inicio, fin);
 
-      const fd = new FormData();
-      fd.append('upload_id',       uploadId);
-      fd.append('chunk_index',     String(i));
-      fd.append('total_chunks',    String(totalChunks));
-      fd.append('tema_id',         String(tema.id));
-      fd.append('nombre_original', archivo.name);
-      // Sólo el chunk final lleva duración: el servidor la asigna al
-      // material recién insertado en el ensamblado.
-      if (i === totalChunks - 1 && durSeg > 0) fd.append('duracion_seg', String(durSeg));
-      fd.append('chunk', blob, archivo.name + '.part' + i);
+      const params = new URLSearchParams({
+        upload_id:       uploadId,
+        chunk_index:     String(i),
+        total_chunks:    String(totalChunks),
+        total_size:      String(archivo.size),
+        tema_id:         String(tema.id),
+        nombre_original: archivo.name,
+      });
+      if (i === totalChunks - 1 && durSeg > 0) params.set('duracion_seg', String(durSeg));
 
       const bytesPrevios  = inicio;
       const totalBytes    = archivo.size;
@@ -1273,8 +1272,9 @@ function subirArchivoChunked(
         xhr.addEventListener('error',   () => res({ ok: false, texto: 'network' }));
         xhr.addEventListener('timeout', () => res({ ok: false, texto: 'timeout' }));
         xhr.addEventListener('abort',   () => res({ ok: false, texto: 'abort' }));
-        xhr.open('POST', '/api/upload-chunk.php');
-        xhr.send(fd);
+        xhr.open('POST', '/api/upload-chunk.php?' + params.toString());
+        xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+        xhr.send(blob);
       });
 
       if (!resultado.ok) {
@@ -1325,8 +1325,8 @@ function subirArchivo(
       } catch { durSeg = 0; }
     }
 
-    // Vídeos grandes → chunked para esquivar el límite nginx de 1 GB
-    if (tipo === 'video' && archivo.size >= CHUNK_SIZE) {
+    // Todos los vídeos usan streaming directo (sin pasar por /tmp del servidor)
+    if (tipo === 'video') {
       await subirArchivoChunked(cuerpo, tema, archivo, durSeg, onProgress);
       resolve(); return;
     }
