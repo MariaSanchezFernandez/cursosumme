@@ -41,15 +41,23 @@ if ($chunkIndex < 0 || $totalChunks < 1 || $chunkIndex >= $totalChunks || $temaI
     exit;
 }
 
+$tipo      = $_GET['tipo'] ?? 'video';
 $extension = strtolower(pathinfo($nombreOrig, PATHINFO_EXTENSION));
-if (!in_array($extension, ['mp4', 'webm', 'mov', 'avi', 'm4v', 'mkv'])) {
-    echo json_encode(['ok' => false, 'mensaje' => "Tipo de vídeo no permitido (.{$extension})"]);
+
+$ext_permitidas = [
+    'video'     => ['mp4', 'webm', 'mov', 'avi', 'm4v', 'mkv'],
+    'documento' => ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'mp3', 'm4a', 'wav', 'ogg', 'aac'],
+];
+if (!isset($ext_permitidas[$tipo]) || !in_array($extension, $ext_permitidas[$tipo])) {
+    echo json_encode(['ok' => false, 'mensaje' => "Tipo de archivo no permitido (.{$extension})"]);
     exit;
 }
 
-$docRoot   = rtrim($_SERVER['DOCUMENT_ROOT'], '/');
-$dirVideos = $docRoot . '/uploads/videos/';
-$partPath  = $dirVideos . $uploadId . '.part';
+$docRoot      = rtrim($_SERVER['DOCUMENT_ROOT'], '/');
+$subdir       = $tipo === 'video' ? 'videos' : 'documentos';
+$dirDestino   = $docRoot . "/uploads/{$subdir}/";
+$dirVideos    = $dirDestino; // alias para compatibilidad
+$partPath     = $dirDestino . $uploadId . '.part';
 
 // Crear directorio si no existe
 if (!is_dir($dirVideos) && !mkdir($dirVideos, 0755, true) && !is_dir($dirVideos)) {

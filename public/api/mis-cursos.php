@@ -76,10 +76,10 @@ $phTemas = implode(',', array_fill(0, count($temaIds), '?'));
 
 // Materiales de todos esos temas
 $stmtMat = $pdo->prepare(
-    "SELECT id, tema_id, tipo, nombre, ruta, tamano_kb
+    "SELECT id, tema_id, tipo, nombre, ruta, tamano_kb, cf_video_id, cf_status
      FROM materiales
      WHERE tema_id IN ({$phTemas})
-     ORDER BY tema_id ASC, subido_en ASC"
+     ORDER BY tema_id ASC, orden ASC, subido_en ASC"
 );
 $stmtMat->execute($temaIds);
 $materialesRows = $stmtMat->fetchAll();

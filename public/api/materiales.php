@@ -27,16 +27,35 @@ if ($metodo === 'GET') {
         exit;
     }
     $stmt = $pdo->prepare(
-        'SELECT id, tipo, nombre, ruta, tamano_kb, duracion_seg, subido_en FROM materiales WHERE tema_id = :tema_id ORDER BY subido_en ASC'
+        'SELECT id, tipo, nombre, ruta, tamano_kb, duracion_seg, cf_video_id, cf_status, subido_en
+         FROM materiales WHERE tema_id = :tema_id ORDER BY orden ASC, subido_en ASC'
     );
     $stmt->execute([':tema_id' => $temaId]);
     echo json_encode(['ok' => true, 'materiales' => $stmt->fetchAll()]);
     exit;
 }
 
-// ── PUT (renombrar) ──────────────────────────────────────────
+// ── PUT (renombrar / reordenar) ───────────────────────────────
 if ($metodo === 'PUT') {
     $body = json_decode(file_get_contents('php://input'), true);
+
+    // Reordenar: recibe { accion:'reordenar', ids:[1,2,3,...] }
+    if (($body['accion'] ?? '') === 'reordenar') {
+        $ids = array_values(array_filter(array_map('intval', $body['ids'] ?? [])));
+        if (empty($ids)) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'mensaje' => 'Falta ids']);
+            exit;
+        }
+        $stmt = $pdo->prepare('UPDATE materiales SET orden=:orden WHERE id=:id');
+        foreach ($ids as $pos => $id) {
+            $stmt->execute([':orden' => $pos, ':id' => $id]);
+        }
+        echo json_encode(['ok' => true]);
+        exit;
+    }
+
+    // Renombrar: recibe { id, nombre }
     if (empty($body['id'])) {
         http_response_code(400);
         echo json_encode(['ok' => false, 'mensaje' => 'Falta el id']);
@@ -60,14 +79,31 @@ if ($metodo === 'DELETE') {
         echo json_encode(['ok' => false, 'mensaje' => 'Falta el id del material']);
         exit;
     }
-    // Obtener nombre/tipo/ruta para log y eliminar archivo físico
-    $stmt = $pdo->prepare('SELECT nombre, tipo, ruta FROM materiales WHERE id = :id');
+    // Obtener datos para log y limpieza
+    $stmt = $pdo->prepare('SELECT nombre, tipo, ruta, cf_video_id FROM materiales WHERE id = :id');
     $stmt->execute([':id' => $id]);
     $mat = $stmt->fetch();
     if ($mat) {
-        $rutaFisica = rtrim($_SERVER['DOCUMENT_ROOT'], '/') . $mat['ruta'];
-        if (file_exists($rutaFisica)) { @unlink($rutaFisica); }
+        // Vídeo local: borrar archivo físico
+        if ($mat['ruta']) {
+            $rutaFisica = rtrim($_SERVER['DOCUMENT_ROOT'], '/') . $mat['ruta'];
+            if (file_exists($rutaFisica)) { @unlink($rutaFisica); }
+        }
+        // Vídeo Cloudflare: borrar del CDN
+        if ($mat['cf_video_id']) {
+            $ch = curl_init('https://api.cloudflare.com/client/v4/accounts/' . CF_ACCOUNT_ID . '/stream/' . rawurlencode($mat['cf_video_id']));
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_CUSTOMREQUEST  => 'DELETE',
+                CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . CF_API_TOKEN],
+                CURLOPT_TIMEOUT        => 10,
+                CURLOPT_SSL_VERIFYPEER => true,
+            ]);
+            curl_exec($ch);
+            curl_close($ch);
+        }
     }
+
     $stmt = $pdo->prepare('DELETE FROM materiales WHERE id = :id');
     $stmt->execute([':id' => $id]);
 

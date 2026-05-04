@@ -47,7 +47,7 @@ if (!in_array($extension, $ext_permitidas[$tipo])) {
     exit;
 }
 
-$maxBytes      = $tipo === 'video' ? 3584 * 1024 * 1024 : 100 * 1024 * 1024;
+$maxBytes      = $tipo === 'video' ? 3584 * 1024 * 1024 : 500 * 1024 * 1024;
 $subdirectorio = $tipo === 'video' ? 'videos' : 'documentos';
 $docRoot       = rtrim($_SERVER['DOCUMENT_ROOT'], '/');
 $dirDestino    = $docRoot . "/uploads/{$subdirectorio}/";

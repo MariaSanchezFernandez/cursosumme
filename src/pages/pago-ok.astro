@@ -1,0 +1,25 @@
+---
+import Plantilla from '../layouts/Plantilla.astro';
+import '../styles/global.css';
+---
+
+<Plantilla>
+  <main style="min-height:80vh;display:flex;align-items:center;justify-content:center;padding:2rem;">
+    <div style="max-width:480px;width:100%;text-align:center;">
+      <div style="width:72px;height:72px;background:#e8f4ee;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;">
+        <svg viewBox="0 0 24 24" fill="none" width="36" height="36">
+          <circle cx="12" cy="12" r="10" fill="#2e7d55"/>
+          <path d="M7 12l3.5 3.5L17 8" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h1 style="font-size:1.5rem;font-weight:800;color:#1a3a28;margin:0 0 0.75rem;">¡Pago completado!</h1>
+      <p style="color:#555;font-size:0.95rem;line-height:1.7;margin:0 0 2rem;">
+        Recibirás un email en breve con tus credenciales de acceso.<br/>
+        <strong>Revisa también la carpeta de spam</strong> si no lo ves en unos minutos.
+      </p>
+      <a href="/" style="display:inline-block;background:#2e7d55;color:#fff;text-decoration:none;padding:0.75rem 2rem;border-radius:8px;font-weight:700;font-size:0.9rem;">
+        Ir a la plataforma →
+      </a>
+    </div>
+  </main>
+</Plantilla>

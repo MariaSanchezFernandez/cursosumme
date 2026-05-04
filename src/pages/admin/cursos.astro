@@ -77,6 +77,20 @@ import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
     </p>
   </div>
 
+  <!-- Precio y Stripe del pack -->
+  <div style="padding:0.75rem 1.5rem; border-bottom:1px solid #f0f5f2; display:flex; gap:0.75rem;">
+    <div style="flex:1;">
+      <label style="font-size:0.75rem; font-weight:700; color:#666; display:block; margin-bottom:0.35rem;">Precio (€)</label>
+      <input id="pack-precio-input" class="form-input" type="number" min="0" step="0.01" placeholder="Ej. 49.00"
+        style="width:100%; box-sizing:border-box;" />
+    </div>
+    <div style="flex:2;">
+      <label style="font-size:0.75rem; font-weight:700; color:#666; display:block; margin-bottom:0.35rem;">Stripe Price ID</label>
+      <input id="pack-spid-input" class="form-input" type="text" placeholder="price_..."
+        style="width:100%; box-sizing:border-box;" />
+    </div>
+  </div>
+
   <!-- Lista de cursos con checkboxes -->
   <div style="flex:1; overflow-y:auto; padding:1rem 1.5rem;">
     <p style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:#aaa; margin:0 0 0.75rem;">
@@ -192,6 +206,12 @@ import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
 .curso-stat-sep { font-size: 0.7rem; color: var(--color-text-muted); opacity: 0.5; }
 .curso-progreso-badge { font-size: 0.72rem; font-weight: 700; background: #e8f4ee; color: #2e7d55; border-radius: 20px; padding: 0.1rem 0.5rem; }
 .curso-card-acciones { display: flex; gap: 0.4rem; align-items: center; }
+.btn-card-dup {
+  width: 30px; height: 30px; border-radius: 8px; border: 1px solid #d8e8e0;
+  background: #fff; cursor: pointer; display: flex; align-items: center;
+  justify-content: center; color: #3a7a5a; flex-shrink: 0;
+}
+.btn-card-dup:hover { background: #eef6f1; }
 .btn-card-del {
   width: 30px; height: 30px; border-radius: 8px; padding: 0;
   border: 1px solid #f5c6c6; background: #fff; cursor: pointer;
@@ -405,6 +425,9 @@ function renderizarCursos(filtro: string) {
             <span class="curso-tag">${c.etiqueta}</span>
             ${c.duracion ? `<span class="curso-tag">⏱ ${c.duracion}</span>` : ''}
             <span class="curso-tag ${c.activo == 1 ? 'activo' : 'inactivo'}">${c.activo == 1 ? '● Activo' : '● Inactivo'}</span>
+            <span class="curso-tag precio-badge" style="cursor:pointer;background:${c.precio ? '#e8f4ee' : '#f5f5f5'};color:${c.precio ? '#1d7a52' : '#999'};" title="Editar precio">
+              ${c.precio ? parseFloat(c.precio).toFixed(2) + ' €' : '+ Precio'}
+            </span>
           </div>
         </div>
         <div class="curso-card-footer">
@@ -416,6 +439,12 @@ function renderizarCursos(filtro: string) {
           </div>
           <div class="curso-card-acciones">
             <button class="btn-color-curso btn-card-color" title="Color del curso" style="width:30px;height:30px;border-radius:50%;border:2px solid rgba(0,0,0,0.15);cursor:pointer;flex-shrink:0;padding:0;background:${acento};position:relative;"></button>
+            <button class="btn-card-dup" data-id="${c.id}" data-titulo="${c.titulo}" title="Duplicar curso">
+              <svg viewBox="0 0 14 14" fill="none" width="13" height="13">
+                <rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+                <path d="M2 10V2h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+              </svg>
+            </button>
             <a href="/admin/cursos/editar?id=${c.id}" class="btn-admin" style="font-size:0.75rem; padding:0; height:30px; line-height:30px; display:inline-flex; align-items:center; padding:0 0.7rem;">
               Editar
             </a>
@@ -465,6 +494,54 @@ function renderizarCursos(filtro: string) {
         setTimeout(() => document.addEventListener('click', cerrar), 0);
       });
 
+      card.querySelector('.btn-card-dup')!.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const btn    = e.currentTarget as HTMLButtonElement;
+        const id     = Number(btn.dataset.id);
+        const titulo = btn.dataset.titulo || '';
+        if (!confirm(`¿Duplicar el curso "${titulo}"?\nSe creará una copia inactiva con todos sus temas y materiales.\n\n⚠ Los alumnos no se copian: deberás asignarlos manualmente a la copia desde su ficha de alumno.`)) return;
+        btn.disabled = true;
+        const res  = await fetch('/api/cursos.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ accion: 'duplicar', id }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          await cargarCursos();
+        } else {
+          btn.disabled = false;
+          alert(data.mensaje || 'Error al duplicar el curso');
+        }
+      });
+
+      card.querySelector('.precio-badge')!.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const precioActual = c.precio ? String(parseFloat(c.precio).toFixed(2)) : '';
+        const spidActual   = c.stripe_price_id ?? '';
+        const nuevoPrecio  = prompt('Precio del curso (€), deja vacío para quitar:', precioActual);
+        if (nuevoPrecio === null) return;
+        const nuevoSpid = prompt('Stripe Price ID (price_...):', spidActual);
+        if (nuevoSpid === null) return;
+        await fetch('/api/cursos.php', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: c.id, titulo: c.titulo, etiqueta: c.etiqueta,
+            nivel: c.nivel, duracion: c.duracion, activo: c.activo,
+            pack: c.pack, pack_color: c.pack_color, color: c.color, imagen: c.imagen,
+            precio: nuevoPrecio || null,
+            stripe_price_id: nuevoSpid || null,
+          }),
+        });
+        c.precio           = nuevoPrecio ? parseFloat(nuevoPrecio) : null;
+        c.stripe_price_id  = nuevoSpid || null;
+        const badge = card.querySelector('.precio-badge') as HTMLElement;
+        badge.textContent   = c.precio ? parseFloat(c.precio).toFixed(2) + ' €' : '+ Precio';
+        badge.style.background = c.precio ? '#e8f4ee' : '#f5f5f5';
+        badge.style.color      = c.precio ? '#1d7a52' : '#999';
+      });
+
       card.querySelector('.btn-card-del')!.addEventListener('click', async (e) => {
         e.preventDefault();
         const btn    = e.currentTarget as HTMLButtonElement;
@@ -510,13 +587,24 @@ function renderizarCursos(filtro: string) {
 }
 
 // ── Panel de packs ─────────────────────────────────────────────
-const overlay   = document.getElementById('overlay-pack')!;
-const panel     = document.getElementById('panel-pack')!;
-const inputNombre = document.getElementById('pack-nombre-input') as HTMLInputElement;
-const selector  = document.getElementById('pack-selector') as HTMLSelectElement;
-const listaDiv  = document.getElementById('pack-cursos-lista')!;
-const btnDisolver = document.getElementById('btn-disolver-pack') as HTMLButtonElement;
-const panelMsg  = document.getElementById('panel-msg')!;
+const overlay      = document.getElementById('overlay-pack')!;
+const panel        = document.getElementById('panel-pack')!;
+const inputNombre  = document.getElementById('pack-nombre-input') as HTMLInputElement;
+const inputPrecio  = document.getElementById('pack-precio-input') as HTMLInputElement;
+const inputSpid    = document.getElementById('pack-spid-input') as HTMLInputElement;
+const selector     = document.getElementById('pack-selector') as HTMLSelectElement;
+const listaDiv     = document.getElementById('pack-cursos-lista')!;
+const btnDisolver  = document.getElementById('btn-disolver-pack') as HTMLButtonElement;
+const panelMsg     = document.getElementById('panel-msg')!;
+
+// Packs de Stripe cargados desde BD
+let packsBD: any[] = [];
+async function cargarPacksBD() {
+  const res  = await fetch('/api/packs.php');
+  const data = await res.json();
+  packsBD = data.packs ?? [];
+}
+cargarPacksBD();
 
 function mostrarPanelMsg(texto: string, tipo: 'ok' | 'error') {
   panelMsg.textContent      = texto;
@@ -537,11 +625,19 @@ function actualizarSelectorPacks() {
   });
 }
 
+function rellenarDatosPack(nombrePack: string) {
+  const packBD = packsBD.find(p => p.nombre === nombrePack || p.etiqueta === nombrePack);
+  inputPrecio.value = packBD?.precio ? String(parseFloat(packBD.precio).toFixed(2)) : '';
+  inputSpid.value   = packBD?.stripe_price_id ?? '';
+}
+
 function abrirPanel() {
   overlay.style.display = 'block';
   panel.style.display   = 'flex';
   panelMsg.style.display = 'none';
   inputNombre.value = '';
+  inputPrecio.value = '';
+  inputSpid.value   = '';
   selector.value    = '';
   btnDisolver.style.display = 'none';
   renderListaCursos('');
@@ -554,6 +650,7 @@ function abrirPanelEditar(pack: string) {
   inputNombre.value = pack;
   btnDisolver.style.display = 'inline-flex';
   renderListaCursos(pack);
+  rellenarDatosPack(pack);
 }
 
 function cerrarPanel() {
@@ -588,6 +685,8 @@ selector.addEventListener('change', () => {
   inputNombre.value = v;
   btnDisolver.style.display = v ? 'inline-flex' : 'none';
   renderListaCursos(v);
+  if (v) rellenarDatosPack(v);
+  else { inputPrecio.value = ''; inputSpid.value = ''; }
 });
 
 // Abrir con botón principal
@@ -644,6 +743,31 @@ document.getElementById('btn-guardar-pack')!.addEventListener('click', async () 
   });
 
   await Promise.all(promesas);
+
+  // Guardar precio y stripe_price_id del pack en packs.php
+  const precio = inputPrecio.value.trim();
+  const spid   = inputSpid.value.trim();
+  const packBDExistente = packsBD.find(p => p.nombre === nombre || p.etiqueta === nombre);
+  const etiquetasPack = [...new Set(
+    todosLosCursos.filter((c: any) => c.pack === nombre || listaDiv.querySelector<HTMLInputElement>(`input[data-id="${c.id}"]`)?.checked)
+      .map((c: any) => c.etiqueta)
+  )].join(',') || nombre;
+
+  if (packBDExistente) {
+    await fetch(`/api/packs.php?id=${packBDExistente.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: packBDExistente.id, nombre, descripcion: packBDExistente.descripcion,
+        precio: precio || null, stripe_price_id: spid || null, etiqueta: packBDExistente.etiqueta, activo: 1 }),
+    });
+  } else if (precio || spid) {
+    await fetch('/api/packs.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, precio: precio || null, stripe_price_id: spid || null, etiqueta: nombre }),
+    });
+  }
+  await cargarPacksBD();
 
   btn.disabled = false; btn.textContent = 'Guardar pack';
   mostrarPanelMsg(`✓ Pack "${nombre}" guardado.`, 'ok');

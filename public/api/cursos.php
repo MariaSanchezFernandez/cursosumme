@@ -25,8 +25,24 @@ if ($metodo === 'GET') {
     // tema del curso. Se usa una subquery porque hacer LEFT JOIN a
     // materiales junto al de temas multiplicaría filas y rompería
     // el COUNT(t.id) AS num_temas.
+    // Modo público: solo cursos activos con precio para la página de precios
+    if (!empty($_GET['publicos'])) {
+        $stmt = $pdo->query(
+            'SELECT c.id, c.titulo, c.etiqueta, c.color, c.imagen, c.precio, c.stripe_price_id,
+                    COUNT(t.id) AS num_temas
+             FROM cursos c
+             LEFT JOIN temas t ON t.curso_id = c.id
+             WHERE c.activo = 1 AND c.precio IS NOT NULL
+             GROUP BY c.id
+             ORDER BY c.etiqueta, c.creado_en DESC'
+        );
+        echo json_encode(['ok' => true, 'cursos' => $stmt->fetchAll()]);
+        exit;
+    }
+
     $cursos = $pdo->query(
         'SELECT c.id, c.titulo, c.descripcion, c.etiqueta, c.nivel, c.duracion, c.pack, c.pack_color, c.color, c.imagen, c.activo, c.creado_en,
+                c.precio, c.stripe_price_id,
                 COUNT(t.id) AS num_temas,
                 (SELECT COALESCE(SUM(m.duracion_seg), 0)
                  FROM materiales m
@@ -72,6 +88,90 @@ if ($metodo === 'GET') {
 // ── POST ─────────────────────────────────────────────────────
 if ($metodo === 'POST') {
     $body = json_decode(file_get_contents('php://input'), true);
+
+    // ── Duplicar curso ──────────────────────────────────────
+    if (($body['accion'] ?? '') === 'duplicar') {
+        $idOrigen = (int)($body['id'] ?? 0);
+        if (!$idOrigen) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'mensaje' => 'Falta el id del curso a duplicar']);
+            exit;
+        }
+
+        $origen = $pdo->prepare('SELECT * FROM cursos WHERE id = :id');
+        $origen->execute([':id' => $idOrigen]);
+        $c = $origen->fetch();
+        if (!$c) {
+            http_response_code(404);
+            echo json_encode(['ok' => false, 'mensaje' => 'Curso no encontrado']);
+            exit;
+        }
+
+        $pdo->beginTransaction();
+        try {
+            // 1. Duplicar curso
+            $pdo->prepare(
+                'INSERT INTO cursos (titulo, descripcion, etiqueta, nivel, duracion, pack, pack_color, color, imagen, activo)
+                 VALUES (:titulo, :descripcion, :etiqueta, :nivel, :duracion, :pack, :pack_color, :color, :imagen, 0)'
+            )->execute([
+                ':titulo'      => $c['titulo'] . ' (Copia)',
+                ':descripcion' => $c['descripcion'],
+                ':etiqueta'    => $c['etiqueta'],
+                ':nivel'       => $c['nivel'],
+                ':duracion'    => $c['duracion'],
+                ':pack'        => $c['pack'],
+                ':pack_color'  => $c['pack_color'],
+                ':color'       => $c['color'],
+                ':imagen'      => $c['imagen'],
+            ]);
+            $nuevoCursoId = (int)$pdo->lastInsertId();
+
+            // 2. Duplicar temas
+            $temas = $pdo->prepare('SELECT * FROM temas WHERE curso_id = :id ORDER BY orden ASC');
+            $temas->execute([':id' => $idOrigen]);
+            foreach ($temas->fetchAll() as $t) {
+                $pdo->prepare(
+                    'INSERT INTO temas (curso_id, titulo, descripcion, duracion, orden, color)
+                     VALUES (:curso_id, :titulo, :descripcion, :duracion, :orden, :color)'
+                )->execute([
+                    ':curso_id'    => $nuevoCursoId,
+                    ':titulo'      => $t['titulo'],
+                    ':descripcion' => $t['descripcion'],
+                    ':duracion'    => $t['duracion'],
+                    ':orden'       => $t['orden'],
+                    ':color'       => $t['color'],
+                ]);
+                $nuevoTemaId = (int)$pdo->lastInsertId();
+
+                // 3. Duplicar materiales (mismos archivos físicos, solo nuevas filas en BD)
+                $mats = $pdo->prepare('SELECT * FROM materiales WHERE tema_id = :tema_id');
+                $mats->execute([':tema_id' => $t['id']]);
+                foreach ($mats->fetchAll() as $m) {
+                    $pdo->prepare(
+                        'INSERT INTO materiales (tema_id, tipo, nombre, ruta, tamano_kb, duracion_seg)
+                         VALUES (:tema_id, :tipo, :nombre, :ruta, :tamano_kb, :duracion_seg)'
+                    )->execute([
+                        ':tema_id'     => $nuevoTemaId,
+                        ':tipo'        => $m['tipo'],
+                        ':nombre'      => $m['nombre'],
+                        ':ruta'        => $m['ruta'],
+                        ':tamano_kb'   => $m['tamano_kb'],
+                        ':duracion_seg'=> $m['duracion_seg'],
+                    ]);
+                }
+            }
+
+            $pdo->commit();
+            registrar_log($pdo, 'curso_duplicado', 'Curso "' . $c['titulo'] . '" duplicado (nuevo ID ' . $nuevoCursoId . ')', 0);
+            echo json_encode(['ok' => true, 'id' => $nuevoCursoId]);
+        } catch (PDOException $e) {
+            $pdo->rollBack();
+            http_response_code(500);
+            echo json_encode(['ok' => false, 'mensaje' => 'Error al duplicar el curso']);
+        }
+        exit;
+    }
+
     if (empty($body['titulo']) || empty($body['etiqueta'])) {
         http_response_code(400);
         echo json_encode(['ok' => false, 'mensaje' => 'Faltan campos obligatorios']);
@@ -106,7 +206,8 @@ if ($metodo === 'PUT') {
     }
     $stmt = $pdo->prepare(
         'UPDATE cursos SET titulo=:titulo, descripcion=:descripcion, etiqueta=:etiqueta, nivel=:nivel,
-         duracion=:duracion, pack=:pack, pack_color=:pack_color, color=:color, imagen=:imagen, activo=:activo WHERE id=:id'
+         duracion=:duracion, pack=:pack, pack_color=:pack_color, color=:color, imagen=:imagen, activo=:activo,
+         precio=:precio, stripe_price_id=:spid WHERE id=:id'
     );
     $stmt->execute([
         ':titulo'      => trim($body['titulo'] ?? ''),
@@ -119,6 +220,8 @@ if ($metodo === 'PUT') {
         ':color'       => !empty($body['color']) ? trim($body['color']) : null,
         ':imagen'      => !empty($body['imagen']) ? trim($body['imagen']) : null,
         ':activo'      => isset($body['activo']) ? (int)$body['activo'] : 1,
+        ':precio'      => isset($body['precio']) && $body['precio'] !== '' ? (float)$body['precio'] : null,
+        ':spid'        => !empty($body['stripe_price_id']) ? trim($body['stripe_price_id']) : null,
         ':id'          => (int)$body['id'],
     ]);
     $adminIdPut = isset($body['admin_id']) ? (int)$body['admin_id'] : 0;

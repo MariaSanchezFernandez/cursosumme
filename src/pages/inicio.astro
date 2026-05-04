@@ -98,8 +98,13 @@ const leccionTit       = document.getElementById('leccionTitulo')!;
 const leccionDesc      = document.getElementById('leccionDescripcion')!;
 const videoPlayer      = document.getElementById('videoPlayer') as HTMLVideoElement;
 const videoPlaceholder = document.getElementById('videoPlaceholder')!;
+const videoBox         = videoPlaceholder.closest('.video-box') as HTMLElement;
 const videoTitulo      = document.getElementById('videoTitulo')!;
+const cfWrapper        = document.getElementById('cfWrapper')    as HTMLElement;
+const cfPlayer         = document.getElementById('cfPlayer')     as HTMLIFrameElement;
+const cfProcesando     = document.getElementById('cfProcesando') as HTMLElement;
 const materialesLista  = document.getElementById('materialesLista')!;
+const videoPlaylist    = document.getElementById('videoPlaylist') as HTMLElement;
 const panelIntro       = document.getElementById('panelIntro')!;
 const panelContenido   = document.getElementById('panelContenido')!;
 const introDesc        = document.getElementById('introDescripcion')!;
@@ -492,8 +497,42 @@ function abrirCurso(curso: any, articleEl: HTMLElement) {
   vista.classList.add('con-detalle');
 }
 
+// ── Ocultar todos los reproductores ──────────────────────────
+function ocultarReproductores() {
+  videoPlayer.pause();
+  videoPlayer.src           = '';
+  videoPlayer.style.display = 'none';
+  cfWrapper.style.display   = 'none';
+  cfPlayer.src              = '';
+  cfProcesando.style.display = 'none';
+}
+
+// ── Reproducir un material de vídeo concreto ─────────────────
+async function reproducirVideo(videoMat: any) {
+  ocultarReproductores();
+  if (videoMat.cf_video_id) {
+    // Vídeo Cloudflare Stream (DRM)
+    if (videoMat.cf_status === 'ready') {
+      const res = await fetch(
+        `/api/cloudflare-token.php?material_id=${videoMat.id}&usuario_id=${sesion.userId}&token=${encodeURIComponent(sesion.token || '')}`
+      );
+      const data = await res.json();
+      if (data.ok) {
+        cfWrapper.style.display = 'block';
+        cfPlayer.src = `https://iframe.videodelivery.net/${data.token}?autoplay=false`;
+      }
+    } else {
+      cfProcesando.style.display = 'block';
+    }
+  } else {
+    // Vídeo local
+    videoPlayer.src           = `/api/video.php?material_id=${videoMat.id}&usuario_id=${sesion.userId}&token=${encodeURIComponent(sesion.token || '')}`;
+    videoPlayer.style.display = 'block';
+  }
+}
+
 // ── Seleccionar tema: reproducir vídeo + materiales ───────────
-function seleccionarTema(tema: any, liEl: HTMLElement) {
+async function seleccionarTema(tema: any, liEl: HTMLElement) {
   // Pasar de intro a panel de contenido (mostrar sidebar)
   panelSubtemas.style.flex    = '0 0 250px';
   panelSubtemas.style.opacity = '1';
@@ -506,15 +545,40 @@ function seleccionarTema(tema: any, liEl: HTMLElement) {
   leccionDesc.innerHTML = tema.descripcion || '';
   temaActualId = tema.id ?? null;
 
-  const videoMat = (tema.materiales ?? []).find((m: any) => m.tipo === 'video');
-  if (videoMat) {
-    videoPlayer.src                = `/api/video.php?material_id=${videoMat.id}&usuario_id=${sesion.userId}&token=${encodeURIComponent(sesion.token || '')}`;
-    videoPlayer.style.display      = 'block';
+  const videosMat = (tema.materiales ?? []).filter((m: any) => m.tipo === 'video');
+  if (videosMat.length > 0) {
+    videoBox.style.display         = '';
     videoPlaceholder.style.display = 'none';
+
+    if (videosMat.length > 1) {
+      videoPlaylist.style.display = '';
+      videoPlaylist.innerHTML = '';
+      videosMat.forEach((mat: any, idx: number) => {
+        const nombre = mat.nombre.replace(/\.[^.]+$/, '');
+        const btn = document.createElement('button');
+        btn.className = 'video-playlist-item' + (idx === 0 ? ' activo' : '');
+        btn.innerHTML = `
+          <svg viewBox="0 0 16 16" fill="none" width="13" height="13">
+            <polygon points="4,3 13,8 4,13" fill="currentColor"/>
+          </svg>
+          <span>${idx + 1}. ${nombre}</span>
+        `;
+        btn.addEventListener('click', () => {
+          videoPlaylist.querySelectorAll('.video-playlist-item').forEach(b => b.classList.remove('activo'));
+          btn.classList.add('activo');
+          reproducirVideo(mat);
+        });
+        videoPlaylist.appendChild(btn);
+      });
+    } else {
+      videoPlaylist.style.display = 'none';
+    }
+
+    reproducirVideo(videosMat[0]);
   } else {
-    videoPlayer.pause();
-    videoPlayer.src                = '';
-    videoPlayer.style.display      = 'none';
+    ocultarReproductores();
+    videoBox.style.display         = 'none';
+    videoPlaylist.style.display    = 'none';
     videoPlaceholder.style.display = 'flex';
     videoTitulo.textContent        = 'Sin vídeo en este tema';
   }
@@ -552,9 +616,7 @@ function seleccionarTema(tema: any, liEl: HTMLElement) {
 btnVolver.addEventListener('click', () => {
   vista.classList.remove('con-detalle');
   document.querySelectorAll('.curso').forEach(c => c.classList.remove('activo'));
-  videoPlayer.pause();
-  videoPlayer.src                = '';
-  videoPlayer.style.display      = 'none';
+  ocultarReproductores();
   videoPlaceholder.style.display = 'flex';
   videoTitulo.textContent        = 'Selecciona un tema';
   panelSubtemas.style.flex    = '0 0 0';

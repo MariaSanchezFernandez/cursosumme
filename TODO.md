@@ -50,3 +50,5 @@ doble de espacio temporalmente — excedía la cuota de la cuenta.
 - [ ] Usar `info-limites.php` (ya devuelve `disco_libre_mb`) en el cliente antes
   de cada upload grande para avisar al admin si el filesystem está al 90 %,
   antes de que empiece a subir.
+
+  - [ ] Limite de personas que pueden iniciar sesion con una misma cuena

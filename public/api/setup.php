@@ -44,8 +44,45 @@ ejecutar($pdo, 'ALTER TABLE temas  ADD COLUMN IF NOT EXISTS duracion    VARCHAR(
 // como override opcional).
 ejecutar($pdo, 'ALTER TABLE materiales ADD COLUMN IF NOT EXISTS duracion_seg INT DEFAULT NULL', 'duracion_seg en materiales', $resultados);
 ejecutar($pdo, 'ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS fecha_baja DATE DEFAULT NULL', 'fecha_baja en usuarios', $resultados);
+
+
 ejecutar($pdo, 'ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS foto_perfil VARCHAR(255) DEFAULT NULL', 'foto_perfil en usuarios', $resultados);
 ejecutar($pdo, 'ALTER TABLE cursos  ADD COLUMN IF NOT EXISTS imagen      VARCHAR(500) DEFAULT NULL', 'imagen en cursos', $resultados);
+
+// ── Orden de materiales ───────────────────────────────────────
+ejecutar($pdo, 'ALTER TABLE materiales ADD COLUMN IF NOT EXISTS orden INT NOT NULL DEFAULT 0', 'orden en materiales', $resultados);
+
+// ── Cloudflare Stream ─────────────────────────────────────────
+// ruta pasa a nullable: los vídeos CF no tienen archivo local.
+ejecutar($pdo, 'ALTER TABLE materiales MODIFY COLUMN ruta VARCHAR(500) DEFAULT NULL', 'ruta nullable en materiales', $resultados);
+ejecutar($pdo, 'ALTER TABLE materiales ADD COLUMN IF NOT EXISTS cf_video_id VARCHAR(100) DEFAULT NULL', 'cf_video_id en materiales', $resultados);
+ejecutar($pdo, "ALTER TABLE materiales ADD COLUMN IF NOT EXISTS cf_status ENUM('uploading','processing','ready','error') DEFAULT NULL", 'cf_status en materiales', $resultados);
+
+// ── Stripe ────────────────────────────────────────────────────
+ejecutar($pdo, 'ALTER TABLE cursos ADD COLUMN IF NOT EXISTS precio DECIMAL(8,2) DEFAULT NULL', 'precio en cursos', $resultados);
+ejecutar($pdo, 'ALTER TABLE cursos ADD COLUMN IF NOT EXISTS stripe_price_id VARCHAR(100) DEFAULT NULL', 'stripe_price_id en cursos', $resultados);
+
+ejecutar($pdo, "CREATE TABLE IF NOT EXISTS packs (
+    id               INT AUTO_INCREMENT PRIMARY KEY,
+    nombre           VARCHAR(200) NOT NULL,
+    descripcion      TEXT,
+    precio           DECIMAL(8,2) DEFAULT NULL,
+    stripe_price_id  VARCHAR(100) DEFAULT NULL,
+    etiqueta         VARCHAR(100) NOT NULL,
+    activo           TINYINT(1) NOT NULL DEFAULT 1,
+    creado_en        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", 'tabla packs', $resultados);
+
+ejecutar($pdo, "CREATE TABLE IF NOT EXISTS pagos (
+    id                 INT AUTO_INCREMENT PRIMARY KEY,
+    stripe_session_id  VARCHAR(200) NOT NULL UNIQUE,
+    email              VARCHAR(200) NOT NULL,
+    cursos_ids         TEXT NOT NULL,
+    alumno_id          INT DEFAULT NULL,
+    estado             ENUM('pendiente','completado','fallido') NOT NULL DEFAULT 'pendiente',
+    importe            DECIMAL(8,2) DEFAULT NULL,
+    creado_en          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", 'tabla pagos', $resultados);
 
 // ── Tabla progresos ───────────────────────────────────────────
 ejecutar($pdo, "CREATE TABLE IF NOT EXISTS progresos (

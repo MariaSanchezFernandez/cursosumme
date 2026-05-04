@@ -494,6 +494,13 @@ function urlDescargaVideo(mat: { id: number }): string {
   } catch { return ''; }
 }
 
+function getAuthBearer(): string {
+  try {
+    const ses = JSON.parse(sessionStorage.getItem('umme_session') || '{}');
+    return ses.token ? `Bearer ${ses.token}` : '';
+  } catch { return ''; }
+}
+
 const msgGlobal = document.getElementById('msg-global') as HTMLDivElement;
 function mostrarMsg(texto: string, tipo: 'ok' | 'error') {
   msgGlobal.textContent      = texto;
@@ -981,7 +988,10 @@ async function crearTemaCard(tema: any): Promise<HTMLElement> {
             <input type="file" class="input-doc" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.jpg,.jpeg,.png,.mp3,.m4a,.wav,.ogg,.aac" />
             <button type="submit" class="btn-admin primario btn-upload">Subir archivo</button>
           </div>
-          <span class="subiendo-msg" style="margin-top:0.4rem; display:none;">Subiendo, espera…</span>
+          <div class="upload-progreso" style="display:none;">
+            <div class="upload-progreso-barra"><div class="upload-progreso-fill" style="width:0%"></div></div>
+            <span class="upload-progreso-txt">0%</span>
+          </div>
         </form>
       </div>
     </div>
@@ -1103,35 +1113,49 @@ async function crearTemaCard(tema: any): Promise<HTMLElement> {
     progresoBarra.style.width = '0%';
     progresoTxt.textContent = '0%';
     btnSubirVideo.disabled = true;
-    await subirArchivo(cuerpo, tema, archivo, 'video', (pct) => {
-      progresoBarra.style.width = pct + '%';
-      progresoTxt.textContent = pct + '%';
-    });
+    await subirArchivo(cuerpo, tema, archivo, 'video',
+      (pct) => {
+        progresoBarra.style.width = pct + '%';
+        progresoTxt.textContent = pct + '%';
+      },
+      (estado) => {
+        if (estado === 'ready') return;
+        progresoTxt.textContent = estado;
+        progresoBarra.style.width = '100%';
+      },
+    );
     progresoVideo.style.display = 'none';
     btnSubirVideo.disabled = false;
     input.value = '';
   });
 
   // ── Upload documento ──────────────────────────────────────
-  const formDoc = cuerpo.querySelector('.form-upload-doc') as HTMLFormElement;
-  const msgDoc  = formDoc.querySelector('.subiendo-msg') as HTMLElement;
+  const formDoc       = cuerpo.querySelector('.form-upload-doc') as HTMLFormElement;
+  const progresoDoc   = formDoc.querySelector('.upload-progreso') as HTMLElement;
+  const progresoDocFill = formDoc.querySelector('.upload-progreso-fill') as HTMLElement;
+  const progresoDocTxt  = formDoc.querySelector('.upload-progreso-txt') as HTMLElement;
   formDoc.addEventListener('submit', async (e) => {
     e.preventDefault();
     const input = formDoc.querySelector('.input-doc') as HTMLInputElement;
     if (!input.files?.length) return;
     const archivo = input.files[0];
-    const MAX_DOC = 100 * 1024 * 1024;
+    const MAX_DOC = 500 * 1024 * 1024;
     if (archivo.size > MAX_DOC) {
       const mb = (archivo.size / 1024 / 1024).toFixed(0);
-      mostrarMsg(`El archivo pesa ${mb} MB y supera el límite de 100 MB.`, 'error');
-      (window as any).logAppError?.('upload', `Documento rechazado en cliente (${mb} MB > 100 MB)`, { detalle: archivo.name + ' · tema=' + tema.id });
+      mostrarMsg(`El archivo pesa ${mb} MB y supera el límite de 500 MB.`, 'error');
+      (window as any).logAppError?.('upload', `Documento rechazado en cliente (${mb} MB > 500 MB)`, { detalle: archivo.name + ' · tema=' + tema.id });
       input.value = '';
       return;
     }
-    msgDoc.style.display = 'inline';
+    progresoDoc.style.display = 'flex';
+    progresoDocFill.style.width = '0%';
+    progresoDocTxt.textContent = '0%';
     (formDoc.querySelector('button[type="submit"]') as HTMLButtonElement).disabled = true;
-    await subirArchivo(cuerpo, tema, archivo, 'documento');
-    msgDoc.style.display = 'none';
+    await subirArchivo(cuerpo, tema, archivo, 'documento', (pct) => {
+      progresoDocFill.style.width = pct + '%';
+      progresoDocTxt.textContent = pct + '%';
+    });
+    progresoDoc.style.display = 'none';
     (formDoc.querySelector('button[type="submit"]') as HTMLButtonElement).disabled = false;
     input.value = '';
   });
@@ -1150,6 +1174,63 @@ async function cargarMateriales(card: HTMLElement, temaId: number) {
     ) as HTMLElement;
     if (lista) lista.appendChild(crearFilaMat(mat));
   }
+  const listaVideo = card.querySelector('.mat-lista-video') as HTMLElement;
+  if (listaVideo) activarReorden(listaVideo);
+}
+
+// ── Drag & drop para reordenar vídeos ────────────────────────
+function activarReorden(lista: HTMLElement) {
+  let dragging: HTMLElement | null = null;
+  let desdeHandle = false;
+
+  // Solo activar drag si el clic viene del handle (los 6 puntos)
+  lista.addEventListener('mousedown', (e) => {
+    desdeHandle = !!(e.target as HTMLElement).closest('.mat-drag');
+  });
+
+  lista.addEventListener('dragstart', (e) => {
+    if (!desdeHandle) { e.preventDefault(); return; }
+    dragging = (e.target as HTMLElement).closest('.mat-fila') as HTMLElement;
+    if (!dragging) return;
+    dragging.style.opacity = '0.4';
+    e.dataTransfer!.effectAllowed = 'move';
+    e.stopPropagation(); // No burbujear al drag de temas
+  });
+
+  lista.addEventListener('dragend', (e) => {
+    e.stopPropagation();
+    if (!dragging) return;
+    dragging.style.opacity = '';
+    dragging = null;
+    desdeHandle = false;
+    guardarOrden(lista);
+  });
+
+  lista.addEventListener('dragover', (e) => {
+    if (!dragging) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer!.dropEffect = 'move';
+    const target = (e.target as HTMLElement).closest('.mat-fila') as HTMLElement;
+    if (!target || target === dragging) return;
+    const mitad = target.getBoundingClientRect().top + target.getBoundingClientRect().height / 2;
+    if (e.clientY < mitad) lista.insertBefore(dragging, target);
+    else lista.insertBefore(dragging, target.nextSibling);
+  });
+
+  lista.addEventListener('drop', (e) => { e.stopPropagation(); });
+}
+
+async function guardarOrden(lista: HTMLElement) {
+  const ids = Array.from(lista.querySelectorAll<HTMLElement>('.mat-fila[data-mat-id]'))
+    .map(el => Number(el.dataset.matId))
+    .filter(Boolean);
+  if (ids.length < 2) return;
+  await fetch('/api/materiales.php', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ accion: 'reordenar', ids }),
+  });
 }
 
 function crearFilaMat(mat: any): HTMLElement {
@@ -1159,20 +1240,43 @@ function crearFilaMat(mat: any): HTMLElement {
     : `<svg viewBox="0 0 16 16" fill="none" width="13" height="13"><path d="M3 1.5h7l3.5 3.5V14a.5.5 0 01-.5.5H3a.5.5 0 01-.5-.5V2a.5.5 0 01.5-.5z" stroke="currentColor" stroke-width="1.3"/><path d="M10 1.5V5H13.5" stroke="currentColor" stroke-width="1.3"/></svg>`;
   const div   = document.createElement('div');
   div.className = 'mat-fila';
+  div.dataset.matId = String(mat.id);
+  if (mat.tipo === 'video') div.draggable = true;
+
+  const esCF = !!(mat.cf_video_id);
 
   function renderNormal() {
-    // Botón descarga solo para vídeos (los documentos ya se sirven directos).
-    const btnDescargaHTML = mat.tipo === 'video'
+    const btnDescargaHTML = (mat.tipo === 'video' && !esCF)
       ? `<a class="mat-descarga" href="${urlDescargaVideo(mat)}" download="${mat.nombre}" title="Descargar" style="width:22px;height:22px;border-radius:5px;border:1px solid #e8eeec;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;color:#555;text-decoration:none;">
            <svg viewBox="0 0 14 14" fill="none" width="12" height="12">
              <path d="M7 1.5v8M3.5 6L7 9.5 10.5 6M2 12h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
            </svg>
          </a>`
       : '';
+
+    const cfBadge = esCF
+      ? `<span class="cf-badge" style="font-size:0.68rem;padding:0.1rem 0.4rem;border-radius:4px;background:#fff7ed;border:1px solid #f5c090;color:#c05010;flex-shrink:0;white-space:nowrap;">${mat.cf_status === 'ready' ? '✓ CF Stream' : 'CF: ' + (mat.cf_status ?? '…')}</span>`
+      : '';
+
+    const nombreHTML = esCF
+      ? `<span class="mat-nombre" title="${mat.nombre}">${mat.nombre}</span>`
+      : `<a href="${urlMaterial(mat)}" target="_blank" class="mat-nombre" title="${mat.nombre}">${mat.nombre}</a>`;
+
+    const dragHandle = mat.tipo === 'video'
+      ? `<span class="mat-drag" title="Arrastrar para reordenar" style="cursor:grab;flex-shrink:0;color:#bbb;display:flex;align-items:center;padding:0 2px;">
+           <svg viewBox="0 0 10 16" fill="currentColor" width="10" height="16">
+             <circle cx="3" cy="3" r="1.3"/><circle cx="7" cy="3" r="1.3"/>
+             <circle cx="3" cy="8" r="1.3"/><circle cx="7" cy="8" r="1.3"/>
+             <circle cx="3" cy="13" r="1.3"/><circle cx="7" cy="13" r="1.3"/>
+           </svg>
+         </span>`
+      : '';
+
     div.innerHTML = `
+      ${dragHandle}
       <span class="mat-icono">${icono}</span>
-      <a href="${urlMaterial(mat)}" target="_blank" class="mat-nombre" title="${mat.nombre}">${mat.nombre}</a>
-      <span class="mat-tam">${kb}</span>
+      ${nombreHTML}
+      ${esCF ? cfBadge : `<span class="mat-tam">${kb}</span>`}
       ${btnDescargaHTML}
       <button class="mat-rename" title="Renombrar" style="width:22px;height:22px;border-radius:5px;border:1px solid #e8eeec;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;">
         <svg viewBox="0 0 14 14" fill="none" width="12" height="12">
@@ -1261,6 +1365,110 @@ function leerDuracionVideo(archivo: File): Promise<number> {
     // Si el navegador no puede leer el metadata en 8s, continuar sin duración
     setTimeout(() => terminar(0), 8000);
   });
+}
+
+// ── Subida de vídeo a Cloudflare Stream vía TUS ───────────────
+// El archivo va DIRECTAMENTE desde el navegador a Cloudflare,
+// sin pasar por IONOS. Evita cuota de disco y el límite nginx.
+async function subirVideoCloudflare(
+  cuerpo: HTMLElement,
+  tema: any,
+  archivo: File,
+  durSeg: number,
+  onProgress?: (pct: number) => void,
+  onEstado?: (estado: string) => void,
+): Promise<void> {
+  const ses = JSON.parse(sessionStorage.getItem('umme_session') || '{}');
+  const auth = ses.token ? `Bearer ${ses.token}` : '';
+
+  onEstado?.('Preparando subida…');
+
+  // 1. Obtener URL TUS de nuestro servidor
+  const rawToken = ses.token || '';
+  const prepRes = await fetch(`/api/cloudflare-upload.php?token=${encodeURIComponent(rawToken)}`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': auth },
+    body:    JSON.stringify({
+      tema_id:          tema.id,
+      nombre_original:  archivo.name,
+      file_size:        archivo.size,
+      duracion_seg:     durSeg || undefined,
+    }),
+  });
+  const prep = await prepRes.json().catch(() => ({ ok: false }));
+  if (!prep.ok) {
+    mostrarMsg(prep.mensaje || 'Error al iniciar subida a Cloudflare.', 'error');
+    return;
+  }
+
+  const { upload_url, material_id, video_id } = prep;
+
+  // 2. Subir con TUS en chunks de 50 MB directamente a Cloudflare
+  const CHUNK = 50 * 1024 * 1024;
+  let offset = 0;
+  onEstado?.('Subiendo…');
+  onProgress?.(0);
+
+  while (offset < archivo.size) {
+    const chunk     = archivo.slice(offset, offset + CHUNK);
+    const chunkSize = chunk.size;
+
+    const r = await fetch(upload_url, {
+      method:  'PATCH',
+      headers: {
+        'Content-Type':    'application/offset+octet-stream',
+        'Tus-Resumable':   '1.0.0',
+        'Upload-Offset':   String(offset),
+        'Content-Length':  String(chunkSize),
+      },
+      body: chunk,
+    });
+
+    if (r.status !== 204) {
+      mostrarMsg(`Error TUS HTTP ${r.status}. Inténtalo de nuevo.`, 'error');
+      return;
+    }
+
+    offset += chunkSize;
+    onProgress?.(Math.min(95, Math.round((offset / archivo.size) * 100)));
+  }
+
+  onProgress?.(100);
+
+  // 3. Añadir fila del material en el panel (estado inicial: procesando)
+  const mat: any = { id: material_id, nombre: archivo.name, tipo: 'video',
+                     ruta: null, tamano_kb: 0, duracion_seg: durSeg || null,
+                     cf_video_id: video_id, cf_status: 'processing' };
+  const filaEl = crearFilaMat(mat);
+  const lista  = cuerpo.querySelector('.mat-lista-video') as HTMLElement;
+  lista.appendChild(filaEl);
+
+  // 4. Polling hasta que Cloudflare termine de procesar
+  onEstado?.('Procesando en Cloudflare…');
+  const badgeEl = filaEl.querySelector('.cf-badge') as HTMLElement | null;
+
+  for (let i = 0; i < 120; i++) {
+    await new Promise(r => setTimeout(r, 5000));
+    try {
+      const sRes  = await fetch(`/api/cloudflare-status.php?material_id=${material_id}&token=${encodeURIComponent(rawToken)}`);
+      const sData = await sRes.json();
+      if (!sData.ok) break;
+      if (badgeEl) badgeEl.textContent = sData.status === 'ready' ? '✓ CF Stream' : `CF: ${sData.status}`;
+      if (sData.status === 'ready') {
+        if (sData.duracion_seg) actualizarDuracionTrasSubida(cuerpo, tema, sData.duracion_seg, material_id);
+        onEstado?.('ready');
+        mostrarMsg('✓ Vídeo listo en Cloudflare Stream.', 'ok');
+        return;
+      }
+      if (sData.status === 'error') {
+        mostrarMsg('Cloudflare reportó un error procesando el vídeo.', 'error');
+        return;
+      }
+    } catch { break; }
+  }
+
+  onEstado?.('ready');
+  mostrarMsg('El vídeo se está procesando. Actualiza la página en unos minutos.', 'ok');
 }
 
 // Chunk de 800 MB: por debajo del límite nginx de IONOS (1024 MB) con margen
@@ -1396,7 +1604,8 @@ function subirArchivo(
   tema: any,
   archivo: File,
   tipo: string,
-  onProgress?: (pct: number) => void
+  onProgress?: (pct: number) => void,
+  onEstado?: (estado: string) => void,
 ): Promise<void> {
   return new Promise(async (resolve) => {
     // Leemos los segundos exactos del vídeo y los enviamos al servidor:
@@ -1410,9 +1619,9 @@ function subirArchivo(
       } catch { durSeg = 0; }
     }
 
-    // Todos los vídeos usan streaming directo (sin pasar por /tmp del servidor)
+    // Vídeos → Cloudflare Stream (directo desde navegador, sin tocar IONOS)
     if (tipo === 'video') {
-      await subirArchivoChunked(cuerpo, tema, archivo, durSeg, onProgress);
+      await subirVideoCloudflare(cuerpo, tema, archivo, durSeg, onProgress, onEstado);
       resolve(); return;
     }
 

@@ -8,7 +8,7 @@
 
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, PUT, OPTIONS');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
@@ -139,6 +139,30 @@ if ($metodo === 'PUT') {
 
     $adminIdPut = isset($body['admin_id']) ? (int)$body['admin_id'] : 0;
     registrar_log($pdo, 'alumno_actualizado', "Alumno ID {$uid} actualizado", $adminIdPut);
+    echo json_encode(['ok' => true]);
+    exit;
+}
+
+// ── DELETE ───────────────────────────────────────────────────
+if ($metodo === 'DELETE') {
+    $id = (int)($_GET['id'] ?? 0);
+    if (!$id) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'mensaje' => 'Falta el id']);
+        exit;
+    }
+    $alumno = $pdo->prepare('SELECT nombre, email FROM usuarios WHERE id=:id AND rol="alumno" LIMIT 1');
+    $alumno->execute([':id' => $id]);
+    $a = $alumno->fetch();
+    if (!$a) {
+        http_response_code(404);
+        echo json_encode(['ok' => false, 'mensaje' => 'Alumno no encontrado']);
+        exit;
+    }
+    $pdo->prepare('DELETE FROM usuarios_cursos WHERE usuario_id=:id')->execute([':id' => $id]);
+    $pdo->prepare('DELETE FROM progresos WHERE usuario_id=:id')->execute([':id' => $id]);
+    $pdo->prepare('DELETE FROM usuarios WHERE id=:id')->execute([':id' => $id]);
+    registrar_log($pdo, 'alumno_eliminado', "Alumno \"{$a['nombre']}\" ({$a['email']}) eliminado", 0);
     echo json_encode(['ok' => true]);
     exit;
 }

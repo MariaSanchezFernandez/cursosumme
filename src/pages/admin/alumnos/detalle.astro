@@ -84,6 +84,12 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
       Entrar como alumno
     </button>
     <a href="/admin/alumnos" class="btn-admin">← Volver</a>
+    <button id="btn-eliminar-alumno" class="btn-admin" style="display:none; color:#c33; border-color:#f5c6c6; margin-left:auto;">
+      <svg viewBox="0 0 14 14" fill="none" width="13" height="13">
+        <path d="M2 4h10M5 4V2.5h4V4M5.5 6.5v4M8.5 6.5v4M3 4l.75 7.5h6.5L11 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Eliminar alumno
+    </button>
   </div>
 
 </PlantillaAdmin>
@@ -316,6 +322,24 @@ async function cargar() {
   btnGuardar.style.display = 'inline-flex';
 
   // Botón "Entrar como alumno"
+  // ── Botón eliminar alumno ─────────────────────────────────
+  const btnEliminar = document.getElementById('btn-eliminar-alumno') as HTMLButtonElement;
+  btnEliminar.style.display = 'inline-flex';
+  btnEliminar.addEventListener('click', async () => {
+    if (!confirm(`¿Eliminar permanentemente a "${alumno.nombre}" (${alumno.email})?\n\nSe borrarán su cuenta, progreso y acceso a todos los cursos. Esta acción no se puede deshacer.`)) return;
+    btnEliminar.disabled = true;
+    btnEliminar.textContent = 'Eliminando…';
+    const res  = await fetch(`/api/alumnos.php?id=${alumnoId}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.ok) {
+      window.location.href = '/admin/alumnos';
+    } else {
+      alert(data.mensaje || 'Error al eliminar');
+      btnEliminar.disabled = false;
+      btnEliminar.textContent = 'Eliminar alumno';
+    }
+  });
+
   const btnEntrar = document.getElementById('btn-entrar-como') as HTMLButtonElement;
   btnEntrar.style.display = 'inline-flex';
   btnEntrar.addEventListener('click', () => {

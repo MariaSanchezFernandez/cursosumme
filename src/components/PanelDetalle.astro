@@ -79,13 +79,31 @@ import '../styles/PanelDetalle.css';
           <p class="leccion-descripcion" id="leccionDescripcion"></p>
         </div>
         <div class="video-box">
-          <!-- Reproductor real -->
+          <!-- Reproductor Cloudflare Stream (DRM) -->
+          <div id="cfWrapper" style="display:none; position:relative; width:100%; padding-top:56.25%; border-radius:10px; overflow:hidden; background:#000; flex-shrink:0;">
+            <iframe id="cfPlayer"
+              src=""
+              style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;"
+              allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+              allowfullscreen>
+            </iframe>
+          </div>
+          <!-- Placeholder cuando el vídeo CF está procesando -->
+          <div id="cfProcesando" style="display:none; width:100%; padding:2.5rem 0; text-align:center; background:#111; border-radius:10px; color:#aaa; font-size:0.85rem; flex-shrink:0;">
+            <svg viewBox="0 0 24 24" fill="none" width="28" height="28" style="margin-bottom:0.5rem; opacity:0.5;">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <p style="margin:0;">El vídeo se está procesando…</p>
+            <p style="margin:0.25rem 0 0; font-size:0.75rem; opacity:0.6;">Estará disponible en unos minutos</p>
+          </div>
+          <!-- Reproductor HTML5 local (vídeos sin DRM) -->
           <video id="videoPlayer" controls
             controlslist="nodownload nofullscreen noremoteplayback"
             disablepictureinpicture
             style="width:100%; height:100%; display:none; background:#000; border-radius:10px;">
           </video>
-          <!-- Marca de agua con email del alumno -->
+          <!-- Marca de agua con email del alumno (solo player local) -->
           <div class="video-marca-agua" id="videoMarcaAgua"></div>
           <!-- Placeholder cuando no hay vídeo seleccionado -->
           <div class="video-inner" id="videoPlaceholder">
@@ -96,6 +114,8 @@ import '../styles/PanelDetalle.css';
             <span class="video-titulo-overlay" id="videoTitulo">Selecciona un tema</span>
           </div>
         </div>
+        <!-- Playlist (solo visible si el tema tiene más de un vídeo) -->
+        <div id="videoPlaylist" class="video-playlist" style="display:none;"></div>
       </div>
 
       <!-- Panel Materiales -->
