@@ -91,6 +91,16 @@ excedía la cuota de la cuenta. Solución aplicada: raw body streaming
   Cada página tiene su composición de skeletons que imita la forma
   del contenido real. Test E2E en `tests/e2e/skeleton.spec.ts`.
 
+- [x] **Estados de carga en `editar.astro`** (2026-05-19): aplicado
+  `window.botonCargando` en los 7 botones críticos del editor de curso:
+  "Guardar cambios" (con bucle de temas dirty dentro), "Añadir tema",
+  "Guardar tema" del panel de edición, "Eliminar tema" (icono, solo
+  spinner), "Subir vídeo" (manteniendo la barra de progreso separada
+  para el %), "Subir archivo" documento (igual que vídeo), "Eliminar
+  material" (icono ×, solo spinner). Pequeña mejora al helper: ahora
+  `botonCargando(btn, '', accion)` muestra solo el spinner sin texto
+  por defecto — necesario para botones icono pequeños.
+
 ---
 
 ## Pendiente
@@ -131,15 +141,6 @@ excedía la cuota de la cuenta. Solución aplicada: raw body streaming
 Auditoría hecha el 2026-05-04 sobre toda la superficie de UI (alumno +
 admin). Este pack es el más visible en demo y el más defendible como
 mejora del TFM.
-
-- [ ] **Estados de carga en `editar.astro`**: el helper
-  `window.botonCargando` ya está montado, pero el archivo
-  `admin/cursos/editar.astro` (~1500 líneas) no se ha tocado en la
-  primera pasada para acotar el cambio. Quedan por envolver: el botón
-  "Guardar cambios" del curso, los botones de añadir/borrar tema,
-  el de subir vídeo (XHR con progreso, requiere coordinación con la
-  barra ya existente) y el de subir documentos/materiales. Hacerlo
-  como pasada dedicada al refactor de `editar.astro`.
 
 - [ ] **Empty states con jerarquía y CTA**: para cada lista que pueda
   estar vacía, diseñar un estado vacío con: icono SVG suave (mismo

@@ -10,8 +10,10 @@
 //   await window.botonCargando(btn, textoMientrasCarga, accion)
 //     btn                 HTMLButtonElement (o cualquier elemento con .disabled)
 //     textoMientrasCarga  string  Texto a mostrar mientras carga
-//                                 (ej. 'Guardando…', 'Subiendo…'). Si se omite,
-//                                 muestra 'Cargando…'.
+//                                 (ej. 'Guardando…', 'Subiendo…'). Si se omite
+//                                 (undefined o null), muestra 'Cargando…'.
+//                                 Pasar '' (cadena vacía) para mostrar solo el
+//                                 spinner sin texto (útil en botones icono).
 //     accion              () => Promise<any>  Función async que hace el trabajo.
 //                                              Devuelve el valor que ella retorne.
 //
@@ -67,7 +69,11 @@ import '../styles/BotonCargando.css';
       btn.setAttribute('aria-busy', 'true');
       btn.disabled = true;
       if (anchoCongelado > 0) btn.style.minWidth = anchoCongelado + 'px';
-      btn.innerHTML = SPINNER + (textoMientrasCarga || 'Cargando…');
+      // Usa nullish (??) en vez de || para que '' signifique "solo spinner"
+      var texto = (textoMientrasCarga === undefined || textoMientrasCarga === null)
+        ? 'Cargando…'
+        : String(textoMientrasCarga);
+      btn.innerHTML = SPINNER + texto;
 
       try {
         return await accion();
