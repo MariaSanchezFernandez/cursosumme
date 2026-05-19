@@ -1,0 +1,56 @@
+/*
+ * ESTILOS: Botón en estado de carga
+ * ---------------------------------
+ * Hoja de estilos del helper window.botonCargando() — ver
+ * src/components/BotonCargando.astro.
+ *
+ * Cuando un botón entra en estado de carga, el helper le añade:
+ *   - data-cargando="1" para los selectores de abajo.
+ *   - innerHTML: <span class="boton-cargando-spinner">...</span> + nuevo texto.
+ *
+ * Reglas visuales:
+ *   - El cursor cambia a "wait" para reforzar el mensaje.
+ *   - Se reduce ligeramente la opacidad para señalar inactividad.
+ *   - El spinner gira a 0.8 s por vuelta y hereda el color del texto
+ *     del botón (currentColor) — así funciona sobre cualquier color
+ *     de fondo de la paleta Umme.
+ *   - Se desactivan los pointer-events para evitar dobles clics
+ *     (además del atributo disabled).
+ */
+
+button[data-cargando="1"],
+.btn[data-cargando="1"] {
+  cursor: wait;
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.boton-cargando-spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: 0.5em;
+  vertical-align: -0.15em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: boton-cargando-spin 0.75s linear infinite;
+}
+
+/* Cuando el spinner es el único hijo del botón (botón icono, texto vacío),
+   no queremos el margen derecho — la separación con el texto sobra y
+   descentraría el spinner dentro de un botón con justify-content: center. */
+.boton-cargando-spinner:only-child {
+  margin-right: 0;
+  vertical-align: middle;
+}
+
+@keyframes boton-cargando-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boton-cargando-spinner {
+    animation-duration: 1.6s;
+  }
+}

@@ -1,5 +1,7 @@
 ---
 import '../styles/global.css';
+import Toast from '../components/Toast.astro';
+import BotonCargando from '../components/BotonCargando.astro';
 ---
 
 <html lang="es">
@@ -88,11 +90,15 @@ import '../styles/global.css';
     </script>
 
     <slot />
+
+    <!-- Sistema global de toasts (window.mostrarToast / window.toast.*) -->
+    <Toast />
+
+    <!-- Helper global de estado de carga en botones (window.botonCargando) -->
+    <BotonCargando />
+
     <!-- Firma de marca: aparece en todas las páginas, esquina inferior izquierda -->
     <span class="firma">cursos umme</span>
-
-    <!-- Capa anti-captura -->
-    <div id="pantalla-negra" aria-hidden="true"></div>
   </body>
 </html>
 
@@ -109,64 +115,4 @@ import '../styles/global.css';
     z-index: 10;
     pointer-events: none;
   }
-
-  /* Pantalla negra anti-captura */
-  #pantalla-negra {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: #000;
-    z-index: 99999;
-    pointer-events: none;
-  }
-  #pantalla-negra.activa {
-    display: block;
-  }
 </style>
-
-<script is:inline>
-  (function () {
-    var overlay = document.getElementById('pantalla-negra');
-    var timer = null;
-
-    function mostrar() {
-      overlay.classList.add('activa');
-      clearTimeout(timer);
-      timer = setTimeout(ocultar, 2000);
-    }
-
-    function ocultar() {
-      overlay.classList.remove('activa');
-    }
-
-    // 1. Tecla PrintScreen y atajos comunes de captura
-    document.addEventListener('keydown', function (e) {
-      var k = e.key || '';
-
-      // PrintScreen
-      if (k === 'PrintScreen') { mostrar(); return; }
-
-      // Windows: Win+Shift+S
-      if (e.metaKey && e.shiftKey && (k === 's' || k === 'S')) { mostrar(); return; }
-
-      // Mac: Cmd+Shift+3, Cmd+Shift+4, Cmd+Shift+5, Cmd+Ctrl+Shift+3/4
-      if (e.metaKey && e.shiftKey && (k === '3' || k === '4' || k === '5' || k === '6')) { mostrar(); return; }
-      if (e.metaKey && e.ctrlKey && e.shiftKey && (k === '3' || k === '4')) { mostrar(); return; }
-
-      // Alt+PrintScreen
-      if (e.altKey && k === 'PrintScreen') { mostrar(); return; }
-    });
-
-    // 2. Pérdida de foco: herramientas de grabación y captura la capturan
-    window.addEventListener('blur', function () {
-      mostrar();
-    });
-    document.addEventListener('visibilitychange', function () {
-      if (document.hidden) mostrar();
-      else ocultar();
-    });
-
-    // 3. Bloquear clic derecho
-    document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
-  })();
-</script>

@@ -311,8 +311,6 @@ const msgError = document.getElementById('msg-error') as HTMLDivElement;
 
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
-  btnCrear.disabled    = true;
-  btnCrear.textContent = 'Creando…';
   msgError.style.display = 'none';
 
   const datos = {
@@ -324,31 +322,29 @@ form.addEventListener('submit', async (e) => {
     cursos:     Array.from(cursosSeleccionados),
   };
 
-  try {
-    const res  = await fetch('/api/alumnos.php', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(datos),
-    });
-    const data = await res.json();
+  await window.botonCargando(btnCrear, 'Creando…', async () => {
+    try {
+      const res  = await fetch('/api/alumnos.php', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(datos),
+      });
+      const data = await res.json();
 
-    if (!data.ok) {
-      msgError.textContent   = data.mensaje || 'Error al crear el alumno';
+      if (!data.ok) {
+        msgError.textContent   = data.mensaje || 'Error al crear el alumno';
+        msgError.style.display = 'block';
+        window.logAppError?.('crear_alumno', 'Servidor rechazó creación de alumno', { detalle: data.mensaje || ('HTTP ' + res.status) });
+        return;
+      }
+
+      formWrap.style.display = 'none';
+      aviso.style.display    = 'block';
+    } catch (err: any) {
+      msgError.textContent   = 'Error de conexión. Inténtalo de nuevo.';
       msgError.style.display = 'block';
-      btnCrear.disabled      = false;
-      btnCrear.textContent   = 'Crear alumno';
-      (window as any).logAppError?.('crear_alumno', 'Servidor rechazó creación de alumno', { detalle: data.mensaje || ('HTTP ' + res.status) });
-      return;
+      window.logAppError?.('crear_alumno', 'Error de red al crear alumno', { detalle: err?.message, stack: err?.stack });
     }
-
-    formWrap.style.display = 'none';
-    aviso.style.display    = 'block';
-  } catch (err: any) {
-    msgError.textContent   = 'Error de conexión. Inténtalo de nuevo.';
-    msgError.style.display = 'block';
-    btnCrear.disabled      = false;
-    btnCrear.textContent   = 'Crear alumno';
-    (window as any).logAppError?.('crear_alumno', 'Error de red al crear alumno', { detalle: err?.message, stack: err?.stack });
-  }
+  });
 });
 </script>

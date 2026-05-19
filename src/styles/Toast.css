@@ -1,0 +1,178 @@
+/*
+ * ESTILOS: Toast — versión Umme
+ * -----------------------------
+ * Hoja de estilos del sistema de notificaciones "toast", alineada con el
+ * lenguaje visual de CursosUmme: tarjetas pastel con borde de marca,
+ * sombras suaves, radio amplio, DM Sans, y la paleta del proyecto
+ * (turquesa, coral, amarillo y oro) según el tipo de mensaje.
+ *
+ * Mapeo por tipo:
+ *   success → turquesa (color-primary)
+ *   error   → coral (color-coral)
+ *   warning → amarillo / oro (color-secondary + color-accent)
+ *   info    → blanco con borde turquesa Umme
+ *
+ * Estructura visual:
+ *   - .toast-container: wrapper fijo abajo-derecha, invisible al puntero.
+ *   - .toast: tarjeta pastel con borde 1.5 px del color de marca, sombra
+ *     difusa y radio 14 px (consistente con .curso y .field).
+ *
+ * Animaciones:
+ *   - Entrada: slide-in suave desde la derecha + fade.
+ *   - Salida:  slide-out a la derecha + fade.
+ *   - Respeta prefers-reduced-motion: las elimina si el sistema lo pide.
+ *
+ * Responsive:
+ *   - Desktop: tarjetas hasta 380 px abajo a la derecha.
+ *   - Móvil (<=600 px): ancho completo con margen pequeño abajo.
+ */
+
+.toast-container {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.75rem;
+  max-width: 380px;
+  width: calc(100% - 2.5rem);
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem 0.95rem;
+  background: var(--toast-bg, #fff);
+  border: 1.5px solid var(--toast-border, var(--color-primary));
+  border-radius: 14px;
+  box-shadow:
+    0 6px 24px rgba(0, 0, 0, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.04);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--color-text);
+  overflow: hidden;
+  animation: toast-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.toast.cerrando {
+  animation: toast-out 220ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+/* ── Tipos: paleta Umme ───────────────────────────────────────── */
+
+.toast--success {
+  --toast-bg:     #e7f6f0;            /* turquesa muy claro */
+  --toast-border: var(--color-primary); /* #b3e8da */
+  --toast-icon:   #2e9e6b;
+}
+
+.toast--error {
+  --toast-bg:     #ffe5df;            /* coral muy claro */
+  --toast-border: var(--color-coral); /* #ffb5a7 */
+  --toast-icon:   #b94a36;
+}
+
+.toast--warning {
+  --toast-bg:     var(--color-secondary); /* #fff8b7 */
+  --toast-border: var(--color-accent);    /* #f9c30e */
+  --toast-icon:   #a87800;
+}
+
+.toast--info {
+  --toast-bg:     #fff;                 /* blanco */
+  --toast-border: var(--color-primary); /* turquesa Umme */
+  --toast-icon:   #2c8a72;
+}
+
+/* ── Icono ────────────────────────────────────────────────────── */
+
+.toast-icono {
+  flex: 0 0 26px;
+  width: 26px;
+  height: 26px;
+  color: var(--toast-icon, var(--color-text));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.toast-icono svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ── Texto del mensaje ────────────────────────────────────────── */
+
+.toast-contenido {
+  flex: 1 1 auto;
+  word-break: break-word;
+}
+
+/* ── Botón cerrar ─────────────────────────────────────────────── */
+
+.toast-cerrar {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  margin-right: -4px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.35rem;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+.toast-cerrar:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--color-text);
+}
+.toast-cerrar:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+/* ── Animaciones ──────────────────────────────────────────────── */
+
+@keyframes toast-in {
+  from { transform: translateX(110%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@keyframes toast-out {
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(110%); opacity: 0; }
+}
+
+/* ── Responsive ───────────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+  .toast-container {
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    max-width: none;
+    width: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast,
+  .toast.cerrando {
+    animation: none;
+  }
+}

@@ -1,0 +1,409 @@
+---
+// PÁGINA: Preview de componentes UX
+// ---------------------------------
+// Página de desarrollo para previsualizar visualmente toasts, botones
+// con estado de carga y otros patrones UX sin tocar la API ni la BD.
+//
+// Todas las "acciones" son simuladas con setTimeout — cero llamadas
+// a /api/. Es seguro abrirla en local o en producción.
+//
+// URL: /preview
+//
+// Cuando esté pulido el pack "polish UX", esta página se puede
+// borrar o dejar como referencia interna.
+import Plantilla from '../layouts/Plantilla.astro';
+---
+
+<Plantilla>
+  <main class="prev-wrap">
+    <header class="prev-header">
+      <h1>Preview de componentes UX</h1>
+      <p>
+        Playground para probar visualmente toasts, botones con estado de
+        carga y combinaciones. <strong>Cero llamadas a la API</strong> —
+        las acciones se simulan con <code>setTimeout</code>.
+      </p>
+    </header>
+
+    <!-- ─── Toasts ───────────────────────────────────────────────── -->
+
+    <section class="prev-section">
+      <h2>1. Sistema de toasts</h2>
+      <p class="prev-section-desc">
+        Notificaciones abajo-derecha. Auto-cierre a 4 s, pausa al pasar el
+        ratón por encima, cerrables con la ×.
+      </p>
+
+      <div class="prev-grid">
+        <button class="prev-btn prev-btn-success" data-toast="success">
+          Mostrar toast Éxito
+        </button>
+        <button class="prev-btn prev-btn-error" data-toast="error">
+          Mostrar toast Error
+        </button>
+        <button class="prev-btn prev-btn-warning" data-toast="warning">
+          Mostrar toast Aviso
+        </button>
+        <button class="prev-btn prev-btn-info" data-toast="info">
+          Mostrar toast Info
+        </button>
+        <button class="prev-btn prev-btn-neutral" data-toast="todos">
+          Disparar los 4 a la vez
+        </button>
+        <button class="prev-btn prev-btn-neutral" data-toast="largo">
+          Toast con texto largo
+        </button>
+      </div>
+    </section>
+
+    <!-- ─── Botones cargando ─────────────────────────────────────── -->
+
+    <section class="prev-section">
+      <h2>2. Botones con estado de carga</h2>
+      <p class="prev-section-desc">
+        El propio botón muestra un spinner + texto contextual mientras
+        dura la acción. Anti doble-clic, restauración automática al
+        terminar (también si la acción falla).
+      </p>
+
+      <div class="prev-grid">
+        <button class="prev-btn prev-btn-coral" id="prevLoadOk">
+          Guardar (simula éxito, 2 s)
+        </button>
+        <button class="prev-btn prev-btn-coral" id="prevLoadErr">
+          Eliminar (simula error, 1.5 s)
+        </button>
+        <button class="prev-btn prev-btn-coral" id="prevLoadSlow">
+          Subir vídeo (lento, 5 s)
+        </button>
+        <button class="prev-btn prev-btn-coral" id="prevLoadDoble">
+          Probar doble clic (no debe duplicarse)
+        </button>
+      </div>
+
+      <h3 class="prev-subtitulo" style="margin-top:1.5rem;">
+        Variante: botones icono (solo spinner, sin texto)
+      </h3>
+      <p class="prev-section-desc">
+        Para botones pequeños (×, ✕, eliminar fila…) pasamos
+        <code>''</code> como texto: el helper solo muestra el spinner.
+        Es el patrón que usa <code>admin/cursos/editar.astro</code> para
+        "Eliminar tema" y "Eliminar material".
+      </p>
+      <div style="display:flex; gap:0.75rem; align-items:center;">
+        <button class="prev-btn-icono" id="prevIconoDel" title="Eliminar (simula 1.5 s)" aria-label="Eliminar">
+          <svg viewBox="0 0 14 14" fill="none" width="14" height="14" aria-hidden="true">
+            <path d="M3.5 3.5l7 7M10.5 3.5l-7 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <button class="prev-btn-icono" id="prevIconoDel2" title="Eliminar (simula 1.5 s)" aria-label="Eliminar">
+          <svg viewBox="0 0 14 14" fill="none" width="14" height="14" aria-hidden="true">
+            <path d="M3.5 3.5l7 7M10.5 3.5l-7 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <span style="color:var(--color-text-muted); font-size:0.85rem;">
+          Pulsa cualquiera para ver el spinner sin texto
+        </span>
+      </div>
+    </section>
+
+    <!-- ─── Skeletons ─────────────────────────────────────────── -->
+
+    <section class="prev-section">
+      <h2>3. Skeleton screens</h2>
+      <p class="prev-section-desc">
+        Placeholders animados con la forma del contenido que va a aparecer.
+        Sustituyen el "Cargando…" gris en los listados. Mejoran la
+        sensación de respuesta inmediata.
+      </p>
+
+      <h3 class="prev-subtitulo">Primitivas</h3>
+      <div class="prev-skel-demo">
+        <div class="skeleton skeleton-text"></div>
+        <div class="skeleton skeleton-text-lg"></div>
+        <div class="skeleton skeleton-text-sm"></div>
+        <div style="display:flex; gap:1rem; align-items:center; margin-top:0.5rem;">
+          <div class="skeleton skeleton-circle" style="width:40px; height:40px;"></div>
+          <div class="skeleton skeleton-box" style="width:100%; height:60px;"></div>
+        </div>
+      </div>
+
+      <h3 class="prev-subtitulo" style="margin-top:1.5rem;">Tarjeta de curso (estilo /inicio)</h3>
+      <div class="prev-skel-demo">
+        <div class="curso-skel-prev">
+          <div class="skeleton skeleton-box" style="width:110px; aspect-ratio:21/9; flex-shrink:0;"></div>
+          <div style="flex:1; display:flex; flex-direction:column; gap:0.4rem;">
+            <div class="skeleton skeleton-text-lg skeleton-w-75"></div>
+            <div class="skeleton skeleton-text skeleton-w-50"></div>
+          </div>
+        </div>
+        <div class="curso-skel-prev">
+          <div class="skeleton skeleton-box" style="width:110px; aspect-ratio:21/9; flex-shrink:0;"></div>
+          <div style="flex:1; display:flex; flex-direction:column; gap:0.4rem;">
+            <div class="skeleton skeleton-text-lg skeleton-w-90"></div>
+            <div class="skeleton skeleton-text skeleton-w-50"></div>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="prev-subtitulo" style="margin-top:1.5rem;">Fila de alumno (estilo /admin/alumnos)</h3>
+      <div class="prev-skel-demo">
+        <div class="fila-skel-prev">
+          <div class="skeleton skeleton-circle" style="width:36px; height:36px; flex-shrink:0;"></div>
+          <div style="flex:1; display:flex; flex-direction:column; gap:0.2rem;">
+            <div class="skeleton skeleton-text skeleton-w-75"></div>
+            <div class="skeleton skeleton-text-sm skeleton-w-50"></div>
+          </div>
+        </div>
+        <div class="fila-skel-prev">
+          <div class="skeleton skeleton-circle" style="width:36px; height:36px; flex-shrink:0;"></div>
+          <div style="flex:1; display:flex; flex-direction:column; gap:0.2rem;">
+            <div class="skeleton skeleton-text skeleton-w-50"></div>
+            <div class="skeleton skeleton-text-sm skeleton-w-75"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Botón cargando + toast combinado ─────────────────────── -->
+
+    <section class="prev-section">
+      <h2>4. Combinado: botón cargando → toast</h2>
+      <p class="prev-section-desc">
+        Flujo real: pulsas, el botón gira, al terminar aparece un toast
+        con el resultado. Es el patrón que usamos en todo el panel admin.
+      </p>
+
+      <div class="prev-grid">
+        <button class="prev-btn prev-btn-coral" id="prevComboOk">
+          Duplicar curso (acaba en éxito)
+        </button>
+        <button class="prev-btn prev-btn-coral" id="prevComboErr">
+          Borrar alumno (acaba en error)
+        </button>
+      </div>
+    </section>
+  </main>
+</Plantilla>
+
+<script is:inline>
+  // Helper local: promesa que se resuelve / rechaza tras N ms.
+  function esperar(ms, ok) {
+    return new Promise(function (resolve, reject) {
+      setTimeout(function () { (ok ? resolve : reject)(); }, ms);
+    });
+  }
+
+  // ── 1. Toasts ───────────────────────────────────────────────
+  document.querySelectorAll('[data-toast]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var tipo = btn.getAttribute('data-toast');
+      if (tipo === 'success') return window.toast.success('Curso guardado correctamente');
+      if (tipo === 'error')   return window.toast.error('No se pudo subir el vídeo. Comprueba tu conexión.');
+      if (tipo === 'warning') return window.toast.warning('Tu sesión caducará en 5 minutos', 8000);
+      if (tipo === 'info')    return window.toast.info('Tienes 3 cursos nuevos asignados');
+      if (tipo === 'todos') {
+        window.toast.success('Curso duplicado');
+        window.toast.error('Falló la actualización del título');
+        window.toast.warning('Quedan 5 min de sesión');
+        window.toast.info('Tienes un mensaje nuevo de soporte');
+        return;
+      }
+      if (tipo === 'largo') {
+        window.toast.info('Este es un mensaje largo de prueba para verificar cómo se comporta el toast cuando el contenido excede una línea, manteniendo la legibilidad y el espaciado.');
+      }
+    });
+  });
+
+  // ── 2. Botones cargando ─────────────────────────────────────
+  document.getElementById('prevLoadOk').addEventListener('click', async function (e) {
+    await window.botonCargando(e.currentTarget, 'Guardando…', function () {
+      return esperar(2000, true);
+    });
+  });
+
+  document.getElementById('prevLoadErr').addEventListener('click', async function (e) {
+    try {
+      await window.botonCargando(e.currentTarget, 'Eliminando…', function () {
+        return esperar(1500, false);
+      });
+    } catch (err) { /* simulación: error capturado */ }
+  });
+
+  document.getElementById('prevLoadSlow').addEventListener('click', async function (e) {
+    await window.botonCargando(e.currentTarget, 'Subiendo vídeo…', function () {
+      return esperar(5000, true);
+    });
+  });
+
+  document.getElementById('prevLoadDoble').addEventListener('click', async function (e) {
+    // Dos llamadas seguidas: la segunda debe ignorarse
+    var btn = e.currentTarget;
+    window.botonCargando(btn, 'Procesando…', function () { return esperar(2000, true); });
+    window.botonCargando(btn, 'Procesando…', function () { return esperar(2000, true); });
+  });
+
+  // Botones icono: pasamos '' para mostrar solo el spinner
+  function handlerIconoDel(e) {
+    var btn = e.currentTarget;
+    window.botonCargando(btn, '', function () { return esperar(1500, true); });
+  }
+  document.getElementById('prevIconoDel').addEventListener('click', handlerIconoDel);
+  document.getElementById('prevIconoDel2').addEventListener('click', handlerIconoDel);
+
+  // ── 3. Combinado: botón cargando + toast ───────────────────
+  document.getElementById('prevComboOk').addEventListener('click', async function (e) {
+    await window.botonCargando(e.currentTarget, 'Duplicando…', function () {
+      return esperar(1800, true);
+    });
+    window.toast.success('"Curso de prueba" duplicado correctamente');
+  });
+
+  document.getElementById('prevComboErr').addEventListener('click', async function (e) {
+    try {
+      await window.botonCargando(e.currentTarget, 'Eliminando…', function () {
+        return esperar(1800, false);
+      });
+    } catch (err) {
+      window.toast.error('No se pudo eliminar: tiene cursos asociados');
+    }
+  });
+</script>
+
+<style>
+  .prev-wrap {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 6rem;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--color-text);
+  }
+
+  .prev-header {
+    margin-bottom: 3rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1.5px solid var(--color-primary);
+  }
+  .prev-header h1 {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+  }
+  .prev-header p {
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+  .prev-header code {
+    background: var(--color-light);
+    padding: 0.1em 0.4em;
+    border-radius: 4px;
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-size: 0.85em;
+  }
+
+  .prev-section {
+    margin-bottom: 3rem;
+    padding: 1.75rem;
+    background: #fff;
+    border: 1.5px solid var(--color-primary);
+    border-radius: 14px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+  }
+  .prev-section h2 {
+    font-size: 1.25rem;
+    font-weight: 800;
+    margin-bottom: 0.4rem;
+  }
+  .prev-section-desc {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+  }
+
+  .prev-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .prev-btn {
+    padding: 0.75rem 1rem;
+    border: 1.5px solid transparent;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 0.92rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .prev-btn:hover         { opacity: 0.88; }
+  .prev-btn:active        { transform: translateY(1px); }
+  .prev-btn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+  .prev-btn-success { background: #e7f6f0; border-color: var(--color-primary); color: #1d6b4e; }
+  .prev-btn-error   { background: #ffe5df; border-color: var(--color-coral);   color: #872f1f; }
+  .prev-btn-warning { background: var(--color-secondary); border-color: var(--color-accent); color: #7a5400; }
+  .prev-btn-info    { background: #fff;    border-color: var(--color-primary); color: var(--color-text); }
+  .prev-btn-neutral { background: var(--color-light); border-color: var(--color-primary); color: var(--color-text); }
+  .prev-btn-coral   { background: var(--color-coral); border-color: var(--color-coral); color: var(--color-text); }
+
+  /* Subtítulos dentro de las secciones */
+  .prev-subtitulo {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+    margin-bottom: 0.75rem;
+  }
+
+  /* Wrappers de demo de skeletons */
+  .prev-skel-demo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .curso-skel-prev {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .fila-skel-prev {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.85rem 1.25rem;
+    border-bottom: 1px solid #eef3f0;
+    background: #fff;
+    border-radius: 8px;
+  }
+
+  /* Botón icono pequeño (estilo "eliminar fila") */
+  .prev-btn-icono {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid #e8eeec;
+    border-radius: 7px;
+    background: #fff;
+    cursor: pointer;
+    color: #c33;
+    font-size: 1.05rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .prev-btn-icono:hover { background: #fdf0f0; border-color: #f5c6c6; }
+  .prev-btn-icono:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+</style>

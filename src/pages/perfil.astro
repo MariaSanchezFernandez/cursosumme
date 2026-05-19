@@ -182,13 +182,14 @@ pfFile.addEventListener('change', async () => {
     const data = await res.json();
     if (data.ok) {
       mostrarFoto(data.url);
+      window.mostrarToast('Foto de perfil actualizada', 'success');
     } else {
-      (window as any).logAppError?.('foto_perfil', 'Servidor rechazó la foto', { detalle: data.mensaje || ('HTTP ' + res.status) });
-      alert('No se pudo subir la foto: ' + (data.mensaje || 'error del servidor'));
+      window.logAppError?.('foto_perfil', 'Servidor rechazó la foto', { detalle: data.mensaje || ('HTTP ' + res.status) });
+      window.mostrarToast('No se pudo subir la foto: ' + (data.mensaje || 'error del servidor'), 'error');
     }
   } catch (err: any) {
-    (window as any).logAppError?.('foto_perfil', 'Error de red al subir foto', { detalle: err?.message, stack: err?.stack });
-    alert('Error de conexión al subir la foto.');
+    window.logAppError?.('foto_perfil', 'Error de red al subir foto', { detalle: err?.message, stack: err?.stack });
+    window.mostrarToast('Error de conexión al subir la foto.', 'error');
   }
   pfFile.value = '';
 });
@@ -220,32 +221,28 @@ btnPwd.addEventListener('click', async () => {
   if (nueva.length < 6) { msgPwd.textContent = 'La contraseña debe tener al menos 6 caracteres.'; return; }
   if (nueva !== confirm) { msgPwd.textContent = 'Las contraseñas no coinciden.'; return; }
 
-  btnPwd.disabled = true;
-  btnPwd.textContent = 'Guardando…';
-
-  try {
-    const res  = await fetch('/api/cambiar-password.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ usuario_id: s.userId, password_nueva: nueva }),
-    });
-    const data = await res.json();
-    if (data.ok) {
-      msgPwd.style.color = '#1d7a52';
-      msgPwd.textContent = '✓ Contraseña actualizada correctamente.';
-      (document.getElementById('pfPwdNueva') as HTMLInputElement).value = '';
-      (document.getElementById('pfPwdConfirm') as HTMLInputElement).value = '';
-    } else {
-      msgPwd.textContent = data.mensaje || 'Error al actualizar la contraseña.';
-      (window as any).logAppError?.('cambio_password', 'Servidor rechazó cambio de contraseña', { detalle: data.mensaje || ('HTTP ' + res.status) });
+  await window.botonCargando(btnPwd, 'Guardando…', async () => {
+    try {
+      const res  = await fetch('/api/cambiar-password.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usuario_id: s.userId, password_nueva: nueva }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        msgPwd.style.color = '#1d7a52';
+        msgPwd.textContent = '✓ Contraseña actualizada correctamente.';
+        (document.getElementById('pfPwdNueva') as HTMLInputElement).value = '';
+        (document.getElementById('pfPwdConfirm') as HTMLInputElement).value = '';
+      } else {
+        msgPwd.textContent = data.mensaje || 'Error al actualizar la contraseña.';
+        window.logAppError?.('cambio_password', 'Servidor rechazó cambio de contraseña', { detalle: data.mensaje || ('HTTP ' + res.status) });
+      }
+    } catch (err: any) {
+      msgPwd.textContent = 'Error de conexión.';
+      window.logAppError?.('cambio_password', 'Error de red al cambiar contraseña', { detalle: err?.message, stack: err?.stack });
     }
-  } catch (err: any) {
-    msgPwd.textContent = 'Error de conexión.';
-    (window as any).logAppError?.('cambio_password', 'Error de red al cambiar contraseña', { detalle: err?.message, stack: err?.stack });
-  }
-
-  btnPwd.disabled = false;
-  btnPwd.textContent = 'Guardar contraseña';
+  });
 });
 </script>
 

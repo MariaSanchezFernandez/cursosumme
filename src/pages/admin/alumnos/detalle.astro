@@ -327,17 +327,15 @@ async function cargar() {
   btnEliminar.style.display = 'inline-flex';
   btnEliminar.addEventListener('click', async () => {
     if (!confirm(`¿Eliminar permanentemente a "${alumno.nombre}" (${alumno.email})?\n\nSe borrarán su cuenta, progreso y acceso a todos los cursos. Esta acción no se puede deshacer.`)) return;
-    btnEliminar.disabled = true;
-    btnEliminar.textContent = 'Eliminando…';
-    const res  = await fetch(`/api/alumnos.php?id=${alumnoId}`, { method: 'DELETE' });
-    const data = await res.json();
-    if (data.ok) {
-      window.location.href = '/admin/alumnos';
-    } else {
-      alert(data.mensaje || 'Error al eliminar');
-      btnEliminar.disabled = false;
-      btnEliminar.textContent = 'Eliminar alumno';
-    }
+    await window.botonCargando(btnEliminar, 'Eliminando…', async () => {
+      const res  = await fetch(`/api/alumnos.php?id=${alumnoId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.ok) {
+        window.location.href = '/admin/alumnos';
+      } else {
+        window.mostrarToast(data.mensaje || 'Error al eliminar', 'error');
+      }
+    });
   });
 
   const btnEntrar = document.getElementById('btn-entrar-como') as HTMLButtonElement;

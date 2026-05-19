@@ -61,55 +61,50 @@ import '../styles/TarjetaLogin.css';
 
     const email = (form.querySelector('#email') as HTMLInputElement).value.trim().toLowerCase();
     const contrasena = (form.querySelector('#password') as HTMLInputElement).value;
-
-    boton.disabled = true;
-    boton.textContent = 'Entrando...';
     errorMsg.style.display = 'none';
 
-    try {
-      const respuesta = await fetch('/api/login.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, contrasena }),
-      });
+    await window.botonCargando(boton, 'Entrando…', async () => {
+      try {
+        const respuesta = await fetch('/api/login.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, contrasena }),
+        });
 
-      const datos = await respuesta.json();
+        const datos = await respuesta.json();
 
-      if (!datos.ok) {
-        // Si la API trae un mensaje (rate-limit, mantenimiento, etc.), mostrarlo;
-        // si no, usar el texto genérico "Email o contraseña incorrectos".
-        errorMsg.textContent = datos.mensaje || 'Email o contraseña incorrectos.';
+        if (!datos.ok) {
+          // Si la API trae un mensaje (rate-limit, mantenimiento, etc.), mostrarlo;
+          // si no, usar el texto genérico "Email o contraseña incorrectos".
+          errorMsg.textContent = datos.mensaje || 'Email o contraseña incorrectos.';
+          errorMsg.style.display = 'block';
+          return;
+        }
+
+        // Sesión: 15 días si "Recordarme" está marcado (localStorage),
+        // 8 horas en caso contrario (sessionStorage, se borra al cerrar el navegador).
+        const recordar  = (form.querySelector('#recordarme') as HTMLInputElement).checked;
+        const duracion  = recordar ? 15 * 24 * 60 * 60 * 1000 : 8 * 60 * 60 * 1000;
+        const sesion = {
+          userId: datos.id,
+          rol: datos.rol,
+          email: datos.email,
+          nombre: datos.nombre,
+          token: datos.token,
+          exp: Date.now() + duracion,
+        };
+        const raw = JSON.stringify(sesion);
+        sessionStorage.setItem('umme_session', raw);
+        if (recordar) localStorage.setItem('umme_session', raw);
+        else          localStorage.removeItem('umme_session');
+
+        window.location.href = datos.rol === 'admin' ? '/admin' : '/inicio';
+
+      } catch (err: any) {
+        errorMsg.textContent = 'Error de conexión. Inténtalo de nuevo.';
         errorMsg.style.display = 'block';
-        boton.disabled = false;
-        boton.textContent = 'Entrar';
-        return;
+        window.logAppError?.('login', 'Error de red en login', { detalle: (err && err.message) || '', stack: err && err.stack });
       }
-
-      // Sesión: 15 días si "Recordarme" está marcado (localStorage),
-      // 8 horas en caso contrario (sessionStorage, se borra al cerrar el navegador).
-      const recordar  = (form.querySelector('#recordarme') as HTMLInputElement).checked;
-      const duracion  = recordar ? 15 * 24 * 60 * 60 * 1000 : 8 * 60 * 60 * 1000;
-      const sesion = {
-        userId: datos.id,
-        rol: datos.rol,
-        email: datos.email,
-        nombre: datos.nombre,
-        token: datos.token,
-        exp: Date.now() + duracion,
-      };
-      const raw = JSON.stringify(sesion);
-      sessionStorage.setItem('umme_session', raw);
-      if (recordar) localStorage.setItem('umme_session', raw);
-      else          localStorage.removeItem('umme_session');
-
-      window.location.href = datos.rol === 'admin' ? '/admin' : '/inicio';
-
-    } catch (err: any) {
-      errorMsg.textContent = 'Error de conexión. Inténtalo de nuevo.';
-      errorMsg.style.display = 'block';
-      boton.disabled = false;
-      boton.textContent = 'Entrar';
-      (window as any).logAppError?.('login', 'Error de red en login', { detalle: (err && err.message) || '', stack: err && err.stack });
-    }
+    });
   });
 </script>

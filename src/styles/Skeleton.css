@@ -1,0 +1,102 @@
+/*
+ * ESTILOS: Skeleton (placeholders animados durante carga)
+ * -------------------------------------------------------
+ * Sustituyen el texto gris "Cargando…" por placeholders con la forma
+ * aproximada del contenido que va a aparecer. Mejoran la sensación de
+ * respuesta inmediata: el usuario ve estructura antes que datos.
+ *
+ * Importado globalmente desde src/styles/global.css → disponible en
+ * toda la app sin imports adicionales.
+ *
+ * Primitivas:
+ *   .skeleton          base (fondo gris con shimmer animado)
+ *   .skeleton-text     línea de texto estándar (alto 0.9rem, redondeado)
+ *   .skeleton-text-sm  línea de texto pequeña (alto 0.7rem)
+ *   .skeleton-text-lg  línea de texto grande / título (alto 1.4rem)
+ *   .skeleton-circle   círculo (avatar, icono); usar width/height inline
+ *   .skeleton-box      rectángulo grande (imagen de tarjeta, banner)
+ *
+ * Modificadores:
+ *   .skeleton-w-25 / 50 / 75 / 90  width: 25% / 50% / 75% / 90%
+ *
+ * Composición:
+ *   Cada página construye su propio "skeleton-card" combinando estas
+ *   piezas con su layout. Por ejemplo, una tarjeta de curso puede
+ *   tener .skeleton-box (imagen) + .skeleton-text-lg (título) + 2x
+ *   .skeleton-text (descripción).
+ *
+ * Animación:
+ *   Shimmer suave (1.4 s) en gradiente — más sobrio que parpadeo.
+ *   Respeta prefers-reduced-motion: el shimmer se ralentiza a 3 s.
+ */
+
+.skeleton {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  background: var(--color-light, #def1ec);
+  border-radius: 8px;
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+/* ── Variantes ────────────────────────────────────────────────── */
+
+.skeleton-text {
+  height: 0.9rem;
+  border-radius: 6px;
+  margin: 0.35rem 0;
+}
+
+.skeleton-text-sm {
+  height: 0.7rem;
+  border-radius: 5px;
+  margin: 0.3rem 0;
+}
+
+.skeleton-text-lg {
+  height: 1.4rem;
+  border-radius: 6px;
+  margin: 0.45rem 0;
+}
+
+.skeleton-circle {
+  border-radius: 50%;
+  /* width y height vienen por estilo inline o clase concreta */
+}
+
+.skeleton-box {
+  border-radius: 10px;
+  /* width y height vienen por estilo inline o composición */
+}
+
+/* ── Modificadores de ancho ───────────────────────────────────── */
+
+.skeleton-w-25 { width: 25%; }
+.skeleton-w-50 { width: 50%; }
+.skeleton-w-75 { width: 75%; }
+.skeleton-w-90 { width: 90%; }
+
+/* ── Animación ────────────────────────────────────────────────── */
+
+@keyframes skeleton-shimmer {
+  to { transform: translateX(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation-duration: 3s;
+  }
+}

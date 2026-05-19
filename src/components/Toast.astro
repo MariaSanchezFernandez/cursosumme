@@ -1,0 +1,122 @@
+---
+// COMPONENTE: Toast
+// -----------------
+// Sistema reutilizable de notificaciones tipo "toast".
+//
+// Cómo funciona:
+//   - Renderiza un contenedor invisible (fijo abajo-derecha) y carga un
+//     script global que expone las funciones para mostrar toasts.
+//   - Debe montarse UNA SOLA VEZ por página: ya está incluido en
+//     Plantilla.astro (alumno) y PlantillaAdmin.astro (admin), así que
+//     cualquier página dentro de esos layouts puede usarlo sin más.
+//
+// API global disponible en cualquier script inline:
+//
+//   mostrarToast(mensaje, tipo?, duracionMs?)
+//     mensaje    string   Texto a mostrar.
+//     tipo       'success' | 'error' | 'info' | 'warning' (def: 'info')
+//     duracionMs number   Auto-cierre en ms. 0 = no se cierra solo. (def: 4000)
+//
+//   Alias por tipo:
+//     toast.success(mensaje, duracion?)
+//     toast.error(mensaje, duracion?)
+//     toast.info(mensaje, duracion?)
+//     toast.warning(mensaje, duracion?)
+//
+// Comportamiento:
+//   - Se apilan varios toasts (no se machacan unos a otros).
+//   - Se cierran solos al cumplirse duracionMs.
+//   - Pasar el cursor por encima pausa el auto-cierre.
+//   - Cerrables manualmente con el botón de cierre.
+//
+// Accesibilidad:
+//   - Contenedor con role=region y aria-label.
+//   - Cada toast con role=status.
+//   - aria-live=assertive para error/warning, polite para success/info.
+//   - Respeta prefers-reduced-motion: sin animación si el usuario lo pide.
+
+import '../styles/Toast.css';
+---
+
+<!-- Contenedor de toasts: siempre presente en el DOM, vacío por defecto -->
+<div
+  id="toastContainer"
+  class="toast-container"
+  role="region"
+  aria-label="Notificaciones"
+></div>
+
+<script is:inline>
+  (function () {
+    var contenedor = document.getElementById('toastContainer');
+    if (!contenedor || window.mostrarToast) return; // ya montado
+
+    var ICONOS = {
+      success: '<svg viewBox="0 0 22 22" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="9.5" stroke="currentColor" stroke-width="1.7"/><path d="M6.5 11.5l3 3 6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+      error:   '<svg viewBox="0 0 22 22" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="9.5" stroke="currentColor" stroke-width="1.7"/><path d="M11 6.5v5.5M11 15v.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>',
+      warning: '<svg viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M11 2.5L20 19H2L11 2.5z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M11 9v4M11 15.5v.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+      info:    '<svg viewBox="0 0 22 22" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="9.5" stroke="currentColor" stroke-width="1.7"/><path d="M11 10v5M11 7v.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>'
+    };
+
+    function crearToast(mensaje, tipo, duracion) {
+      tipo = ICONOS[tipo] ? tipo : 'info';
+      duracion = (typeof duracion === 'number') ? duracion : 4000;
+
+      var el = document.createElement('div');
+      el.className = 'toast toast--' + tipo;
+      el.setAttribute('role', 'status');
+      el.setAttribute('aria-live', (tipo === 'error' || tipo === 'warning') ? 'assertive' : 'polite');
+
+      el.innerHTML =
+        '<div class="toast-icono">' + ICONOS[tipo] + '</div>' +
+        '<div class="toast-contenido"></div>' +
+        '<button class="toast-cerrar" type="button" aria-label="Cerrar notificación">×</button>';
+
+      // textContent (no innerHTML) para evitar inyectar HTML en el mensaje
+      el.querySelector('.toast-contenido').textContent = mensaje;
+
+      var temporizador = null;
+      function cerrar() {
+        if (el._cerrando) return;
+        el._cerrando = true;
+        clearTimeout(temporizador);
+        el.classList.add('cerrando');
+        el.addEventListener('animationend', function () {
+          if (el.parentNode) el.parentNode.removeChild(el);
+        }, { once: true });
+        // Fallback si la animación no dispara (prefers-reduced-motion)
+        setTimeout(function () {
+          if (el.parentNode) el.parentNode.removeChild(el);
+        }, 400);
+      }
+
+      el.querySelector('.toast-cerrar').addEventListener('click', cerrar);
+
+      if (duracion > 0) {
+        temporizador = setTimeout(cerrar, duracion);
+        // Pausar el auto-cierre al pasar el cursor (más cómodo para leer)
+        el.addEventListener('mouseenter', function () {
+          clearTimeout(temporizador);
+        });
+        el.addEventListener('mouseleave', function () {
+          temporizador = setTimeout(cerrar, duracion);
+        });
+      }
+
+      contenedor.appendChild(el);
+      return el;
+    }
+
+    window.mostrarToast = function (mensaje, tipo, duracion) {
+      if (!mensaje) return null;
+      return crearToast(String(mensaje), tipo || 'info', duracion);
+    };
+
+    window.toast = {
+      success: function (m, d) { return window.mostrarToast(m, 'success', d); },
+      error:   function (m, d) { return window.mostrarToast(m, 'error',   d); },
+      info:    function (m, d) { return window.mostrarToast(m, 'info',    d); },
+      warning: function (m, d) { return window.mostrarToast(m, 'warning', d); }
+    };
+  })();
+</script>

@@ -704,28 +704,26 @@ formCurso.addEventListener('submit', async (e) => {
     mostrarMsg('No hay cambios que guardar.', 'ok');
     return;
   }
-  btnGuardar.disabled    = true;
-  btnGuardar.textContent = 'Guardando…';
-  let okCurso = true;
-  if (cursoDirty) okCurso = await guardarCurso();
-  let okTemas = 0, falloTemas = 0;
-  for (const card of temasDirty) {
-    const fn = (card as any).guardarTema as (() => Promise<boolean>) | undefined;
-    if (!fn) continue;
-    const ok = await fn();
-    if (ok) okTemas++; else falloTemas++;
-  }
-  refrescarBarraEstado();
-  if (okCurso && falloTemas === 0) {
-    const total = (cursoDirty ? 1 : 0) + okTemas;
-    if (cursoDirty) cursoDirty = false;
+  await window.botonCargando(btnGuardar, 'Guardando…', async () => {
+    let okCurso = true;
+    if (cursoDirty) okCurso = await guardarCurso();
+    let okTemas = 0, falloTemas = 0;
+    for (const card of temasDirty) {
+      const fn = (card as any).guardarTema as (() => Promise<boolean>) | undefined;
+      if (!fn) continue;
+      const ok = await fn();
+      if (ok) okTemas++; else falloTemas++;
+    }
     refrescarBarraEstado();
-    mostrarMsg(`✓ Guardado (${total} ${total === 1 ? 'cambio' : 'cambios'}).`, 'ok');
-  } else if (falloTemas > 0) {
-    mostrarMsg(`Algunos temas no se pudieron guardar (${falloTemas}).`, 'error');
-  }
-  btnGuardar.disabled    = false;
-  btnGuardar.textContent = 'Guardar cambios';
+    if (okCurso && falloTemas === 0) {
+      const total = (cursoDirty ? 1 : 0) + okTemas;
+      if (cursoDirty) cursoDirty = false;
+      refrescarBarraEstado();
+      mostrarMsg(`✓ Guardado (${total} ${total === 1 ? 'cambio' : 'cambios'}).`, 'ok');
+    } else if (falloTemas > 0) {
+      mostrarMsg(`Algunos temas no se pudieron guardar (${falloTemas}).`, 'error');
+    }
+  });
 });
 
 // ── Duración total del curso ─────────────────────────────────
@@ -1066,28 +1064,35 @@ async function crearTemaCard(tema: any): Promise<HTMLElement> {
   editPanel.querySelector('.input-dur-tema')!.addEventListener('input', marcarTemaDirty);
   (editPanel.querySelector('.input-desc-tema') as HTMLElement).addEventListener('input', marcarTemaDirty);
 
-  editPanel.querySelector('.btn-guardar-tema')!.addEventListener('click', async () => {
-    const ok = await guardarTema();
-    if (ok) {
-      editPanel.style.display = 'none';
-      mostrarMsg('✓ Tema actualizado.', 'ok');
-      refrescarBarraEstado();
-    }
+  editPanel.querySelector('.btn-guardar-tema')!.addEventListener('click', async (e) => {
+    const btn = e.currentTarget as HTMLButtonElement;
+    await window.botonCargando(btn, 'Guardando…', async () => {
+      const ok = await guardarTema();
+      if (ok) {
+        editPanel.style.display = 'none';
+        mostrarMsg('✓ Tema actualizado.', 'ok');
+        refrescarBarraEstado();
+      }
+    });
   });
 
   // ── Eliminar tema ─────────────────────────────────────────
-  cabecera.querySelector('.btn-del-tema')!.addEventListener('click', async () => {
+  cabecera.querySelector('.btn-del-tema')!.addEventListener('click', async (e) => {
     if (!confirm(`¿Eliminar "${tema.titulo}" y todos sus archivos?`)) return;
-    const res  = await fetch(`/api/temas.php?id=${tema.id}`, { method: 'DELETE' });
-    const data = await res.json();
-    if (data.ok) {
-      card.remove();
-      if (!temasLista.children.length) temasVacio.style.display = 'block';
-      actualizarDurDisplay();
-      mostrarMsg('✓ Tema eliminado.', 'ok');
-    } else {
-      mostrarMsg(data.mensaje || 'Error al eliminar', 'error');
-    }
+    const btn = e.currentTarget as HTMLButtonElement;
+    // Botón icono: pasamos '' para mostrar solo el spinner sin texto
+    await window.botonCargando(btn, '', async () => {
+      const res  = await fetch(`/api/temas.php?id=${tema.id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.ok) {
+        card.remove();
+        if (!temasLista.children.length) temasVacio.style.display = 'block';
+        actualizarDurDisplay();
+        mostrarMsg('✓ Tema eliminado.', 'ok');
+      } else {
+        mostrarMsg(data.mensaje || 'Error al eliminar', 'error');
+      }
+    });
   });
 
   // ── Upload vídeo ──────────────────────────────────────────
@@ -1105,27 +1110,29 @@ async function crearTemaCard(tema: any): Promise<HTMLElement> {
     if (archivo.size > MAX_VIDEO) {
       const mb = (archivo.size / 1024 / 1024).toFixed(0);
       mostrarMsg(`El vídeo pesa ${mb} MB y supera el límite de 3.5 GB. Comprímelo antes de subirlo.`, 'error');
-      (window as any).logAppError?.('upload', `Vídeo rechazado en cliente (${mb} MB > 3.5 GB)`, { detalle: archivo.name + ' · tema=' + tema.id });
+      window.logAppError?.('upload', `Vídeo rechazado en cliente (${mb} MB > 3.5 GB)`, { detalle: archivo.name + ' · tema=' + tema.id });
       input.value = '';
       return;
     }
     progresoVideo.style.display = 'flex';
     progresoBarra.style.width = '0%';
     progresoTxt.textContent = '0%';
-    btnSubirVideo.disabled = true;
-    await subirArchivo(cuerpo, tema, archivo, 'video',
-      (pct) => {
-        progresoBarra.style.width = pct + '%';
-        progresoTxt.textContent = pct + '%';
-      },
-      (estado) => {
-        if (estado === 'ready') return;
-        progresoTxt.textContent = estado;
-        progresoBarra.style.width = '100%';
-      },
-    );
+    // El botón muestra spinner + "Subiendo…" mientras la barra de progreso
+    // de debajo comunica el porcentaje real.
+    await window.botonCargando(btnSubirVideo, 'Subiendo…', async () => {
+      await subirArchivo(cuerpo, tema, archivo, 'video',
+        (pct) => {
+          progresoBarra.style.width = pct + '%';
+          progresoTxt.textContent = pct + '%';
+        },
+        (estado) => {
+          if (estado === 'ready') return;
+          progresoTxt.textContent = estado;
+          progresoBarra.style.width = '100%';
+        },
+      );
+    });
     progresoVideo.style.display = 'none';
-    btnSubirVideo.disabled = false;
     input.value = '';
   });
 
@@ -1143,20 +1150,21 @@ async function crearTemaCard(tema: any): Promise<HTMLElement> {
     if (archivo.size > MAX_DOC) {
       const mb = (archivo.size / 1024 / 1024).toFixed(0);
       mostrarMsg(`El archivo pesa ${mb} MB y supera el límite de 500 MB.`, 'error');
-      (window as any).logAppError?.('upload', `Documento rechazado en cliente (${mb} MB > 500 MB)`, { detalle: archivo.name + ' · tema=' + tema.id });
+      window.logAppError?.('upload', `Documento rechazado en cliente (${mb} MB > 500 MB)`, { detalle: archivo.name + ' · tema=' + tema.id });
       input.value = '';
       return;
     }
     progresoDoc.style.display = 'flex';
     progresoDocFill.style.width = '0%';
     progresoDocTxt.textContent = '0%';
-    (formDoc.querySelector('button[type="submit"]') as HTMLButtonElement).disabled = true;
-    await subirArchivo(cuerpo, tema, archivo, 'documento', (pct) => {
-      progresoDocFill.style.width = pct + '%';
-      progresoDocTxt.textContent = pct + '%';
+    const btnSubirDoc = formDoc.querySelector('button[type="submit"]') as HTMLButtonElement;
+    await window.botonCargando(btnSubirDoc, 'Subiendo…', async () => {
+      await subirArchivo(cuerpo, tema, archivo, 'documento', (pct) => {
+        progresoDocFill.style.width = pct + '%';
+        progresoDocTxt.textContent = pct + '%';
+      });
     });
     progresoDoc.style.display = 'none';
-    (formDoc.querySelector('button[type="submit"]') as HTMLButtonElement).disabled = false;
     input.value = '';
   });
 
@@ -1286,11 +1294,17 @@ function crearFilaMat(mat: any): HTMLElement {
       <button class="mat-del" title="Eliminar">✕</button>
     `;
     div.querySelector('.mat-rename')!.addEventListener('click', renderEditar);
-    div.querySelector('.mat-del')!.addEventListener('click', async () => {
+    div.querySelector('.mat-del')!.addEventListener('click', async (e) => {
       if (!confirm(`¿Eliminar "${mat.nombre}"?`)) return;
-      const res  = await fetch(`/api/materiales.php?id=${mat.id}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (!data.ok) { mostrarMsg('Error al eliminar', 'error'); return; }
+      const btn = e.currentTarget as HTMLButtonElement;
+      // Botón icono (×): pasamos '' para mostrar solo el spinner
+      const okDel = await window.botonCargando(btn, '', async () => {
+        const res  = await fetch(`/api/materiales.php?id=${mat.id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!data.ok) { mostrarMsg('Error al eliminar', 'error'); return false; }
+        return true;
+      });
+      if (!okDel) return;
       div.remove();
       // Si era un vídeo con duración, restamos del total del tema y
       // refrescamos pill + display del curso para reflejarlo al
@@ -1725,29 +1739,25 @@ btnCrear.addEventListener('click', async () => {
   const titulo = inputNuevo.value.trim();
   if (!titulo) { inputNuevo.focus(); return; }
 
-  btnCrear.disabled    = true;
-  btnCrear.textContent = 'Añadiendo…';
+  await window.botonCargando(btnCrear, 'Añadiendo…', async () => {
+    const res  = await fetch('/api/temas.php', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ curso_id: cursoId, titulo, duracion: '' }),
+    });
+    const data = await res.json();
 
-  const res  = await fetch('/api/temas.php', {
-    method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ curso_id: cursoId, titulo, duracion: '' }),
+    if (!data.ok) { mostrarMsg(data.mensaje || 'Error al crear el tema', 'error'); return; }
+
+    const nuevoTema = { id: data.id, titulo, duracion: '', descripcion: '', orden: data.orden };
+    temasVacio.style.display = 'none';
+    const card = await crearTemaCard(nuevoTema);
+    temasLista.appendChild(card);
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    inputNuevo.value        = '';
+    nuevoWrap.style.display = 'none';
+    mostrarMsg('✓ Tema añadido. Ya puedes subir el vídeo y los materiales.', 'ok');
   });
-  const data = await res.json();
-
-  btnCrear.disabled    = false;
-  btnCrear.textContent = 'Añadir tema';
-
-  if (!data.ok) { mostrarMsg(data.mensaje || 'Error al crear el tema', 'error'); return; }
-
-  const nuevoTema = { id: data.id, titulo, duracion: '', descripcion: '', orden: data.orden };
-  temasVacio.style.display = 'none';
-  const card = await crearTemaCard(nuevoTema);
-  temasLista.appendChild(card);
-  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-  inputNuevo.value        = '';
-  nuevoWrap.style.display = 'none';
-  mostrarMsg('✓ Tema añadido. Ya puedes subir el vídeo y los materiales.', 'ok');
 });
 
 inputNuevo.addEventListener('keydown', (e: KeyboardEvent) => {

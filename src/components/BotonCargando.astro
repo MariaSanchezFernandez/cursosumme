@@ -1,0 +1,92 @@
+---
+// COMPONENTE: BotonCargando
+// -------------------------
+// Helper global para mostrar un estado de carga en CUALQUIER <button>
+// mientras se ejecuta una acción asíncrona. No es un componente visual:
+// se monta una vez en los layouts y expone una función global.
+//
+// API global:
+//
+//   await window.botonCargando(btn, textoMientrasCarga, accion)
+//     btn                 HTMLButtonElement (o cualquier elemento con .disabled)
+//     textoMientrasCarga  string  Texto a mostrar mientras carga
+//                                 (ej. 'Guardando…', 'Subiendo…'). Si se omite
+//                                 (undefined o null), muestra 'Cargando…'.
+//                                 Pasar '' (cadena vacía) para mostrar solo el
+//                                 spinner sin texto (útil en botones icono).
+//     accion              () => Promise<any>  Función async que hace el trabajo.
+//                                              Devuelve el valor que ella retorne.
+//
+// Comportamiento:
+//   - Guarda el HTML original, disabled y ancho del botón antes de empezar.
+//   - Congela el ancho del botón (evita que cambie de tamaño con el texto nuevo).
+//   - Aplica disabled=true, data-cargando="1" y reemplaza el contenido por
+//     un spinner SVG + el texto "textoMientrasCarga".
+//   - Ejecuta accion() en un try/finally: pase lo que pase, restaura el botón.
+//   - Si el botón ya está cargando (data-cargando="1"), se ignora la llamada
+//     (protección anti-doble-click).
+//   - Si el botón se ha eliminado del DOM durante la acción, no falla.
+//
+// Ejemplo:
+//
+//   btn.addEventListener('click', async () => {
+//     await window.botonCargando(btn, 'Guardando…', async () => {
+//       const res = await fetch('/api/...', { method: 'POST' });
+//       const data = await res.json();
+//       if (data.ok) toast.success('Guardado');
+//       else         toast.error(data.mensaje || 'Error al guardar');
+//     });
+//   });
+
+import '../styles/BotonCargando.css';
+---
+
+<script is:inline>
+  (function () {
+    if (window.botonCargando) return; // ya registrado
+
+    var SPINNER = '<span class="boton-cargando-spinner" aria-hidden="true"></span>';
+
+    window.botonCargando = async function (btn, textoMientrasCarga, accion) {
+      if (!btn) {
+        if (typeof accion === 'function') return await accion();
+        return;
+      }
+      // Anti doble-clic: si ya está cargando, ignorar la nueva petición
+      if (btn.dataset && btn.dataset.cargando === '1') return;
+      if (typeof accion !== 'function') {
+        throw new Error('botonCargando: se requiere una función accion() como tercer argumento');
+      }
+
+      // Estado original a restaurar
+      var htmlOriginal     = btn.innerHTML;
+      var disabledOriginal = !!btn.disabled;
+      var minWidthOriginal = btn.style.minWidth;
+      var anchoCongelado   = btn.offsetWidth;
+
+      // Aplicar estado de carga
+      btn.dataset.cargando = '1';
+      btn.setAttribute('aria-busy', 'true');
+      btn.disabled = true;
+      if (anchoCongelado > 0) btn.style.minWidth = anchoCongelado + 'px';
+      // Usa nullish (??) en vez de || para que '' signifique "solo spinner"
+      var texto = (textoMientrasCarga === undefined || textoMientrasCarga === null)
+        ? 'Cargando…'
+        : String(textoMientrasCarga);
+      btn.innerHTML = SPINNER + texto;
+
+      try {
+        return await accion();
+      } finally {
+        // Restaurar (solo si el botón sigue en el DOM)
+        if (document.body && document.body.contains(btn)) {
+          btn.innerHTML = htmlOriginal;
+          btn.disabled = disabledOriginal;
+          btn.style.minWidth = minWidthOriginal;
+          btn.removeAttribute('aria-busy');
+          delete btn.dataset.cargando;
+        }
+      }
+    };
+  })();
+</script>

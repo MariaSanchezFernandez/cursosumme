@@ -518,61 +518,57 @@ const msgError = document.getElementById('msg-error') as HTMLDivElement;
 
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
-  btnCrear.disabled    = true;
-  btnCrear.textContent = 'Creando…';
   msgError.style.display = 'none';
 
-  try {
-    const descHtml = (document.getElementById('descripcion-editor') as HTMLElement).innerHTML.trim();
-    const res  = await fetch('/api/cursos.php', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        titulo:      (document.getElementById('titulo')   as HTMLInputElement).value.trim(),
-        descripcion: descHtml === '<br>' ? '' : descHtml,
-        etiqueta:    (document.getElementById('etiqueta') as HTMLInputElement).value.trim(),
-        activo:      (document.getElementById('activo')   as HTMLInputElement).checked ? 1 : 0,
-        imagen:      imagenUrl || null,
-      }),
-    });
-    const data = await res.json();
+  await window.botonCargando(btnCrear, 'Creando…', async () => {
+    try {
+      const descHtml = (document.getElementById('descripcion-editor') as HTMLElement).innerHTML.trim();
+      const res  = await fetch('/api/cursos.php', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          titulo:      (document.getElementById('titulo')   as HTMLInputElement).value.trim(),
+          descripcion: descHtml === '<br>' ? '' : descHtml,
+          etiqueta:    (document.getElementById('etiqueta') as HTMLInputElement).value.trim(),
+          activo:      (document.getElementById('activo')   as HTMLInputElement).checked ? 1 : 0,
+          imagen:      imagenUrl || null,
+        }),
+      });
+      const data = await res.json();
 
-    if (!data.ok) {
-      msgError.textContent   = data.mensaje || 'Error al crear el curso';
+      if (!data.ok) {
+        msgError.textContent   = data.mensaje || 'Error al crear el curso';
+        msgError.style.display = 'block';
+        window.logAppError?.('crear_curso', 'Servidor rechazó creación de curso', { detalle: data.mensaje || ('HTTP ' + res.status) });
+        return;
+      }
+
+      cursoId = Number(data.id);
+
+      // Transformar la cabecera y mostrar la sección de temas
+      document.querySelector('.admin-header-titulo')!.textContent =
+        (document.getElementById('titulo') as HTMLInputElement).value.trim();
+
+      // Marcar bloques como completados y bloquear edición
+      const wrap = document.getElementById('form-basico-wrap')!;
+      wrap.querySelectorAll('.bloque-form').forEach(el => el.classList.add('completado'));
+      btnCrear.style.display  = 'none';
+      form.querySelectorAll('input, select').forEach(el => (el as HTMLInputElement).disabled = true);
+
+      const ok = document.createElement('p');
+      ok.style.cssText = 'font-size:0.82rem; color:#2e7d55; margin:0.5rem 0 0; font-weight:600;';
+      ok.textContent   = '✓ Curso creado. Ahora añade los temas y sube los vídeos.';
+      wrap.appendChild(ok);
+
+      document.getElementById('temas-seccion')!.style.display = 'block';
+      document.getElementById('temas-seccion')!.scrollIntoView({ behavior: 'smooth' });
+
+    } catch (err: any) {
+      msgError.textContent   = 'Error de conexión.';
       msgError.style.display = 'block';
-      btnCrear.disabled      = false;
-      btnCrear.textContent   = 'Crear curso y añadir temas →';
-      (window as any).logAppError?.('crear_curso', 'Servidor rechazó creación de curso', { detalle: data.mensaje || ('HTTP ' + res.status) });
-      return;
+      window.logAppError?.('crear_curso', 'Error de red al crear curso', { detalle: err?.message, stack: err?.stack });
     }
-
-    cursoId = Number(data.id);
-
-    // Transformar la cabecera y mostrar la sección de temas
-    document.querySelector('.admin-header-titulo')!.textContent =
-      (document.getElementById('titulo') as HTMLInputElement).value.trim();
-
-    // Marcar bloques como completados y bloquear edición
-    const wrap = document.getElementById('form-basico-wrap')!;
-    wrap.querySelectorAll('.bloque-form').forEach(el => el.classList.add('completado'));
-    btnCrear.style.display  = 'none';
-    form.querySelectorAll('input, select').forEach(el => (el as HTMLInputElement).disabled = true);
-
-    const ok = document.createElement('p');
-    ok.style.cssText = 'font-size:0.82rem; color:#2e7d55; margin:0.5rem 0 0; font-weight:600;';
-    ok.textContent   = '✓ Curso creado. Ahora añade los temas y sube los vídeos.';
-    wrap.appendChild(ok);
-
-    document.getElementById('temas-seccion')!.style.display = 'block';
-    document.getElementById('temas-seccion')!.scrollIntoView({ behavior: 'smooth' });
-
-  } catch (err: any) {
-    msgError.textContent   = 'Error de conexión.';
-    msgError.style.display = 'block';
-    btnCrear.disabled      = false;
-    btnCrear.textContent   = 'Crear curso y añadir temas →';
-    (window as any).logAppError?.('crear_curso', 'Error de red al crear curso', { detalle: err?.message, stack: err?.stack });
-  }
+  });
 });
 
 // ── Duración total ─────────────────────────────────────────────
@@ -635,29 +631,26 @@ btnCancelar.addEventListener('click', () => { nuevoWrap.style.display = 'none'; 
 formNuevo.addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!cursoId) return;
-  btnCrearTema.disabled    = true;
-  btnCrearTema.textContent = 'Añadiendo…';
 
-  const titulo = (document.getElementById('tema-titulo') as HTMLInputElement).value.trim();
-  const res    = await fetch('/api/temas.php', {
-    method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ curso_id: cursoId, titulo, duracion: '' }),
+  await window.botonCargando(btnCrearTema, 'Añadiendo…', async () => {
+    const titulo = (document.getElementById('tema-titulo') as HTMLInputElement).value.trim();
+    const res    = await fetch('/api/temas.php', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ curso_id: cursoId, titulo, duracion: '' }),
+    });
+    const data = await res.json();
+
+    if (!data.ok) { mostrarMsg(data.mensaje || 'Error al crear el tema', 'error'); return; }
+
+    const nuevoTema = { id: data.id, titulo, duracion: '', orden: data.orden };
+    temasVacio.style.display = 'none';
+    const card = await crearTemaCard(nuevoTema);
+    temasLista.appendChild(card);
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    (document.getElementById('tema-titulo') as HTMLInputElement).value = '';
+    nuevoWrap.style.display = 'none';
+    mostrarMsg('✓ Tema añadido. Sube el vídeo y los materiales.', 'ok');
   });
-  const data = await res.json();
-
-  btnCrearTema.disabled    = false;
-  btnCrearTema.textContent = 'Añadir tema';
-
-  if (!data.ok) { mostrarMsg(data.mensaje || 'Error al crear el tema', 'error'); return; }
-
-  const nuevoTema = { id: data.id, titulo, duracion: '', orden: data.orden };
-  temasVacio.style.display = 'none';
-  const card = await crearTemaCard(nuevoTema);
-  temasLista.appendChild(card);
-  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  (document.getElementById('tema-titulo') as HTMLInputElement).value = '';
-  nuevoWrap.style.display = 'none';
-  mostrarMsg('✓ Tema añadido. Sube el vídeo y los materiales.', 'ok');
 });
 
 // ── Card de tema ───────────────────────────────────────────────

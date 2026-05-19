@@ -97,6 +97,29 @@
   gap: 0;
 }
 
+/* ── Skeleton de tarjeta de curso (durante carga) ── */
+.curso-skel {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.2rem 1rem;
+  background: #fff;
+  border-radius: 12px;
+  margin-bottom: 0.6rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.curso-skel-img {
+  flex-shrink: 0;
+  width: 110px;
+  aspect-ratio: 21 / 9;
+}
+.curso-skel-info {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
 /* ── Grupos de packs ── */
 .pack-grupo {
   border-radius: 10px;

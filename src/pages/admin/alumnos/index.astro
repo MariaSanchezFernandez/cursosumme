@@ -30,8 +30,36 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
       </div>
     </div>
 
-    <div id="estado-carga" style="padding:2rem 1.5rem; color:#aaa; font-size:0.85rem;">
-      Cargando alumnos…
+    <div id="estado-carga" class="alumnos-skel" aria-hidden="true">
+      <!-- Skeletons mientras cargan los alumnos -->
+      <div class="alumno-skel-row">
+        <div class="skeleton skeleton-circle alumno-skel-avatar"></div>
+        <div class="alumno-skel-cols">
+          <div class="skeleton skeleton-text skeleton-w-75"></div>
+          <div class="skeleton skeleton-text-sm skeleton-w-50"></div>
+        </div>
+      </div>
+      <div class="alumno-skel-row">
+        <div class="skeleton skeleton-circle alumno-skel-avatar"></div>
+        <div class="alumno-skel-cols">
+          <div class="skeleton skeleton-text skeleton-w-50"></div>
+          <div class="skeleton skeleton-text-sm skeleton-w-75"></div>
+        </div>
+      </div>
+      <div class="alumno-skel-row">
+        <div class="skeleton skeleton-circle alumno-skel-avatar"></div>
+        <div class="alumno-skel-cols">
+          <div class="skeleton skeleton-text skeleton-w-90"></div>
+          <div class="skeleton skeleton-text-sm skeleton-w-25"></div>
+        </div>
+      </div>
+      <div class="alumno-skel-row">
+        <div class="skeleton skeleton-circle alumno-skel-avatar"></div>
+        <div class="alumno-skel-cols">
+          <div class="skeleton skeleton-text skeleton-w-50"></div>
+          <div class="skeleton skeleton-text-sm skeleton-w-50"></div>
+        </div>
+      </div>
     </div>
 
     <table id="tabla-alumnos" style="display:none;">
@@ -153,3 +181,28 @@ function filtrarAlumnos() {
 
 (window as any).filtrarAlumnos = filtrarAlumnos;
 </script>
+
+<style>
+  /* Skeletons de filas de alumno mientras carga la tabla */
+  .alumnos-skel {
+    padding: 0.5rem 0;
+  }
+  .alumno-skel-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.85rem 1.5rem;
+    border-bottom: 1px solid #eef3f0;
+  }
+  .alumno-skel-avatar {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+  }
+  .alumno-skel-cols {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+</style>
