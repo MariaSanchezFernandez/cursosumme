@@ -52,11 +52,14 @@ ejecutar($pdo, 'ALTER TABLE cursos  ADD COLUMN IF NOT EXISTS imagen      VARCHAR
 // ── Orden de materiales ───────────────────────────────────────
 ejecutar($pdo, 'ALTER TABLE materiales ADD COLUMN IF NOT EXISTS orden INT NOT NULL DEFAULT 0', 'orden en materiales', $resultados);
 
-// ── Cloudflare Stream ─────────────────────────────────────────
-// ruta pasa a nullable: los vídeos CF no tienen archivo local.
+// ── Cloudflare Stream (legacy, columnas conservadas por datos existentes) ──
 ejecutar($pdo, 'ALTER TABLE materiales MODIFY COLUMN ruta VARCHAR(500) DEFAULT NULL', 'ruta nullable en materiales', $resultados);
 ejecutar($pdo, 'ALTER TABLE materiales ADD COLUMN IF NOT EXISTS cf_video_id VARCHAR(100) DEFAULT NULL', 'cf_video_id en materiales', $resultados);
 ejecutar($pdo, "ALTER TABLE materiales ADD COLUMN IF NOT EXISTS cf_status ENUM('uploading','processing','ready','error') DEFAULT NULL", 'cf_status en materiales', $resultados);
+
+// ── VdoCipher DRM ─────────────────────────────────────────────
+ejecutar($pdo, 'ALTER TABLE materiales ADD COLUMN IF NOT EXISTS vdocipher_video_id VARCHAR(100) DEFAULT NULL', 'vdocipher_video_id en materiales', $resultados);
+ejecutar($pdo, "ALTER TABLE materiales ADD COLUMN IF NOT EXISTS vdo_status ENUM('uploading','processing','ready') DEFAULT NULL", 'vdo_status en materiales', $resultados);
 
 // ── Stripe ────────────────────────────────────────────────────
 ejecutar($pdo, 'ALTER TABLE cursos ADD COLUMN IF NOT EXISTS precio DECIMAL(8,2) DEFAULT NULL', 'precio en cursos', $resultados);

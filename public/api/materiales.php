@@ -27,7 +27,7 @@ if ($metodo === 'GET') {
         exit;
     }
     $stmt = $pdo->prepare(
-        'SELECT id, tipo, nombre, ruta, tamano_kb, duracion_seg, cf_video_id, cf_status, subido_en
+        'SELECT id, tipo, nombre, ruta, tamano_kb, duracion_seg, vdocipher_video_id, vdo_status, subido_en
          FROM materiales WHERE tema_id = :tema_id ORDER BY orden ASC, subido_en ASC'
     );
     $stmt->execute([':tema_id' => $temaId]);
@@ -80,7 +80,7 @@ if ($metodo === 'DELETE') {
         exit;
     }
     // Obtener datos para log y limpieza
-    $stmt = $pdo->prepare('SELECT nombre, tipo, ruta, cf_video_id FROM materiales WHERE id = :id');
+    $stmt = $pdo->prepare('SELECT nombre, tipo, ruta, vdocipher_video_id FROM materiales WHERE id = :id');
     $stmt->execute([':id' => $id]);
     $mat = $stmt->fetch();
     if ($mat) {
@@ -89,18 +89,22 @@ if ($metodo === 'DELETE') {
             $rutaFisica = rtrim($_SERVER['DOCUMENT_ROOT'], '/') . $mat['ruta'];
             if (file_exists($rutaFisica)) { @unlink($rutaFisica); }
         }
-        // Vídeo Cloudflare: borrar del CDN
-        if ($mat['cf_video_id']) {
-            $ch = curl_init('https://api.cloudflare.com/client/v4/accounts/' . CF_ACCOUNT_ID . '/stream/' . rawurlencode($mat['cf_video_id']));
-            curl_setopt_array($ch, [
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_CUSTOMREQUEST  => 'DELETE',
-                CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . CF_API_TOKEN],
-                CURLOPT_TIMEOUT        => 10,
-                CURLOPT_SSL_VERIFYPEER => true,
-            ]);
-            curl_exec($ch);
-            curl_close($ch);
+        // Vídeo VdoCipher: borrar del CDN
+        if ($mat['vdocipher_video_id']) {
+            $apiKey = defined('VDOCIPHER_API_KEY') ? VDOCIPHER_API_KEY : '';
+            if ($apiKey) {
+                $vid = rawurlencode($mat['vdocipher_video_id']);
+                $ch  = curl_init("https://dev.vdocipher.com/api/videos?videos={$vid}");
+                curl_setopt_array($ch, [
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_CUSTOMREQUEST  => 'DELETE',
+                    CURLOPT_HTTPHEADER     => ['Authorization: Apisecret ' . $apiKey],
+                    CURLOPT_TIMEOUT        => 10,
+                    CURLOPT_SSL_VERIFYPEER => true,
+                ]);
+                curl_exec($ch);
+                curl_close($ch);
+            }
         }
     }
 

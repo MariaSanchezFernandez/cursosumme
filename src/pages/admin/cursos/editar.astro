@@ -1243,10 +1243,10 @@ function crearFilaMat(mat: any): HTMLElement {
   div.dataset.matId = String(mat.id);
   if (mat.tipo === 'video') div.draggable = true;
 
-  const esCF = !!(mat.cf_video_id);
+  const esVdo = !!(mat.vdocipher_video_id);
 
   function renderNormal() {
-    const btnDescargaHTML = (mat.tipo === 'video' && !esCF)
+    const btnDescargaHTML = (mat.tipo === 'video' && !esVdo)
       ? `<a class="mat-descarga" href="${urlDescargaVideo(mat)}" download="${mat.nombre}" title="Descargar" style="width:22px;height:22px;border-radius:5px;border:1px solid #e8eeec;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;color:#555;text-decoration:none;">
            <svg viewBox="0 0 14 14" fill="none" width="12" height="12">
              <path d="M7 1.5v8M3.5 6L7 9.5 10.5 6M2 12h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1254,11 +1254,11 @@ function crearFilaMat(mat: any): HTMLElement {
          </a>`
       : '';
 
-    const cfBadge = esCF
-      ? `<span class="cf-badge" style="font-size:0.68rem;padding:0.1rem 0.4rem;border-radius:4px;background:#fff7ed;border:1px solid #f5c090;color:#c05010;flex-shrink:0;white-space:nowrap;">${mat.cf_status === 'ready' ? '✓ CF Stream' : 'CF: ' + (mat.cf_status ?? '…')}</span>`
+    const cfBadge = esVdo
+      ? `<span class="vdo-badge" style="font-size:0.68rem;padding:0.1rem 0.4rem;border-radius:4px;background:#fff7ed;border:1px solid #f5c090;color:#c05010;flex-shrink:0;white-space:nowrap;">${mat.vdo_status === 'ready' ? '✓ CF Stream' : 'CF: ' + (mat.vdo_status ?? '…')}</span>`
       : '';
 
-    const nombreHTML = esCF
+    const nombreHTML = esVdo
       ? `<span class="mat-nombre" title="${mat.nombre}">${mat.nombre}</span>`
       : `<a href="${urlMaterial(mat)}" target="_blank" class="mat-nombre" title="${mat.nombre}">${mat.nombre}</a>`;
 
@@ -1276,7 +1276,7 @@ function crearFilaMat(mat: any): HTMLElement {
       ${dragHandle}
       <span class="mat-icono">${icono}</span>
       ${nombreHTML}
-      ${esCF ? cfBadge : `<span class="mat-tam">${kb}</span>`}
+      ${esVdo ? cfBadge : `<span class="mat-tam">${kb}</span>`}
       ${btnDescargaHTML}
       <button class="mat-rename" title="Renombrar" style="width:22px;height:22px;border-radius:5px;border:1px solid #e8eeec;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;">
         <svg viewBox="0 0 14 14" fill="none" width="12" height="12">
@@ -1367,10 +1367,10 @@ function leerDuracionVideo(archivo: File): Promise<number> {
   });
 }
 
-// ── Subida de vídeo a Cloudflare Stream vía TUS ───────────────
-// El archivo va DIRECTAMENTE desde el navegador a Cloudflare,
+// ── Subida de vídeo a VdoCipher DRM ──────────────────────────
+// El archivo va DIRECTAMENTE desde el navegador al S3 de VdoCipher,
 // sin pasar por IONOS. Evita cuota de disco y el límite nginx.
-async function subirVideoCloudflare(
+async function subirVideoVdoCipher(
   cuerpo: HTMLElement,
   tema: any,
   archivo: File,
@@ -1378,90 +1378,97 @@ async function subirVideoCloudflare(
   onProgress?: (pct: number) => void,
   onEstado?: (estado: string) => void,
 ): Promise<void> {
-  const ses = JSON.parse(sessionStorage.getItem('umme_session') || '{}');
-  const auth = ses.token ? `Bearer ${ses.token}` : '';
-
-  onEstado?.('Preparando subida…');
-
-  // 1. Obtener URL TUS de nuestro servidor
+  const ses      = JSON.parse(sessionStorage.getItem('umme_session') || '{}');
   const rawToken = ses.token || '';
-  const prepRes = await fetch(`/api/cloudflare-upload.php?token=${encodeURIComponent(rawToken)}`, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': auth },
-    body:    JSON.stringify({
-      tema_id:          tema.id,
+
+  onEstado?.('Iniciando subida…');
+
+  // 1. Obtener credenciales S3 de nuestro servidor
+  let credRes: Response;
+  try {
+    const uploadParams = new URLSearchParams({
+      token:            rawToken,
+      uid:              String(ses.userId || ''),
+      tema_id:          String(tema.id),
       nombre_original:  archivo.name,
-      file_size:        archivo.size,
-      duracion_seg:     durSeg || undefined,
-    }),
-  });
-  const prep = await prepRes.json().catch(() => ({ ok: false }));
-  if (!prep.ok) {
-    mostrarMsg(prep.mensaje || 'Error al iniciar subida a Cloudflare.', 'error');
+      ...(durSeg > 0 ? { duracion_seg: String(durSeg) } : {}),
+    });
+    credRes = await fetch(`/api/vdocipher-upload.php?${uploadParams.toString()}`);
+  } catch {
+    mostrarMsg('Error de red al conectar con VdoCipher.', 'error');
     return;
   }
 
-  const { upload_url, material_id, video_id } = prep;
-
-  // 2. Subir con TUS en chunks de 50 MB directamente a Cloudflare
-  const CHUNK = 50 * 1024 * 1024;
-  let offset = 0;
-  onEstado?.('Subiendo…');
-  onProgress?.(0);
-
-  while (offset < archivo.size) {
-    const chunk     = archivo.slice(offset, offset + CHUNK);
-    const chunkSize = chunk.size;
-
-    const r = await fetch(upload_url, {
-      method:  'PATCH',
-      headers: {
-        'Content-Type':    'application/offset+octet-stream',
-        'Tus-Resumable':   '1.0.0',
-        'Upload-Offset':   String(offset),
-        'Content-Length':  String(chunkSize),
-      },
-      body: chunk,
-    });
-
-    if (r.status !== 204) {
-      mostrarMsg(`Error TUS HTTP ${r.status}. Inténtalo de nuevo.`, 'error');
-      return;
-    }
-
-    offset += chunkSize;
-    onProgress?.(Math.min(95, Math.round((offset / archivo.size) * 100)));
+  const cred = await credRes.json().catch(() => ({ ok: false }));
+  if (!cred.ok) {
+    mostrarMsg(cred.mensaje || 'Error al obtener credenciales de VdoCipher.', 'error');
+    return;
   }
 
-  onProgress?.(100);
+  const { material_id, videoId, clientPayload } = cred;
+  const uploadLink: string = clientPayload.uploadLink;
 
-  // 3. Añadir fila del material en el panel (estado inicial: procesando)
+  // 2. Subir archivo DIRECTAMENTE al S3 de VdoCipher
+  // Campos en el orden exacto que exige la policy firmada de VdoCipher
+  const formData = new FormData();
+  formData.append('x-amz-credential',         clientPayload['x-amz-credential']);
+  formData.append('x-amz-algorithm',          clientPayload['x-amz-algorithm']);
+  formData.append('x-amz-date',               clientPayload['x-amz-date']);
+  formData.append('x-amz-signature',          clientPayload['x-amz-signature']);
+  formData.append('key',                       clientPayload['key']);
+  formData.append('policy',                    clientPayload['policy']);
+  formData.append('success_action_status',    '201');
+  formData.append('success_action_redirect',  '');
+  formData.append('file', archivo);          // file siempre al final
+
+  onEstado?.('Subiendo a VdoCipher…');
+  onProgress?.(0);
+
+  const s3Ok = await new Promise<boolean>((resolve) => {
+    const xhr = new XMLHttpRequest();
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable)
+        onProgress?.(Math.min(95, Math.round((e.loaded / e.total) * 100)));
+    });
+    xhr.addEventListener('load', () => {
+      if (xhr.status >= 200 && xhr.status < 300) { onProgress?.(100); resolve(true); }
+      else {
+        mostrarMsg(`Error al subir a VdoCipher (HTTP ${xhr.status}). Inténtalo de nuevo.`, 'error');
+        (window as any).logAppError?.('upload', `VdoCipher S3 HTTP ${xhr.status}`,
+          { detalle: archivo.name + ' · tema=' + tema.id + ' · respuesta=' + xhr.responseText.slice(0, 300) });
+        resolve(false);
+      }
+    });
+    xhr.addEventListener('error',   () => { mostrarMsg('Error de red subiendo a VdoCipher.', 'error'); resolve(false); });
+    xhr.addEventListener('timeout', () => { mostrarMsg('Tiempo agotado subiendo a VdoCipher.', 'error'); resolve(false); });
+    xhr.open('POST', uploadLink);
+    xhr.send(formData);
+  });
+
+  if (!s3Ok) return;
+
+  // 3. Añadir fila en la lista (estado inicial: uploading → polling lo actualizará)
   const mat: any = { id: material_id, nombre: archivo.name, tipo: 'video',
                      ruta: null, tamano_kb: 0, duracion_seg: durSeg || null,
-                     cf_video_id: video_id, cf_status: 'processing' };
+                     vdocipher_video_id: videoId, vdo_status: 'uploading' };
   const filaEl = crearFilaMat(mat);
-  const lista  = cuerpo.querySelector('.mat-lista-video') as HTMLElement;
-  lista.appendChild(filaEl);
+  (cuerpo.querySelector('.mat-lista-video') as HTMLElement).appendChild(filaEl);
 
-  // 4. Polling hasta que Cloudflare termine de procesar
-  onEstado?.('Procesando en Cloudflare…');
-  const badgeEl = filaEl.querySelector('.cf-badge') as HTMLElement | null;
+  // 4. Polling cada 5 s hasta que VdoCipher termine de codificar
+  onEstado?.('Procesando en VdoCipher…');
+  const badgeEl = filaEl.querySelector('.vdo-badge') as HTMLElement | null;
 
   for (let i = 0; i < 120; i++) {
     await new Promise(r => setTimeout(r, 5000));
     try {
-      const sRes  = await fetch(`/api/cloudflare-status.php?material_id=${material_id}&token=${encodeURIComponent(rawToken)}`);
+      const sRes  = await fetch(`/api/vdocipher-status.php?material_id=${material_id}&token=${encodeURIComponent(rawToken)}`);
       const sData = await sRes.json();
       if (!sData.ok) break;
-      if (badgeEl) badgeEl.textContent = sData.status === 'ready' ? '✓ CF Stream' : `CF: ${sData.status}`;
+      if (badgeEl) badgeEl.textContent = sData.status === 'ready' ? '✓ VdoCipher DRM' : `VDO: ${sData.status}`;
       if (sData.status === 'ready') {
         if (sData.duracion_seg) actualizarDuracionTrasSubida(cuerpo, tema, sData.duracion_seg, material_id);
         onEstado?.('ready');
-        mostrarMsg('✓ Vídeo listo en Cloudflare Stream.', 'ok');
-        return;
-      }
-      if (sData.status === 'error') {
-        mostrarMsg('Cloudflare reportó un error procesando el vídeo.', 'error');
+        mostrarMsg('✓ Vídeo listo en VdoCipher.', 'ok');
         return;
       }
     } catch { break; }
@@ -1621,7 +1628,7 @@ function subirArchivo(
 
     // Vídeos → Cloudflare Stream (directo desde navegador, sin tocar IONOS)
     if (tipo === 'video') {
-      await subirVideoCloudflare(cuerpo, tema, archivo, durSeg, onProgress, onEstado);
+      await subirVideoVdoCipher(cuerpo, tema, archivo, durSeg, onProgress, onEstado);
       resolve(); return;
     }
 

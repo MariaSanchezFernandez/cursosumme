@@ -100,9 +100,9 @@ const videoPlayer      = document.getElementById('videoPlayer') as HTMLVideoElem
 const videoPlaceholder = document.getElementById('videoPlaceholder')!;
 const videoBox         = videoPlaceholder.closest('.video-box') as HTMLElement;
 const videoTitulo      = document.getElementById('videoTitulo')!;
-const cfWrapper        = document.getElementById('cfWrapper')    as HTMLElement;
-const cfPlayer         = document.getElementById('cfPlayer')     as HTMLIFrameElement;
-const cfProcesando     = document.getElementById('cfProcesando') as HTMLElement;
+const vdoWrapper        = document.getElementById('vdoWrapper')    as HTMLElement;
+const vdoPlayer         = document.getElementById('vdoPlayer')     as HTMLIFrameElement;
+const vdoProcesando     = document.getElementById('vdoProcesando') as HTMLElement;
 const materialesLista  = document.getElementById('materialesLista')!;
 const videoPlaylist    = document.getElementById('videoPlaylist') as HTMLElement;
 const panelIntro       = document.getElementById('panelIntro')!;
@@ -500,29 +500,30 @@ function abrirCurso(curso: any, articleEl: HTMLElement) {
 // ── Ocultar todos los reproductores ──────────────────────────
 function ocultarReproductores() {
   videoPlayer.pause();
-  videoPlayer.src           = '';
-  videoPlayer.style.display = 'none';
-  cfWrapper.style.display   = 'none';
-  cfPlayer.src              = '';
-  cfProcesando.style.display = 'none';
+  videoPlayer.src             = '';
+  videoPlayer.style.display   = 'none';
+  vdoWrapper.style.display    = 'none';
+  vdoPlayer.src               = '';
+  vdoProcesando.style.display = 'none';
 }
 
 // ── Reproducir un material de vídeo concreto ─────────────────
 async function reproducirVideo(videoMat: any) {
   ocultarReproductores();
-  if (videoMat.cf_video_id) {
-    // Vídeo Cloudflare Stream (DRM)
-    if (videoMat.cf_status === 'ready') {
+  if (videoMat.vdocipher_video_id) {
+    // Vídeo VdoCipher DRM (Widevine + FairPlay)
+    if (videoMat.vdo_status === 'ready') {
       const res = await fetch(
-        `/api/cloudflare-token.php?material_id=${videoMat.id}&usuario_id=${sesion.userId}&token=${encodeURIComponent(sesion.token || '')}`
+        `/api/vdocipher-otp.php?material_id=${videoMat.id}&usuario_id=${sesion.userId}&token=${encodeURIComponent(sesion.token || '')}`
       );
       const data = await res.json();
       if (data.ok) {
-        cfWrapper.style.display = 'block';
-        cfPlayer.src = `https://iframe.videodelivery.net/${data.token}?autoplay=false`;
+        vdoWrapper.style.display = 'block';
+        const playerParam = data.player ? `&player=${encodeURIComponent(data.player)}` : '';
+        vdoPlayer.src = `https://player.vdocipher.com/v2/?otp=${encodeURIComponent(data.otp)}&playbackInfo=${encodeURIComponent(data.playbackInfo)}${playerParam}`;
       }
     } else {
-      cfProcesando.style.display = 'block';
+      vdoProcesando.style.display = 'block';
     }
   } else {
     // Vídeo local
