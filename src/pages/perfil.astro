@@ -182,13 +182,14 @@ pfFile.addEventListener('change', async () => {
     const data = await res.json();
     if (data.ok) {
       mostrarFoto(data.url);
+      window.mostrarToast('Foto de perfil actualizada', 'success');
     } else {
-      (window as any).logAppError?.('foto_perfil', 'Servidor rechazó la foto', { detalle: data.mensaje || ('HTTP ' + res.status) });
-      alert('No se pudo subir la foto: ' + (data.mensaje || 'error del servidor'));
+      window.logAppError?.('foto_perfil', 'Servidor rechazó la foto', { detalle: data.mensaje || ('HTTP ' + res.status) });
+      window.mostrarToast('No se pudo subir la foto: ' + (data.mensaje || 'error del servidor'), 'error');
     }
   } catch (err: any) {
-    (window as any).logAppError?.('foto_perfil', 'Error de red al subir foto', { detalle: err?.message, stack: err?.stack });
-    alert('Error de conexión al subir la foto.');
+    window.logAppError?.('foto_perfil', 'Error de red al subir foto', { detalle: err?.message, stack: err?.stack });
+    window.mostrarToast('Error de conexión al subir la foto.', 'error');
   }
   pfFile.value = '';
 });

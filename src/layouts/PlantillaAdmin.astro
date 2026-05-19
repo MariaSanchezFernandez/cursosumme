@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import '../styles/PlantillaAdmin.css';
+import Toast from '../components/Toast.astro';
 
 interface Props {
   titulo: string;
@@ -216,6 +217,9 @@ const { titulo, paginaActual } = Astro.props;
       </div>
 
     </div>
+
+    <!-- Sistema global de toasts (window.mostrarToast / window.toast.*) -->
+    <Toast />
 
   <script is:inline>
     var _s = {};

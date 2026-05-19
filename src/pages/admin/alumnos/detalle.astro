@@ -334,7 +334,7 @@ async function cargar() {
     if (data.ok) {
       window.location.href = '/admin/alumnos';
     } else {
-      alert(data.mensaje || 'Error al eliminar');
+      window.mostrarToast(data.mensaje || 'Error al eliminar', 'error');
       btnEliminar.disabled = false;
       btnEliminar.textContent = 'Eliminar alumno';
     }

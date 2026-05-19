@@ -128,7 +128,7 @@ async function cargar() {
       if (data.ok) {
         window.location.href = data.url;
       } else {
-        alert(data.mensaje || 'Error al iniciar el pago');
+        window.mostrarToast(data.mensaje || 'Error al iniciar el pago', 'error');
         btn.disabled = false;
         btn.textContent = 'Comprar →';
       }

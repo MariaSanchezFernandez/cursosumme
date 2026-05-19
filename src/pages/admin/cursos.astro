@@ -508,10 +508,11 @@ function renderizarCursos(filtro: string) {
         });
         const data = await res.json();
         if (data.ok) {
+          window.mostrarToast(`"${titulo}" duplicado correctamente`, 'success');
           await cargarCursos();
         } else {
           btn.disabled = false;
-          alert(data.mensaje || 'Error al duplicar el curso');
+          window.mostrarToast(data.mensaje || 'Error al duplicar el curso', 'error');
         }
       });
 
@@ -556,9 +557,10 @@ function renderizarCursos(filtro: string) {
           construirFiltros();
           renderizarCursos('todos');
           actualizarSelectorPacks();
+          window.mostrarToast(`"${titulo}" eliminado`, 'success');
         } else {
           btn.disabled = false;
-          alert(data.mensaje || 'Error al eliminar el curso');
+          window.mostrarToast(data.mensaje || 'Error al eliminar el curso', 'error');
         }
       });
 
