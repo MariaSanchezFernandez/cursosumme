@@ -37,7 +37,28 @@ import '../styles/TarjetaCurso.css';
         </div>
 
         <section class="lista" id="lista-cursos">
-          <div style="padding:2rem; color:#aaa; font-size:0.85rem;">Cargando tus cursos…</div>
+          <!-- Skeletons mientras cargan los cursos (sustituidos por el render real) -->
+          <div class="curso-skel" aria-hidden="true">
+            <div class="skeleton skeleton-box curso-skel-img"></div>
+            <div class="curso-skel-info">
+              <div class="skeleton skeleton-text-lg skeleton-w-75"></div>
+              <div class="skeleton skeleton-text skeleton-w-50"></div>
+            </div>
+          </div>
+          <div class="curso-skel" aria-hidden="true">
+            <div class="skeleton skeleton-box curso-skel-img"></div>
+            <div class="curso-skel-info">
+              <div class="skeleton skeleton-text-lg skeleton-w-90"></div>
+              <div class="skeleton skeleton-text skeleton-w-50"></div>
+            </div>
+          </div>
+          <div class="curso-skel" aria-hidden="true">
+            <div class="skeleton skeleton-box curso-skel-img"></div>
+            <div class="curso-skel-info">
+              <div class="skeleton skeleton-text-lg skeleton-w-50"></div>
+              <div class="skeleton skeleton-text skeleton-w-50"></div>
+            </div>
+          </div>
         </section>
       </div>
 

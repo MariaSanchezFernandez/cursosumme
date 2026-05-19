@@ -24,7 +24,33 @@ import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
   </div>
 
   <div class="tabla-wrap">
-    <div id="err-carga" style="padding:2rem 1.5rem; color:#aaa; font-size:0.85rem;">Cargando…</div>
+    <div id="err-carga" class="err-skel" aria-hidden="true">
+      <!-- Skeletons mientras cargan los errores -->
+      <div class="err-skel-row">
+        <div class="skeleton skeleton-text-sm" style="width:90px;"></div>
+        <div class="skeleton skeleton-text-sm" style="width:70px;"></div>
+        <div class="skeleton skeleton-text-sm" style="width:110px;"></div>
+        <div class="skeleton skeleton-text skeleton-w-75"></div>
+      </div>
+      <div class="err-skel-row">
+        <div class="skeleton skeleton-text-sm" style="width:90px;"></div>
+        <div class="skeleton skeleton-text-sm" style="width:70px;"></div>
+        <div class="skeleton skeleton-text-sm" style="width:110px;"></div>
+        <div class="skeleton skeleton-text skeleton-w-90"></div>
+      </div>
+      <div class="err-skel-row">
+        <div class="skeleton skeleton-text-sm" style="width:90px;"></div>
+        <div class="skeleton skeleton-text-sm" style="width:70px;"></div>
+        <div class="skeleton skeleton-text-sm" style="width:110px;"></div>
+        <div class="skeleton skeleton-text skeleton-w-50"></div>
+      </div>
+      <div class="err-skel-row">
+        <div class="skeleton skeleton-text-sm" style="width:90px;"></div>
+        <div class="skeleton skeleton-text-sm" style="width:70px;"></div>
+        <div class="skeleton skeleton-text-sm" style="width:110px;"></div>
+        <div class="skeleton skeleton-text skeleton-w-75"></div>
+      </div>
+    </div>
     <table id="err-tabla" style="display:none;">
       <thead>
         <tr>
@@ -190,4 +216,16 @@ cargar();
   transition: background 0.12s;
 }
 .btn-card-del:hover { background: #fdf0f0; }
+
+/* Skeletons de fila de error mientras carga la tabla */
+.err-skel {
+  padding: 0.5rem 0;
+}
+.err-skel-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid #eef3f0;
+}
 </style>

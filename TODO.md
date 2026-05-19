@@ -73,10 +73,23 @@ excedía la cuota de la cuenta. Solución aplicada: raw body streaming
 
 - [x] **Página de preview `/preview`** (2026-05-04): playground de los
   componentes UX (`src/pages/preview.astro`) para validar visualmente
-  toasts y botones cargando **sin tocar la API**. Todas las acciones
-  son simuladas con `setTimeout`. Útil como referencia para futuros
-  componentes y para hacer demo del pack "polish UX" sin necesidad de
-  login ni BD.
+  toasts, botones cargando y skeleton screens **sin tocar la API**.
+  Todas las acciones son simuladas con `setTimeout`. Útil como
+  referencia para futuros componentes y para hacer demo del pack
+  "polish UX" sin necesidad de login ni BD.
+
+- [x] **Skeleton screens en listados** (2026-05-04): primitivas
+  reutilizables en `src/styles/Skeleton.css` (`.skeleton`,
+  `.skeleton-text`/`-sm`/`-lg`, `.skeleton-circle`, `.skeleton-box` +
+  modificadores `.skeleton-w-25`/`50`/`75`/`90`) con shimmer animado
+  de 1.4 s y respeto a `prefers-reduced-motion`. Cargado globalmente
+  desde `global.css`. **Aplicado en 5 listados**: `/inicio` (tarjetas
+  de curso del alumno), `/admin/alumnos` (filas con avatar + nombre
+  + email), `/admin/cursos` (grid de tarjetas de curso),
+  `/admin/tickets` (3 tickets con cabecera + cuerpo),
+  `/admin/errores` (filas con columnas fecha/tipo/usuario/mensaje).
+  Cada página tiene su composición de skeletons que imita la forma
+  del contenido real. Test E2E en `tests/e2e/skeleton.spec.ts`.
 
 ---
 
@@ -127,13 +140,6 @@ mejora del TFM.
   el de subir vídeo (XHR con progreso, requiere coordinación con la
   barra ya existente) y el de subir documentos/materiales. Hacerlo
   como pasada dedicada al refactor de `editar.astro`.
-
-- [ ] **Skeleton screens en listados**: sustituir el texto gris
-  `"Cargando…"` por placeholders con la forma de las tarjetas/filas
-  que van a aparecer, animados con un shimmer suave. Aplicar a
-  `/inicio` (mis cursos), `/admin/alumnos`, `/admin/cursos`,
-  `/admin/tickets`, `/admin/errores`. Mejora la sensación de respuesta
-  inmediata.
 
 - [ ] **Empty states con jerarquía y CTA**: para cada lista que pueda
   estar vacía, diseñar un estado vacío con: icono SVG suave (mismo

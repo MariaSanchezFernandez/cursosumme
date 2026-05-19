@@ -16,7 +16,32 @@ import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
 
     <!-- Lista -->
     <div id="listaAdmin">
-      <div class="tk-cargando" id="tkCargando">Cargando consultas…</div>
+      <div class="tk-cargando" id="tkCargando" aria-hidden="true">
+        <div class="ticket-skel">
+          <div class="ticket-skel-cab">
+            <div class="skeleton skeleton-text-lg skeleton-w-50"></div>
+            <div class="skeleton skeleton-text-sm skeleton-w-25"></div>
+          </div>
+          <div class="skeleton skeleton-text skeleton-w-90"></div>
+          <div class="skeleton skeleton-text skeleton-w-75"></div>
+        </div>
+        <div class="ticket-skel">
+          <div class="ticket-skel-cab">
+            <div class="skeleton skeleton-text-lg skeleton-w-75"></div>
+            <div class="skeleton skeleton-text-sm skeleton-w-25"></div>
+          </div>
+          <div class="skeleton skeleton-text skeleton-w-50"></div>
+          <div class="skeleton skeleton-text skeleton-w-90"></div>
+        </div>
+        <div class="ticket-skel">
+          <div class="ticket-skel-cab">
+            <div class="skeleton skeleton-text-lg skeleton-w-25"></div>
+            <div class="skeleton skeleton-text-sm skeleton-w-25"></div>
+          </div>
+          <div class="skeleton skeleton-text skeleton-w-75"></div>
+          <div class="skeleton skeleton-text skeleton-w-50"></div>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -359,10 +384,23 @@ cargarTickets();
 
 /* ── Cargando / vacío ────────────────────────────────────────────────────────*/
 .tk-cargando {
-  text-align: center;
-  padding: 3rem 1rem;
-  color: var(--color-text-muted);
-  font-size: 0.85rem;
+  padding: 0.5rem 0;
+}
+
+/* Skeletons de ticket mientras carga la lista */
+.ticket-skel {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 0.6rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.ticket-skel-cab {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.4rem;
 }
 
 .tk-vacio {

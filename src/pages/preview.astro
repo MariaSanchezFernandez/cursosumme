@@ -82,10 +82,68 @@ import Plantilla from '../layouts/Plantilla.astro';
       </div>
     </section>
 
+    <!-- ─── Skeletons ─────────────────────────────────────────── -->
+
+    <section class="prev-section">
+      <h2>3. Skeleton screens</h2>
+      <p class="prev-section-desc">
+        Placeholders animados con la forma del contenido que va a aparecer.
+        Sustituyen el "Cargando…" gris en los listados. Mejoran la
+        sensación de respuesta inmediata.
+      </p>
+
+      <h3 class="prev-subtitulo">Primitivas</h3>
+      <div class="prev-skel-demo">
+        <div class="skeleton skeleton-text"></div>
+        <div class="skeleton skeleton-text-lg"></div>
+        <div class="skeleton skeleton-text-sm"></div>
+        <div style="display:flex; gap:1rem; align-items:center; margin-top:0.5rem;">
+          <div class="skeleton skeleton-circle" style="width:40px; height:40px;"></div>
+          <div class="skeleton skeleton-box" style="width:100%; height:60px;"></div>
+        </div>
+      </div>
+
+      <h3 class="prev-subtitulo" style="margin-top:1.5rem;">Tarjeta de curso (estilo /inicio)</h3>
+      <div class="prev-skel-demo">
+        <div class="curso-skel-prev">
+          <div class="skeleton skeleton-box" style="width:110px; aspect-ratio:21/9; flex-shrink:0;"></div>
+          <div style="flex:1; display:flex; flex-direction:column; gap:0.4rem;">
+            <div class="skeleton skeleton-text-lg skeleton-w-75"></div>
+            <div class="skeleton skeleton-text skeleton-w-50"></div>
+          </div>
+        </div>
+        <div class="curso-skel-prev">
+          <div class="skeleton skeleton-box" style="width:110px; aspect-ratio:21/9; flex-shrink:0;"></div>
+          <div style="flex:1; display:flex; flex-direction:column; gap:0.4rem;">
+            <div class="skeleton skeleton-text-lg skeleton-w-90"></div>
+            <div class="skeleton skeleton-text skeleton-w-50"></div>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="prev-subtitulo" style="margin-top:1.5rem;">Fila de alumno (estilo /admin/alumnos)</h3>
+      <div class="prev-skel-demo">
+        <div class="fila-skel-prev">
+          <div class="skeleton skeleton-circle" style="width:36px; height:36px; flex-shrink:0;"></div>
+          <div style="flex:1; display:flex; flex-direction:column; gap:0.2rem;">
+            <div class="skeleton skeleton-text skeleton-w-75"></div>
+            <div class="skeleton skeleton-text-sm skeleton-w-50"></div>
+          </div>
+        </div>
+        <div class="fila-skel-prev">
+          <div class="skeleton skeleton-circle" style="width:36px; height:36px; flex-shrink:0;"></div>
+          <div style="flex:1; display:flex; flex-direction:column; gap:0.2rem;">
+            <div class="skeleton skeleton-text skeleton-w-50"></div>
+            <div class="skeleton skeleton-text-sm skeleton-w-75"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ─── Botón cargando + toast combinado ─────────────────────── -->
 
     <section class="prev-section">
-      <h2>3. Combinado: botón cargando → toast</h2>
+      <h2>4. Combinado: botón cargando → toast</h2>
       <p class="prev-section-desc">
         Flujo real: pulsas, el botón gira, al terminar aparece un toast
         con el resultado. Es el patrón que usamos en todo el panel admin.
@@ -257,4 +315,39 @@ import Plantilla from '../layouts/Plantilla.astro';
   .prev-btn-info    { background: #fff;    border-color: var(--color-primary); color: var(--color-text); }
   .prev-btn-neutral { background: var(--color-light); border-color: var(--color-primary); color: var(--color-text); }
   .prev-btn-coral   { background: var(--color-coral); border-color: var(--color-coral); color: var(--color-text); }
+
+  /* Subtítulos dentro de las secciones */
+  .prev-subtitulo {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+    margin-bottom: 0.75rem;
+  }
+
+  /* Wrappers de demo de skeletons */
+  .prev-skel-demo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .curso-skel-prev {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .fila-skel-prev {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.85rem 1.25rem;
+    border-bottom: 1px solid #eef3f0;
+    background: #fff;
+    border-radius: 8px;
+  }
 </style>

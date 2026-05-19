@@ -29,8 +29,32 @@ import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
     </div>
   </div>
 
-  <div id="estado-carga" style="padding:2rem 0; color:#aaa; font-size:0.85rem;">
-    Cargando cursos…
+  <div id="estado-carga" class="cursos-skel" aria-hidden="true">
+    <!-- Skeletons mientras cargan los cursos -->
+    <div class="curso-skel-card">
+      <div class="skeleton skeleton-box curso-skel-img"></div>
+      <div class="curso-skel-body">
+        <div class="skeleton skeleton-text-lg skeleton-w-75"></div>
+        <div class="skeleton skeleton-text skeleton-w-50"></div>
+        <div class="skeleton skeleton-text-sm skeleton-w-25"></div>
+      </div>
+    </div>
+    <div class="curso-skel-card">
+      <div class="skeleton skeleton-box curso-skel-img"></div>
+      <div class="curso-skel-body">
+        <div class="skeleton skeleton-text-lg skeleton-w-90"></div>
+        <div class="skeleton skeleton-text skeleton-w-75"></div>
+        <div class="skeleton skeleton-text-sm skeleton-w-25"></div>
+      </div>
+    </div>
+    <div class="curso-skel-card">
+      <div class="skeleton skeleton-box curso-skel-img"></div>
+      <div class="curso-skel-body">
+        <div class="skeleton skeleton-text-lg skeleton-w-50"></div>
+        <div class="skeleton skeleton-text skeleton-w-90"></div>
+        <div class="skeleton skeleton-text-sm skeleton-w-25"></div>
+      </div>
+    </div>
   </div>
 
   <div id="contenido-cursos"></div>
@@ -239,6 +263,30 @@ import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
 .pack-curso-item input[type="checkbox"] { width: 16px; height: 16px; flex-shrink: 0; accent-color: var(--color-primary); }
 .pack-curso-item-titulo { font-size: 0.83rem; font-weight: 600; flex: 1; }
 .pack-curso-item-cat { font-size: 0.72rem; color: #aaa; }
+
+/* ── Skeletons de tarjeta de curso (durante carga) ── */
+.cursos-skel {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  padding: 0.5rem 0;
+}
+.curso-skel-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 1rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.curso-skel-card .curso-skel-img {
+  width: 100%;
+  aspect-ratio: 21 / 9;
+  margin-bottom: 0.85rem;
+}
+.curso-skel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
 </style>
 
 <script>
