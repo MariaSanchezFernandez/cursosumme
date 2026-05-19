@@ -58,4 +58,26 @@ interface Window {
       peligro?: boolean;
     }
   ): Promise<boolean>;
+
+  /**
+   * Modal para pedir uno o varios datos al usuario, en sustitución
+   * del prompt() nativo del navegador. Definido en
+   * src/components/Modal.astro. Resuelve a un objeto `{ nombre: valor }`
+   * si el usuario confirma, o `null` si cancela.
+   */
+  pedirDato(opciones: {
+    titulo?: string;
+    campos: Array<{
+      nombre: string;
+      etiqueta?: string;
+      tipo?: 'text' | 'number' | 'email' | 'tel' | 'url';
+      valor?: string | number | null;
+      placeholder?: string;
+      min?: number | string;
+      max?: number | string;
+      step?: number | string;
+    }>;
+    textoConfirmar?: string;
+    textoCancelar?: string;
+  }): Promise<Record<string, string> | null>;
 }

@@ -62,6 +62,38 @@
   white-space: pre-line;
 }
 
+/* ── Inputs (solo para window.pedirDato) ──────────────────────── */
+
+.modal-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+.modal-campo:last-of-type { margin-bottom: 1.5rem; }
+
+.modal-campo label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.modal-input {
+  padding: 0.65rem 0.85rem;
+  border: 1.5px solid var(--color-primary);
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.95rem;
+  color: var(--color-text);
+  background: #fff;
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+  box-sizing: border-box;
+}
+.modal-input:focus { border-color: var(--color-accent); }
+.modal-input::placeholder { color: #aaa; }
+
 .modal-acciones {
   display: flex;
   justify-content: flex-end;

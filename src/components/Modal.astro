@@ -1,49 +1,63 @@
 ---
-// COMPONENTE: Modal (helper de confirmación)
-// ------------------------------------------
-// Sustituye al confirm() nativo del navegador por un modal con estética
-// Umme. Se monta una vez en los layouts y expone una función global.
+// COMPONENTE: Modal (helpers de confirmación y entrada de datos)
+// ----------------------------------------------------------------
+// Sustituye al confirm() y prompt() nativos del navegador por modales
+// con estética Umme. Se monta una vez en los layouts y expone dos
+// funciones globales:
 //
-// API global:
+//   window.confirmar(opcionesOMensaje) → Promise<boolean>
+//     Confirmación binaria — Aceptar / Cancelar.
 //
-//   await window.confirmar(opcionesOMensaje) → Promise<boolean>
+//     Forma simple:
+//       const ok = await window.confirmar('¿Eliminar el curso?');
 //
-//   Forma simple — solo mensaje (texto plano):
-//     const ok = await window.confirmar('¿Eliminar el curso?');
+//     Forma completa:
+//       const ok = await window.confirmar({
+//         titulo: 'Eliminar curso',         (opcional)
+//         mensaje: '¿Estás segura? Se borrarán todos los temas.',
+//         textoConfirmar: 'Eliminar',       (def: 'Aceptar')
+//         textoCancelar:  'Cancelar',       (def: 'Cancelar')
+//         peligro: true,                    (def: false — botón rojo)
+//       });
 //
-//   Forma completa — objeto con opciones:
-//     const ok = await window.confirmar({
-//       titulo: 'Eliminar curso',           (opcional)
-//       mensaje: '¿Estás segura? Se borrarán todos los temas y archivos.',
-//       textoConfirmar: 'Eliminar',         (def: 'Aceptar')
+//   window.pedirDato(opciones) → Promise<object | null>
+//     Solicita uno o varios datos al usuario. Devuelve un objeto con
+//     los valores indexados por `nombre`, o `null` si cancela.
+//
+//     const datos = await window.pedirDato({
+//       titulo: 'Precio del curso',         (opcional)
+//       campos: [
+//         { nombre: 'precio', etiqueta: 'Precio (€)', tipo: 'number',
+//           valor: '49.00', placeholder: 'Deja vacío para quitar',
+//           min: 0, step: '0.01' },
+//         { nombre: 'stripe', etiqueta: 'Stripe Price ID',
+//           valor: 'price_xxx', placeholder: 'price_...' },
+//       ],
+//       textoConfirmar: 'Guardar',          (def: 'Guardar')
 //       textoCancelar:  'Cancelar',         (def: 'Cancelar')
-//       peligro: true,                      (def: false — botón confirmar rojo)
 //     });
+//     if (!datos) return; // cancelado
+//     console.log(datos.precio, datos.stripe);
 //
-//   La promesa resuelve a `true` si el usuario pulsa Aceptar, o `false`
-//   si pulsa Cancelar, Escape o clica fuera del modal.
-//
-// Comportamiento:
-//   - Solo puede haber un modal abierto a la vez (si llega otro confirmar()
-//     con uno ya abierto, el anterior se cancela primero).
-//   - Foco inicial: en "Aceptar" por defecto, en "Cancelar" si peligro=true
-//     (más seguro para acciones destructivas).
-//   - Tab atrapa el foco entre los dos botones (no escapa al fondo).
-//   - Escape = Cancelar. Clic en el backdrop = Cancelar.
-//   - Al cerrar devuelve el foco al elemento que tenía el foco antes de
-//     abrir el modal (típicamente el botón que lo disparó).
+// Comportamiento común:
+//   - Solo puede haber un modal abierto a la vez.
+//   - Escape, clic en backdrop o "Cancelar" cierra como cancelación.
+//   - "Confirmar" cierra con éxito.
+//   - Tab atrapa el foco dentro del modal (no escapa al fondo).
+//   - Enter en un input de pedirDato dispara "Confirmar".
+//   - Al cerrar, el foco vuelve al elemento que tenía el foco antes.
 //
 // Accesibilidad:
-//   - Backdrop con role="dialog" + aria-modal="true".
-//   - Si hay título, se asocia con aria-labelledby.
-//   - Mensajes se insertan con textContent (no XSS).
+//   - role="dialog" + aria-modal="true" en el backdrop.
+//   - aria-labelledby al título si existe.
+//   - Textos insertados con textContent (sin XSS).
 
 import '../styles/Modal.css';
 ---
 
 <script is:inline>
   (function () {
-    if (window.confirmar) return; // ya registrado
+    if (window.confirmar && window.pedirDato) return; // ya registrado
 
     var idCounter = 0;
     var modalActual = null;
@@ -63,10 +77,105 @@ import '../styles/Modal.css';
       m.resolve(resultado);
     }
 
-    window.confirmar = function (opcionesOMensaje) {
-      // Si hay otro modal abierto, lo cancelamos antes
-      if (modalActual) cerrarActual(false);
+    // Abre un modal genérico y devuelve el `card` para que el caller
+    // pueda manipular su contenido (insertar texto seguro vía textContent,
+    // setear valores de inputs, etc.).
+    function abrirModal(opts) {
+      // opts = {
+      //   titulo, peligro, contenidoHTML,
+      //   textoConfirmar, textoCancelar,
+      //   valorCancelar,     -> valor con el que resolver al cancelar
+      //   onConfirmar(card), -> función que devuelve el valor con el que
+      //                        resolver al confirmar (o undefined para no cerrar)
+      //   focoInicial(card), -> función que pone el foco inicial
+      //   resolve            -> resolver de la promesa del helper
+      // }
+      if (modalActual) cerrarActual(opts.valorCancelar);
 
+      var opener = document.activeElement;
+
+      var backdrop = document.createElement('div');
+      backdrop.className = 'modal-backdrop';
+      backdrop.setAttribute('role', 'dialog');
+      backdrop.setAttribute('aria-modal', 'true');
+
+      var card = document.createElement('div');
+      card.className = 'modal-card';
+
+      var idTitulo = '';
+      if (opts.titulo) {
+        idTitulo = 'modal-titulo-' + (++idCounter);
+        backdrop.setAttribute('aria-labelledby', idTitulo);
+      }
+
+      var html = '';
+      if (opts.titulo) html += '<h2 class="modal-titulo" id="' + idTitulo + '"></h2>';
+      html += opts.contenidoHTML;
+      html += '<div class="modal-acciones">';
+      html += '<button class="modal-btn modal-btn-cancelar" type="button"></button>';
+      html += '<button class="modal-btn modal-btn-confirmar' + (opts.peligro ? ' modal-btn-peligro' : '') + '" type="button"></button>';
+      html += '</div>';
+      card.innerHTML = html;
+
+      if (opts.titulo) card.querySelector('.modal-titulo').textContent = opts.titulo;
+      var btnCancelar  = card.querySelector('.modal-btn-cancelar');
+      var btnConfirmar = card.querySelector('.modal-btn-confirmar');
+      btnCancelar.textContent  = opts.textoCancelar;
+      btnConfirmar.textContent = opts.textoConfirmar;
+
+      backdrop.appendChild(card);
+      document.body.appendChild(backdrop);
+
+      function cancelar() { cerrarActual(opts.valorCancelar); }
+      function confirmar() {
+        var r = opts.onConfirmar ? opts.onConfirmar(card) : true;
+        if (r === undefined) return; // validación falló: no cerrar
+        cerrarActual(r);
+      }
+
+      function onKey(e) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          cancelar();
+          return;
+        }
+        if (e.key === 'Tab') {
+          // Trap genérico entre todos los elementos enfocables del modal
+          var focusables = backdrop.querySelectorAll(
+            'input, button, select, textarea, a[href], [tabindex]:not([tabindex="-1"])'
+          );
+          if (!focusables.length) return;
+          var primero = focusables[0];
+          var ultimo  = focusables[focusables.length - 1];
+          if (e.shiftKey && document.activeElement === primero) {
+            e.preventDefault();
+            ultimo.focus();
+          } else if (!e.shiftKey && document.activeElement === ultimo) {
+            e.preventDefault();
+            primero.focus();
+          }
+        }
+      }
+
+      backdrop.addEventListener('click', function (e) {
+        if (e.target === backdrop) cancelar();
+      });
+      btnCancelar.addEventListener('click', cancelar);
+      btnConfirmar.addEventListener('click', confirmar);
+      backdrop.addEventListener('keydown', onKey);
+
+      modalActual = { backdrop: backdrop, resolve: opts.resolve, opener: opener, onKey: onKey };
+
+      // Foco inicial diferido para que la animación arranque sin saltos
+      setTimeout(function () {
+        try { opts.focoInicial(card); } catch (e) {}
+      }, 50);
+
+      return { card: card, confirmar: confirmar };
+    }
+
+    // ─── window.confirmar ──────────────────────────────────────────
+    window.confirmar = function (opcionesOMensaje) {
       var opts = (typeof opcionesOMensaje === 'string')
         ? { mensaje: opcionesOMensaje }
         : (opcionesOMensaje || {});
@@ -78,70 +187,98 @@ import '../styles/Modal.css';
       var peligro        = !!opts.peligro;
 
       return new Promise(function (resolve) {
-        var opener = document.activeElement;
-
-        var backdrop = document.createElement('div');
-        backdrop.className = 'modal-backdrop';
-        backdrop.setAttribute('role', 'dialog');
-        backdrop.setAttribute('aria-modal', 'true');
-
-        var card = document.createElement('div');
-        card.className = 'modal-card';
-
-        var idTitulo = '';
-        if (titulo) {
-          idTitulo = 'modal-titulo-' + (++idCounter);
-          backdrop.setAttribute('aria-labelledby', idTitulo);
-        }
-
-        // Construir HTML (sin interpolación: textContent después)
-        var html = '';
-        if (titulo) html += '<h2 class="modal-titulo" id="' + idTitulo + '"></h2>';
-        html += '<p class="modal-mensaje"></p>';
-        html += '<div class="modal-acciones">';
-        html += '<button class="modal-btn modal-btn-cancelar" type="button"></button>';
-        html += '<button class="modal-btn modal-btn-confirmar' + (peligro ? ' modal-btn-peligro' : '') + '" type="button"></button>';
-        html += '</div>';
-        card.innerHTML = html;
-
-        // Texto seguro (textContent, no innerHTML)
-        if (titulo) card.querySelector('.modal-titulo').textContent = titulo;
-        card.querySelector('.modal-mensaje').textContent = mensaje;
-        var btnCancelar  = card.querySelector('.modal-btn-cancelar');
-        var btnConfirmar = card.querySelector('.modal-btn-confirmar');
-        btnCancelar.textContent  = textoCancelar;
-        btnConfirmar.textContent = textoConfirmar;
-
-        backdrop.appendChild(card);
-        document.body.appendChild(backdrop);
-
-        function onKey(e) {
-          if (e.key === 'Escape') {
-            e.preventDefault();
-            cerrarActual(false);
-            return;
-          }
-          if (e.key === 'Tab') {
-            // Trap del foco entre los dos botones
-            e.preventDefault();
-            var act = document.activeElement;
-            (act === btnCancelar ? btnConfirmar : btnCancelar).focus();
-          }
-        }
-
-        backdrop.addEventListener('click', function (e) {
-          if (e.target === backdrop) cerrarActual(false);
+        var m = abrirModal({
+          titulo: titulo,
+          peligro: peligro,
+          contenidoHTML: '<p class="modal-mensaje"></p>',
+          textoConfirmar: textoConfirmar,
+          textoCancelar: textoCancelar,
+          valorCancelar: false,
+          onConfirmar: function () { return true; },
+          focoInicial: function (card) {
+            var btn = card.querySelector(peligro ? '.modal-btn-cancelar' : '.modal-btn-confirmar');
+            if (btn) btn.focus();
+          },
+          resolve: resolve,
         });
-        btnCancelar.addEventListener('click',  function () { cerrarActual(false); });
-        btnConfirmar.addEventListener('click', function () { cerrarActual(true);  });
-        backdrop.addEventListener('keydown', onKey);
+        // Inserta el mensaje con textContent (sin XSS)
+        m.card.querySelector('.modal-mensaje').textContent = mensaje;
+      });
+    };
 
-        modalActual = { backdrop: backdrop, resolve: resolve, opener: opener, onKey: onKey };
+    // ─── window.pedirDato ──────────────────────────────────────────
+    window.pedirDato = function (opciones) {
+      var opts = opciones || {};
+      var titulo         = opts.titulo || '';
+      var campos         = Array.isArray(opts.campos) ? opts.campos : [];
+      var textoConfirmar = opts.textoConfirmar || 'Guardar';
+      var textoCancelar  = opts.textoCancelar  || 'Cancelar';
 
-        // Foco inicial: Confirmar por defecto, Cancelar si la acción es peligrosa
-        setTimeout(function () {
-          (peligro ? btnCancelar : btnConfirmar).focus();
-        }, 50);
+      // Construir HTML con inputs vacíos — luego rellenamos valores y
+      // etiquetas con textContent / value desde JS (sin XSS).
+      var inputsHTML = '';
+      campos.forEach(function (campo) {
+        var id = 'pd-' + (++idCounter);
+        var tipo = campo.tipo || 'text';
+        var attrs = ' id="' + id + '" type="' + tipo + '" data-pd-nombre="' + String(campo.nombre).replace(/"/g, '&quot;') + '" class="modal-input"';
+        if (tipo === 'number') {
+          if (campo.min !== undefined) attrs += ' min="' + campo.min + '"';
+          if (campo.max !== undefined) attrs += ' max="' + campo.max + '"';
+          if (campo.step !== undefined) attrs += ' step="' + campo.step + '"';
+        }
+        inputsHTML += '<div class="modal-campo">';
+        if (campo.etiqueta) inputsHTML += '<label for="' + id + '"></label>';
+        inputsHTML += '<input' + attrs + ' />';
+        inputsHTML += '</div>';
+      });
+
+      return new Promise(function (resolve) {
+        var m = abrirModal({
+          titulo: titulo,
+          peligro: false,
+          contenidoHTML: inputsHTML,
+          textoConfirmar: textoConfirmar,
+          textoCancelar: textoCancelar,
+          valorCancelar: null,
+          onConfirmar: function (card) {
+            var datos = {};
+            var inputs = card.querySelectorAll('input[data-pd-nombre]');
+            for (var i = 0; i < inputs.length; i++) {
+              datos[inputs[i].dataset.pdNombre] = inputs[i].value;
+            }
+            return datos;
+          },
+          focoInicial: function (card) {
+            var primero = card.querySelector('input[data-pd-nombre]');
+            if (primero) {
+              primero.focus();
+              primero.select();
+            } else {
+              card.querySelector('.modal-btn-confirmar').focus();
+            }
+          },
+          resolve: resolve,
+        });
+
+        // Rellenar valores, placeholders y etiquetas de cada input
+        var inputs = m.card.querySelectorAll('input[data-pd-nombre]');
+        campos.forEach(function (campo, i) {
+          var input = inputs[i];
+          if (!input) return;
+          if (campo.valor !== undefined && campo.valor !== null) {
+            input.value = String(campo.valor);
+          }
+          if (campo.placeholder) input.placeholder = campo.placeholder;
+          var label = m.card.querySelector('label[for="' + input.id + '"]');
+          if (label && campo.etiqueta) label.textContent = campo.etiqueta;
+          // Enter = confirmar
+          input.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              m.confirmar();
+            }
+          });
+        });
       });
     };
   })();

@@ -101,24 +101,32 @@ excedía la cuota de la cuenta. Solución aplicada: raw body streaming
   `botonCargando(btn, '', accion)` muestra solo el spinner sin texto
   por defecto — necesario para botones icono pequeños.
 
-- [x] **Modales reutilizables para confirmar** (2026-05-19): componente
-  `src/components/Modal.astro` + `src/styles/Modal.css` montado en
-  ambos layouts. API global
-  `await window.confirmar(opcionesOMensaje) → Promise<boolean>` con
-  forma simple (solo mensaje) o completa (título, mensaje, textos de
-  botones, `peligro` → botón rojo). Acepta Escape, clic fuera y trap
-  del foco entre los dos botones. Foco inicial en "Confirmar" por
-  defecto o en "Cancelar" si `peligro: true` (más seguro). Devuelve
-  el foco al disparador al cerrar. Animaciones fade+scale (respeta
-  `prefers-reduced-motion`). Tipos en `src/env.d.ts`. **10 `confirm()`
-  nativos sustituidos** en `admin/cursos.astro` (duplicar, eliminar,
-  disolver pack), `admin/cursos/editar.astro` (eliminar tema y material),
-  `admin/cursos/crear-curso.astro` (eliminar tema y material),
-  `admin/alumnos/detalle.astro` (eliminar alumno),
-  `admin/tickets.astro` (eliminar conversación) y
-  `admin/errores.astro` (borrar todos los errores). Demo en sección 5
-  de `/preview`. Pendiente: `pedirDato()` para sustituir `prompt()`
-  en edición rápida (precio curso, stripe_price_id) — siguiente pasada.
+- [x] **Modales reutilizables para confirmar y pedir datos**
+  (2026-05-19): componente `src/components/Modal.astro` +
+  `src/styles/Modal.css` montado en ambos layouts. **Dos APIs
+  globales** que comparten infraestructura:
+    - `await window.confirmar(opcionesOMensaje) → Promise<boolean>`:
+      sustituye al `confirm()` nativo. **10 `confirm()` sustituidos**
+      en `admin/cursos.astro` (duplicar, eliminar, disolver pack),
+      `editar.astro` (eliminar tema y material), `crear-curso.astro`
+      (eliminar tema y material), `alumnos/detalle.astro` (eliminar
+      alumno), `tickets.astro` (eliminar conversación) y
+      `errores.astro` (borrar todos los errores).
+    - `await window.pedirDato({ campos: [...] }) → Promise<object | null>`:
+      sustituye al `prompt()` nativo. Soporta varios inputs en un
+      solo modal (text/number/email/tel/url) con etiquetas, valores
+      iniciales, placeholders y validación (min/max/step). **2
+      `prompt()` consecutivos sustituidos** en
+      `admin/cursos.astro` por un solo modal con precio + Stripe ID
+      cuando se hace clic en el badge de precio del curso.
+  Características comunes: Escape/clic fuera/Cancelar cierran como
+  cancelación; trap del foco genérico entre todos los elementos
+  enfocables; Enter en input de `pedirDato` dispara Confirmar; foco
+  inicial en Cancelar si `peligro: true` (más seguro); devolución de
+  foco al disparador al cerrar; animaciones fade+scale (respeta
+  `prefers-reduced-motion`). Tipos en `src/env.d.ts`. Demos en
+  sección 5 de `/preview` (4 escenarios de `confirmar` + 2 de
+  `pedirDato`).
 
 ---
 
@@ -212,13 +220,3 @@ mejora del TFM.
   pequeñas (`PanelDetalleTabs`, `PanelDetalleMaterial`, sidebar admin
   como componente con su CSS).
 
-- [ ] **`window.pedirDato()` para sustituir `prompt()` nativos**:
-  el sistema de modal de confirmación ya está construido
-  (`Modal.astro` + `window.confirmar()`). Falta crear el helper
-  `pedirDato(campos, opciones?) → Promise<datos | null>` reutilizando
-  el mismo modal y el mismo CSS — solo cambia el contenido (uno o
-  varios `<input>` en lugar de mensaje plano). Sustituir los
-  `prompt()` actuales en `admin/cursos.astro` (precio del curso,
-  `stripe_price_id` desde el badge) por este helper, con validación
-  inline. Buena base de mejora de UX para todo el flujo de edición
-  rápida.

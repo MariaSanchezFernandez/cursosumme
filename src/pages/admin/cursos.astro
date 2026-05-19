@@ -573,10 +573,20 @@ function renderizarCursos(filtro: string) {
         e.stopPropagation();
         const precioActual = c.precio ? String(parseFloat(c.precio).toFixed(2)) : '';
         const spidActual   = c.stripe_price_id ?? '';
-        const nuevoPrecio  = prompt('Precio del curso (€), deja vacío para quitar:', precioActual);
-        if (nuevoPrecio === null) return;
-        const nuevoSpid = prompt('Stripe Price ID (price_...):', spidActual);
-        if (nuevoSpid === null) return;
+        const datos = await window.pedirDato({
+          titulo: 'Precio del curso',
+          campos: [
+            { nombre: 'precio', etiqueta: 'Precio (€)', tipo: 'number',
+              valor: precioActual, placeholder: 'Deja vacío para quitar',
+              min: 0, step: '0.01' },
+            { nombre: 'stripe', etiqueta: 'Stripe Price ID',
+              valor: spidActual, placeholder: 'price_...' },
+          ],
+          textoConfirmar: 'Guardar',
+        });
+        if (!datos) return;
+        const nuevoPrecio = (datos.precio || '').trim();
+        const nuevoSpid   = (datos.stripe || '').trim();
         await fetch('/api/cursos.php', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
