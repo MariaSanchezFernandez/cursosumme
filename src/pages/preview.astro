@@ -80,6 +80,31 @@ import Plantilla from '../layouts/Plantilla.astro';
           Probar doble clic (no debe duplicarse)
         </button>
       </div>
+
+      <h3 class="prev-subtitulo" style="margin-top:1.5rem;">
+        Variante: botones icono (solo spinner, sin texto)
+      </h3>
+      <p class="prev-section-desc">
+        Para botones pequeños (×, ✕, eliminar fila…) pasamos
+        <code>''</code> como texto: el helper solo muestra el spinner.
+        Es el patrón que usa <code>admin/cursos/editar.astro</code> para
+        "Eliminar tema" y "Eliminar material".
+      </p>
+      <div style="display:flex; gap:0.75rem; align-items:center;">
+        <button class="prev-btn-icono" id="prevIconoDel" title="Eliminar (simula 1.5 s)" aria-label="Eliminar">
+          <svg viewBox="0 0 14 14" fill="none" width="14" height="14" aria-hidden="true">
+            <path d="M3.5 3.5l7 7M10.5 3.5l-7 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <button class="prev-btn-icono" id="prevIconoDel2" title="Eliminar (simula 1.5 s)" aria-label="Eliminar">
+          <svg viewBox="0 0 14 14" fill="none" width="14" height="14" aria-hidden="true">
+            <path d="M3.5 3.5l7 7M10.5 3.5l-7 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <span style="color:var(--color-text-muted); font-size:0.85rem;">
+          Pulsa cualquiera para ver el spinner sin texto
+        </span>
+      </div>
     </section>
 
     <!-- ─── Skeletons ─────────────────────────────────────────── -->
@@ -218,6 +243,14 @@ import Plantilla from '../layouts/Plantilla.astro';
     window.botonCargando(btn, 'Procesando…', function () { return esperar(2000, true); });
   });
 
+  // Botones icono: pasamos '' para mostrar solo el spinner
+  function handlerIconoDel(e) {
+    var btn = e.currentTarget;
+    window.botonCargando(btn, '', function () { return esperar(1500, true); });
+  }
+  document.getElementById('prevIconoDel').addEventListener('click', handlerIconoDel);
+  document.getElementById('prevIconoDel2').addEventListener('click', handlerIconoDel);
+
   // ── 3. Combinado: botón cargando + toast ───────────────────
   document.getElementById('prevComboOk').addEventListener('click', async function (e) {
     await window.botonCargando(e.currentTarget, 'Duplicando…', function () {
@@ -349,5 +382,28 @@ import Plantilla from '../layouts/Plantilla.astro';
     border-bottom: 1px solid #eef3f0;
     background: #fff;
     border-radius: 8px;
+  }
+
+  /* Botón icono pequeño (estilo "eliminar fila") */
+  .prev-btn-icono {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid #e8eeec;
+    border-radius: 7px;
+    background: #fff;
+    cursor: pointer;
+    color: #c33;
+    font-size: 1.05rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .prev-btn-icono:hover { background: #fdf0f0; border-color: #f5c6c6; }
+  .prev-btn-icono:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
   }
 </style>

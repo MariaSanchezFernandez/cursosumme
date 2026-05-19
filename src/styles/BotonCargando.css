@@ -37,6 +37,14 @@ button[data-cargando="1"],
   animation: boton-cargando-spin 0.75s linear infinite;
 }
 
+/* Cuando el spinner es el único hijo del botón (botón icono, texto vacío),
+   no queremos el margen derecho — la separación con el texto sobra y
+   descentraría el spinner dentro de un botón con justify-content: center. */
+.boton-cargando-spinner:only-child {
+  margin-right: 0;
+  vertical-align: middle;
+}
+
 @keyframes boton-cargando-spin {
   to { transform: rotate(360deg); }
 }
