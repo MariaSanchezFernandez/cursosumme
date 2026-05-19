@@ -183,6 +183,32 @@ import Plantilla from '../layouts/Plantilla.astro';
         </button>
       </div>
     </section>
+
+    <!-- ─── Modal de confirmación ────────────────────────────────── -->
+
+    <section class="prev-section">
+      <h2>5. Modal de confirmación</h2>
+      <p class="prev-section-desc">
+        Sustituye al <code>confirm()</code> nativo del navegador.
+        Resuelve a <code>true</code> / <code>false</code> según la
+        decisión. Cierra con Aceptar, Cancelar, Escape o clic fuera.
+      </p>
+
+      <div class="prev-grid">
+        <button class="prev-btn prev-btn-neutral" id="prevModalSimple">
+          Confirmación simple (solo mensaje)
+        </button>
+        <button class="prev-btn prev-btn-neutral" id="prevModalCompleto">
+          Con título y botones personalizados
+        </button>
+        <button class="prev-btn prev-btn-error" id="prevModalPeligro">
+          Acción destructiva (botón rojo)
+        </button>
+        <button class="prev-btn prev-btn-coral" id="prevModalReal">
+          Flujo real: eliminar curso (modal + loading + toast)
+        </button>
+      </div>
+    </section>
   </main>
 </Plantilla>
 
@@ -250,6 +276,50 @@ import Plantilla from '../layouts/Plantilla.astro';
   }
   document.getElementById('prevIconoDel').addEventListener('click', handlerIconoDel);
   document.getElementById('prevIconoDel2').addEventListener('click', handlerIconoDel);
+
+  // ── 5. Modal de confirmación ────────────────────────────────
+  document.getElementById('prevModalSimple').addEventListener('click', async function () {
+    var ok = await window.confirmar('¿Eliminar este elemento?');
+    window.toast.info('Resultado: ' + (ok ? 'Aceptar' : 'Cancelar'));
+  });
+
+  document.getElementById('prevModalCompleto').addEventListener('click', async function () {
+    var ok = await window.confirmar({
+      titulo: 'Confirmar publicación',
+      mensaje: 'El curso pasará a estar visible para todos los alumnos asignados. Podrás editarlo después.',
+      textoConfirmar: 'Publicar',
+      textoCancelar:  'Seguir editando',
+    });
+    if (ok) window.toast.success('Curso publicado');
+    else    window.toast.info('Operación cancelada');
+  });
+
+  document.getElementById('prevModalPeligro').addEventListener('click', async function () {
+    var ok = await window.confirmar({
+      titulo: 'Eliminar curso',
+      mensaje: '¿Eliminar el curso "Introducción al SEO"? Se borrarán todos sus temas, materiales y el progreso de los alumnos. Esta acción no se puede deshacer.',
+      textoConfirmar: 'Sí, eliminar',
+      textoCancelar:  'Cancelar',
+      peligro: true,
+    });
+    if (ok) window.toast.success('Curso eliminado');
+    else    window.toast.info('No se eliminó nada');
+  });
+
+  document.getElementById('prevModalReal').addEventListener('click', async function (e) {
+    var btn = e.currentTarget;
+    var ok = await window.confirmar({
+      titulo: 'Eliminar curso',
+      mensaje: '¿Eliminar el curso "Curso de prueba" y todos sus archivos?',
+      textoConfirmar: 'Eliminar',
+      peligro: true,
+    });
+    if (!ok) return;
+    await window.botonCargando(btn, 'Eliminando…', function () {
+      return esperar(1800, true);
+    });
+    window.toast.success('"Curso de prueba" eliminado correctamente');
+  });
 
   // ── 3. Combinado: botón cargando + toast ───────────────────
   document.getElementById('prevComboOk').addEventListener('click', async function (e) {

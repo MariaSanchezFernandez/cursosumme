@@ -41,4 +41,21 @@ interface Window {
     textoMientrasCarga: string,
     accion: () => Promise<T>
   ): Promise<T | undefined>;
+
+  /**
+   * Modal de confirmación con estética Umme, en sustitución del
+   * confirm() nativo del navegador. Definido en src/components/Modal.astro.
+   *
+   * Resuelve `true` si el usuario pulsa "Aceptar", `false` si pulsa
+   * "Cancelar", Escape o clica fuera del modal.
+   */
+  confirmar(
+    opcionesOMensaje: string | {
+      titulo?: string;
+      mensaje: string;
+      textoConfirmar?: string;
+      textoCancelar?: string;
+      peligro?: boolean;
+    }
+  ): Promise<boolean>;
 }

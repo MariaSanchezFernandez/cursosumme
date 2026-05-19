@@ -1,0 +1,148 @@
+---
+// COMPONENTE: Modal (helper de confirmación)
+// ------------------------------------------
+// Sustituye al confirm() nativo del navegador por un modal con estética
+// Umme. Se monta una vez en los layouts y expone una función global.
+//
+// API global:
+//
+//   await window.confirmar(opcionesOMensaje) → Promise<boolean>
+//
+//   Forma simple — solo mensaje (texto plano):
+//     const ok = await window.confirmar('¿Eliminar el curso?');
+//
+//   Forma completa — objeto con opciones:
+//     const ok = await window.confirmar({
+//       titulo: 'Eliminar curso',           (opcional)
+//       mensaje: '¿Estás segura? Se borrarán todos los temas y archivos.',
+//       textoConfirmar: 'Eliminar',         (def: 'Aceptar')
+//       textoCancelar:  'Cancelar',         (def: 'Cancelar')
+//       peligro: true,                      (def: false — botón confirmar rojo)
+//     });
+//
+//   La promesa resuelve a `true` si el usuario pulsa Aceptar, o `false`
+//   si pulsa Cancelar, Escape o clica fuera del modal.
+//
+// Comportamiento:
+//   - Solo puede haber un modal abierto a la vez (si llega otro confirmar()
+//     con uno ya abierto, el anterior se cancela primero).
+//   - Foco inicial: en "Aceptar" por defecto, en "Cancelar" si peligro=true
+//     (más seguro para acciones destructivas).
+//   - Tab atrapa el foco entre los dos botones (no escapa al fondo).
+//   - Escape = Cancelar. Clic en el backdrop = Cancelar.
+//   - Al cerrar devuelve el foco al elemento que tenía el foco antes de
+//     abrir el modal (típicamente el botón que lo disparó).
+//
+// Accesibilidad:
+//   - Backdrop con role="dialog" + aria-modal="true".
+//   - Si hay título, se asocia con aria-labelledby.
+//   - Mensajes se insertan con textContent (no XSS).
+
+import '../styles/Modal.css';
+---
+
+<script is:inline>
+  (function () {
+    if (window.confirmar) return; // ya registrado
+
+    var idCounter = 0;
+    var modalActual = null;
+
+    function cerrarActual(resultado) {
+      if (!modalActual) return;
+      var m = modalActual;
+      modalActual = null;
+      m.backdrop.removeEventListener('keydown', m.onKey);
+      m.backdrop.classList.add('modal-cerrando');
+      setTimeout(function () {
+        if (m.backdrop.parentNode) m.backdrop.parentNode.removeChild(m.backdrop);
+        if (m.opener && document.body.contains(m.opener)) {
+          try { m.opener.focus(); } catch (e) {}
+        }
+      }, 180);
+      m.resolve(resultado);
+    }
+
+    window.confirmar = function (opcionesOMensaje) {
+      // Si hay otro modal abierto, lo cancelamos antes
+      if (modalActual) cerrarActual(false);
+
+      var opts = (typeof opcionesOMensaje === 'string')
+        ? { mensaje: opcionesOMensaje }
+        : (opcionesOMensaje || {});
+
+      var titulo         = opts.titulo || '';
+      var mensaje        = opts.mensaje || '';
+      var textoConfirmar = opts.textoConfirmar || 'Aceptar';
+      var textoCancelar  = opts.textoCancelar  || 'Cancelar';
+      var peligro        = !!opts.peligro;
+
+      return new Promise(function (resolve) {
+        var opener = document.activeElement;
+
+        var backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop';
+        backdrop.setAttribute('role', 'dialog');
+        backdrop.setAttribute('aria-modal', 'true');
+
+        var card = document.createElement('div');
+        card.className = 'modal-card';
+
+        var idTitulo = '';
+        if (titulo) {
+          idTitulo = 'modal-titulo-' + (++idCounter);
+          backdrop.setAttribute('aria-labelledby', idTitulo);
+        }
+
+        // Construir HTML (sin interpolación: textContent después)
+        var html = '';
+        if (titulo) html += '<h2 class="modal-titulo" id="' + idTitulo + '"></h2>';
+        html += '<p class="modal-mensaje"></p>';
+        html += '<div class="modal-acciones">';
+        html += '<button class="modal-btn modal-btn-cancelar" type="button"></button>';
+        html += '<button class="modal-btn modal-btn-confirmar' + (peligro ? ' modal-btn-peligro' : '') + '" type="button"></button>';
+        html += '</div>';
+        card.innerHTML = html;
+
+        // Texto seguro (textContent, no innerHTML)
+        if (titulo) card.querySelector('.modal-titulo').textContent = titulo;
+        card.querySelector('.modal-mensaje').textContent = mensaje;
+        var btnCancelar  = card.querySelector('.modal-btn-cancelar');
+        var btnConfirmar = card.querySelector('.modal-btn-confirmar');
+        btnCancelar.textContent  = textoCancelar;
+        btnConfirmar.textContent = textoConfirmar;
+
+        backdrop.appendChild(card);
+        document.body.appendChild(backdrop);
+
+        function onKey(e) {
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            cerrarActual(false);
+            return;
+          }
+          if (e.key === 'Tab') {
+            // Trap del foco entre los dos botones
+            e.preventDefault();
+            var act = document.activeElement;
+            (act === btnCancelar ? btnConfirmar : btnCancelar).focus();
+          }
+        }
+
+        backdrop.addEventListener('click', function (e) {
+          if (e.target === backdrop) cerrarActual(false);
+        });
+        btnCancelar.addEventListener('click',  function () { cerrarActual(false); });
+        btnConfirmar.addEventListener('click', function () { cerrarActual(true);  });
+        backdrop.addEventListener('keydown', onKey);
+
+        modalActual = { backdrop: backdrop, resolve: resolve, opener: opener, onKey: onKey };
+
+        // Foco inicial: Confirmar por defecto, Cancelar si la acción es peligrosa
+        setTimeout(function () {
+          (peligro ? btnCancelar : btnConfirmar).focus();
+        }, 50);
+      });
+    };
+  })();
+</script>

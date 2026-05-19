@@ -195,7 +195,13 @@ document.getElementById('sel-tipo')!.addEventListener('change', (e) => {
 });
 
 document.getElementById('btn-limpiar')!.addEventListener('click', async () => {
-  if (!confirm('¿Borrar todos los errores registrados?')) return;
+  const ok = await window.confirmar({
+    titulo: 'Borrar errores',
+    mensaje: '¿Borrar todos los errores registrados?',
+    textoConfirmar: 'Borrar todos',
+    peligro: true,
+  });
+  if (!ok) return;
   await fetch('/api/errores.php', { method: 'DELETE' });
   cargar();
 });

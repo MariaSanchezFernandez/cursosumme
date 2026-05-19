@@ -69,11 +69,21 @@ import '../styles/BotonCargando.css';
       btn.setAttribute('aria-busy', 'true');
       btn.disabled = true;
       if (anchoCongelado > 0) btn.style.minWidth = anchoCongelado + 'px';
-      // Usa nullish (??) en vez de || para que '' signifique "solo spinner"
+      // Texto a mostrar. '' → solo spinner (sin texto). null/undefined → 'Cargando…'
       var texto = (textoMientrasCarga === undefined || textoMientrasCarga === null)
         ? 'Cargando…'
         : String(textoMientrasCarga);
-      btn.innerHTML = SPINNER + texto;
+      if (texto) {
+        // Wrapper inline-flex con gap real: garantiza separación uniforme
+        // y centrado vertical perfecto del spinner respecto al texto,
+        // independientemente de si el botón es inline, flex o tiene padding
+        // asimétrico.
+        var safe = texto.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        btn.innerHTML = '<span class="boton-cargando-wrap">' + SPINNER + '<span>' + safe + '</span></span>';
+      } else {
+        // Botón icono: solo el spinner, sin wrapper
+        btn.innerHTML = SPINNER;
+      }
 
       try {
         return await accion();

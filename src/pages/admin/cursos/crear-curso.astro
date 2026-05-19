@@ -786,7 +786,13 @@ async function crearTemaCard(tema: any): Promise<HTMLElement> {
   });
 
   card.querySelector('.btn-del-tema')!.addEventListener('click', async () => {
-    if (!confirm(`¿Eliminar "${tema.titulo}" y todos sus archivos?`)) return;
+    const ok = await window.confirmar({
+      titulo: 'Eliminar tema',
+      mensaje: `¿Eliminar "${tema.titulo}" y todos sus archivos?`,
+      textoConfirmar: 'Eliminar',
+      peligro: true,
+    });
+    if (!ok) return;
     const res  = await fetch(`/api/temas.php?id=${tema.id}`, { method: 'DELETE' });
     const data = await res.json();
     if (data.ok) {
@@ -893,7 +899,13 @@ function crearFilaMat(mat: any): HTMLElement {
     `;
     div.querySelector('.mat-rename')!.addEventListener('click', renderEditar);
     div.querySelector('.mat-del')!.addEventListener('click', async () => {
-      if (!confirm(`¿Eliminar "${mat.nombre}"?`)) return;
+      const okDel = await window.confirmar({
+        titulo: 'Eliminar material',
+        mensaje: `¿Eliminar "${mat.nombre}"?`,
+        textoConfirmar: 'Eliminar',
+        peligro: true,
+      });
+      if (!okDel) return;
       const res  = await fetch(`/api/materiales.php?id=${mat.id}`, { method: 'DELETE' });
       const data = await res.json();
       if (!data.ok) { mostrarMsg('Error al eliminar', 'error'); return; }

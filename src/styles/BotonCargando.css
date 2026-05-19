@@ -29,20 +29,27 @@ button[data-cargando="1"],
   display: inline-block;
   width: 1em;
   height: 1em;
-  margin-right: 0.5em;
-  vertical-align: -0.15em;
   border: 2px solid currentColor;
   border-right-color: transparent;
   border-radius: 50%;
   animation: boton-cargando-spin 0.75s linear infinite;
+  vertical-align: middle;
 }
 
-/* Cuando el spinner es el único hijo del botón (botón icono, texto vacío),
-   no queremos el margen derecho — la separación con el texto sobra y
-   descentraría el spinner dentro de un botón con justify-content: center. */
-.boton-cargando-spinner:only-child {
-  margin-right: 0;
-  vertical-align: middle;
+/* Wrapper flex que mete dentro spinner + texto. Garantiza:
+   - centrado vertical perfecto (align-items: center)
+   - centrado horizontal en el botón (justify-content: center + width 100%)
+   - separación uniforme entre spinner y texto (gap)
+   Sin esto, la separación con margin-right depende del contexto del botón
+   (inline vs flex vs grid) y el horizontal depende del text-align del padre,
+   que algunos botones del proyecto sobreescriben. */
+.boton-cargando-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6em;
+  line-height: 1;
+  width: 100%;
 }
 
 @keyframes boton-cargando-spin {

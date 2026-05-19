@@ -224,7 +224,13 @@ function crearFilaTicket(ticket: any): HTMLElement {
   if (btnDel) {
     btnDel.addEventListener('click', async (e) => {
       e.stopPropagation();
-      if (!confirm('¿Eliminar esta conversación? No se puede deshacer.')) return;
+      const okDel = await window.confirmar({
+        titulo: 'Eliminar conversación',
+        mensaje: '¿Eliminar esta conversación? No se puede deshacer.',
+        textoConfirmar: 'Eliminar',
+        peligro: true,
+      });
+      if (!okDel) return;
       btnDel.disabled = true;
       try {
         const res  = await fetch(`/api/tickets.php?id=${ticket.id}`, { method: 'DELETE' });

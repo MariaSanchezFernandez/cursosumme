@@ -326,7 +326,13 @@ async function cargar() {
   const btnEliminar = document.getElementById('btn-eliminar-alumno') as HTMLButtonElement;
   btnEliminar.style.display = 'inline-flex';
   btnEliminar.addEventListener('click', async () => {
-    if (!confirm(`¿Eliminar permanentemente a "${alumno.nombre}" (${alumno.email})?\n\nSe borrarán su cuenta, progreso y acceso a todos los cursos. Esta acción no se puede deshacer.`)) return;
+    const okDel = await window.confirmar({
+      titulo: 'Eliminar alumno',
+      mensaje: `¿Eliminar permanentemente a "${alumno.nombre}" (${alumno.email})?\n\nSe borrarán su cuenta, progreso y acceso a todos los cursos. Esta acción no se puede deshacer.`,
+      textoConfirmar: 'Eliminar alumno',
+      peligro: true,
+    });
+    if (!okDel) return;
     await window.botonCargando(btnEliminar, 'Eliminando…', async () => {
       const res  = await fetch(`/api/alumnos.php?id=${alumnoId}`, { method: 'DELETE' });
       const data = await res.json();

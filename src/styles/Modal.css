@@ -1,0 +1,126 @@
+/*
+ * ESTILOS: Modal de confirmación
+ * ------------------------------
+ * Hoja de estilos del helper window.confirmar() — ver
+ * src/components/Modal.astro.
+ *
+ * Estructura:
+ *   .modal-backdrop  overlay oscuro semi-transparente que cubre el viewport
+ *     .modal-card    tarjeta blanca centrada con borde y sombra Umme
+ *       .modal-titulo    (opcional) título h2 en bold
+ *       .modal-mensaje   párrafo principal, conserva saltos de línea
+ *       .modal-acciones  fila de botones (cancelar / confirmar)
+ *
+ * Variantes:
+ *   .modal-btn-peligro   botón confirmar en rojo, para acciones destructivas
+ *
+ * Animaciones: fade + scale suave a la entrada, fade a la salida.
+ * Respeta prefers-reduced-motion.
+ *
+ * Accesibilidad:
+ *   - El backdrop lleva role="dialog" y aria-modal="true".
+ *   - El título (si existe) se referencia por aria-labelledby.
+ *   - Trap de Tab gestionado en JS.
+ *   - Escape cierra (= cancelar) gestionado en JS.
+ */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.45);
+  animation: modal-backdrop-in 180ms ease-out;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 460px;
+  padding: 1.5rem 1.5rem 1.25rem;
+  background: #fff;
+  border: 1.5px solid var(--color-primary);
+  border-radius: 16px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
+  font-family: 'DM Sans', sans-serif;
+  color: var(--color-text);
+  animation: modal-card-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.modal-titulo {
+  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.modal-mensaje {
+  margin: 0 0 1.5rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.modal-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.modal-btn {
+  padding: 0.65rem 1.15rem;
+  border: 1.5px solid transparent;
+  border-radius: 10px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.modal-btn-cancelar {
+  background: #fff;
+  border-color: #d8e4df;
+  color: var(--color-text);
+}
+.modal-btn-cancelar:hover { background: var(--color-light); border-color: var(--color-primary); }
+
+.modal-btn-confirmar {
+  background: var(--color-coral);
+  border-color: var(--color-coral);
+  color: var(--color-text);
+}
+.modal-btn-confirmar:hover { opacity: 0.88; }
+
+.modal-btn-confirmar.modal-btn-peligro {
+  background: #c44747;
+  border-color: #c44747;
+  color: #fff;
+}
+.modal-btn-confirmar.modal-btn-peligro:hover { opacity: 0.92; background: #b03e3e; border-color: #b03e3e; }
+
+.modal-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ── Cierre con animación inversa ─────────────────────────────── */
+
+.modal-backdrop.modal-cerrando { animation: modal-backdrop-out 180ms ease-out forwards; }
+.modal-backdrop.modal-cerrando .modal-card { animation: modal-card-out 160ms ease-out forwards; }
+
+@keyframes modal-backdrop-in  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modal-backdrop-out { to { opacity: 0; } }
+@keyframes modal-card-in      { from { opacity: 0; transform: translateY(8px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes modal-card-out     { to { opacity: 0; transform: translateY(4px) scale(0.97); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-backdrop,
+  .modal-card,
+  .modal-backdrop.modal-cerrando,
+  .modal-backdrop.modal-cerrando .modal-card {
+    animation: none;
+  }
+}

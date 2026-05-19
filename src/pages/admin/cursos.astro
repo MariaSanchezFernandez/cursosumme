@@ -547,7 +547,12 @@ function renderizarCursos(filtro: string) {
         const btn    = e.currentTarget as HTMLButtonElement;
         const id     = Number(btn.dataset.id);
         const titulo = btn.dataset.titulo || '';
-        if (!confirm(`¿Duplicar el curso "${titulo}"?\nSe creará una copia inactiva con todos sus temas y materiales.\n\n⚠ Los alumnos no se copian: deberás asignarlos manualmente a la copia desde su ficha de alumno.`)) return;
+        const okDup = await window.confirmar({
+          titulo: 'Duplicar curso',
+          mensaje: `¿Duplicar el curso "${titulo}"?\nSe creará una copia inactiva con todos sus temas y materiales.\n\n⚠ Los alumnos no se copian: deberás asignarlos manualmente a la copia desde su ficha de alumno.`,
+          textoConfirmar: 'Duplicar',
+        });
+        if (!okDup) return;
         await window.botonCargando(btn, 'Duplicando…', async () => {
           const res  = await fetch('/api/cursos.php', {
             method: 'POST',
@@ -596,7 +601,13 @@ function renderizarCursos(filtro: string) {
         const btn    = e.currentTarget as HTMLButtonElement;
         const id     = Number(btn.dataset.id);
         const titulo = btn.dataset.titulo || '';
-        if (!confirm(`¿Eliminar el curso "${titulo}"?\nSe borrarán todos sus temas y archivos.`)) return;
+        const okDel = await window.confirmar({
+          titulo: 'Eliminar curso',
+          mensaje: `¿Eliminar el curso "${titulo}"?\nSe borrarán todos sus temas y archivos.`,
+          textoConfirmar: 'Eliminar',
+          peligro: true,
+        });
+        if (!okDel) return;
         await window.botonCargando(btn, 'Eliminando…', async () => {
           const res  = await fetch(`/api/cursos.php?id=${id}`, { method: 'DELETE' });
           const data = await res.json();
@@ -838,7 +849,12 @@ document.getElementById('btn-guardar-pack')!.addEventListener('click', async () 
 // ── Disolver pack ──────────────────────────────────────────────
 btnDisolver.addEventListener('click', async () => {
   const nombre = inputNombre.value.trim();
-  if (!confirm(`¿Disolver el pack "${nombre}"? Los cursos quedarán sin pack.`)) return;
+  const okDisolver = await window.confirmar({
+    titulo: 'Disolver pack',
+    mensaje: `¿Disolver el pack "${nombre}"? Los cursos quedarán sin pack.`,
+    textoConfirmar: 'Disolver',
+  });
+  if (!okDisolver) return;
 
   btnDisolver.disabled = true;
   const cursosPack = todosLosCursos.filter(c => c.pack === nombre);

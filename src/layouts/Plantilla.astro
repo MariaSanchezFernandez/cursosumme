@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import Toast from '../components/Toast.astro';
 import BotonCargando from '../components/BotonCargando.astro';
+import Modal from '../components/Modal.astro';
 ---
 
 <html lang="es">
@@ -96,6 +97,9 @@ import BotonCargando from '../components/BotonCargando.astro';
 
     <!-- Helper global de estado de carga en botones (window.botonCargando) -->
     <BotonCargando />
+
+    <!-- Helper global de modal de confirmación (window.confirmar) -->
+    <Modal />
 
     <!-- Firma de marca: aparece en todas las páginas, esquina inferior izquierda -->
     <span class="firma">cursos umme</span>

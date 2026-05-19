@@ -1078,7 +1078,13 @@ async function crearTemaCard(tema: any): Promise<HTMLElement> {
 
   // ── Eliminar tema ─────────────────────────────────────────
   cabecera.querySelector('.btn-del-tema')!.addEventListener('click', async (e) => {
-    if (!confirm(`¿Eliminar "${tema.titulo}" y todos sus archivos?`)) return;
+    const okDel = await window.confirmar({
+      titulo: 'Eliminar tema',
+      mensaje: `¿Eliminar "${tema.titulo}" y todos sus archivos?`,
+      textoConfirmar: 'Eliminar',
+      peligro: true,
+    });
+    if (!okDel) return;
     const btn = e.currentTarget as HTMLButtonElement;
     // Botón icono: pasamos '' para mostrar solo el spinner sin texto
     await window.botonCargando(btn, '', async () => {
@@ -1295,7 +1301,13 @@ function crearFilaMat(mat: any): HTMLElement {
     `;
     div.querySelector('.mat-rename')!.addEventListener('click', renderEditar);
     div.querySelector('.mat-del')!.addEventListener('click', async (e) => {
-      if (!confirm(`¿Eliminar "${mat.nombre}"?`)) return;
+      const okConfirmar = await window.confirmar({
+        titulo: 'Eliminar material',
+        mensaje: `¿Eliminar "${mat.nombre}"?`,
+        textoConfirmar: 'Eliminar',
+        peligro: true,
+      });
+      if (!okConfirmar) return;
       const btn = e.currentTarget as HTMLButtonElement;
       // Botón icono (×): pasamos '' para mostrar solo el spinner
       const okDel = await window.botonCargando(btn, '', async () => {

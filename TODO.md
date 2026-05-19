@@ -101,6 +101,25 @@ excedía la cuota de la cuenta. Solución aplicada: raw body streaming
   `botonCargando(btn, '', accion)` muestra solo el spinner sin texto
   por defecto — necesario para botones icono pequeños.
 
+- [x] **Modales reutilizables para confirmar** (2026-05-19): componente
+  `src/components/Modal.astro` + `src/styles/Modal.css` montado en
+  ambos layouts. API global
+  `await window.confirmar(opcionesOMensaje) → Promise<boolean>` con
+  forma simple (solo mensaje) o completa (título, mensaje, textos de
+  botones, `peligro` → botón rojo). Acepta Escape, clic fuera y trap
+  del foco entre los dos botones. Foco inicial en "Confirmar" por
+  defecto o en "Cancelar" si `peligro: true` (más seguro). Devuelve
+  el foco al disparador al cerrar. Animaciones fade+scale (respeta
+  `prefers-reduced-motion`). Tipos en `src/env.d.ts`. **10 `confirm()`
+  nativos sustituidos** en `admin/cursos.astro` (duplicar, eliminar,
+  disolver pack), `admin/cursos/editar.astro` (eliminar tema y material),
+  `admin/cursos/crear-curso.astro` (eliminar tema y material),
+  `admin/alumnos/detalle.astro` (eliminar alumno),
+  `admin/tickets.astro` (eliminar conversación) y
+  `admin/errores.astro` (borrar todos los errores). Demo en sección 5
+  de `/preview`. Pendiente: `pedirDato()` para sustituir `prompt()`
+  en edición rápida (precio curso, stripe_price_id) — siguiente pasada.
+
 ---
 
 ## Pendiente
@@ -193,18 +212,13 @@ mejora del TFM.
   pequeñas (`PanelDetalleTabs`, `PanelDetalleMaterial`, sidebar admin
   como componente con su CSS).
 
-- [ ] **Modales reutilizables para confirmar y pedir datos**
-  (sustituir `confirm()` y `prompt()` nativos): los diálogos del
-  navegador rompen visualmente la experiencia (estilo del SO, no de
-  Umme) y no son accesibles ni personalizables. Crear dos componentes:
-    - `confirmar(mensaje, opciones?) → Promise<boolean>` para
-      reemplazar `confirm()` en eliminar/duplicar curso, eliminar
-      alumno, etc. Permite título, mensaje, texto de los botones y
-      variante "peligro" (botón rojo) para acciones destructivas.
-    - `pedirDato(campos, opciones?) → Promise<datos | null>` para
-      reemplazar `prompt()` en edición rápida (precio curso,
-      `stripe_price_id`, etc.). Admite varios campos a la vez.
-  Ambos basados en el mismo `<Modal />` reutilizable con
-  `role=dialog`, `aria-modal`, trap de foco, Escape para cerrar y
-  devolución del foco al disparador. Estética Umme (mismo lenguaje
-  que toasts: tarjeta pastel, DM Sans, paleta de marca).
+- [ ] **`window.pedirDato()` para sustituir `prompt()` nativos**:
+  el sistema de modal de confirmación ya está construido
+  (`Modal.astro` + `window.confirmar()`). Falta crear el helper
+  `pedirDato(campos, opciones?) → Promise<datos | null>` reutilizando
+  el mismo modal y el mismo CSS — solo cambia el contenido (uno o
+  varios `<input>` en lugar de mensaje plano). Sustituir los
+  `prompt()` actuales en `admin/cursos.astro` (precio del curso,
+  `stripe_price_id` desde el badge) por este helper, con validación
+  inline. Buena base de mejora de UX para todo el flujo de edición
+  rápida.
