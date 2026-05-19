@@ -27,4 +27,18 @@ interface Window {
 
   /** Registro de errores manejados — definido en los layouts */
   logAppError(tipo: string, mensaje: string, extra?: { detalle?: string; stack?: string }): void;
+
+  /**
+   * Estado de carga reutilizable para CUALQUIER `<button>`.
+   * Definido en src/components/BotonCargando.astro.
+   *
+   * Reemplaza el contenido del botón por un spinner + texto contextual,
+   * lo deja `disabled` mientras dura la acción y lo restaura al terminar
+   * (también si la acción lanza una excepción).
+   */
+  botonCargando<T>(
+    btn: HTMLButtonElement | HTMLElement | null,
+    textoMientrasCarga: string,
+    accion: () => Promise<T>
+  ): Promise<T | undefined>;
 }

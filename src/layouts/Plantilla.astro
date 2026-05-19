@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import Toast from '../components/Toast.astro';
+import BotonCargando from '../components/BotonCargando.astro';
 ---
 
 <html lang="es">
@@ -92,6 +93,9 @@ import Toast from '../components/Toast.astro';
 
     <!-- Sistema global de toasts (window.mostrarToast / window.toast.*) -->
     <Toast />
+
+    <!-- Helper global de estado de carga en botones (window.botonCargando) -->
+    <BotonCargando />
 
     <!-- Firma de marca: aparece en todas las páginas, esquina inferior izquierda -->
     <span class="firma">cursos umme</span>

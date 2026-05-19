@@ -500,20 +500,20 @@ function renderizarCursos(filtro: string) {
         const id     = Number(btn.dataset.id);
         const titulo = btn.dataset.titulo || '';
         if (!confirm(`¿Duplicar el curso "${titulo}"?\nSe creará una copia inactiva con todos sus temas y materiales.\n\n⚠ Los alumnos no se copian: deberás asignarlos manualmente a la copia desde su ficha de alumno.`)) return;
-        btn.disabled = true;
-        const res  = await fetch('/api/cursos.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ accion: 'duplicar', id }),
+        await window.botonCargando(btn, 'Duplicando…', async () => {
+          const res  = await fetch('/api/cursos.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ accion: 'duplicar', id }),
+          });
+          const data = await res.json();
+          if (data.ok) {
+            window.mostrarToast(`"${titulo}" duplicado correctamente`, 'success');
+            await cargarCursos();
+          } else {
+            window.mostrarToast(data.mensaje || 'Error al duplicar el curso', 'error');
+          }
         });
-        const data = await res.json();
-        if (data.ok) {
-          window.mostrarToast(`"${titulo}" duplicado correctamente`, 'success');
-          await cargarCursos();
-        } else {
-          btn.disabled = false;
-          window.mostrarToast(data.mensaje || 'Error al duplicar el curso', 'error');
-        }
       });
 
       card.querySelector('.precio-badge')!.addEventListener('click', async (e) => {
@@ -549,19 +549,19 @@ function renderizarCursos(filtro: string) {
         const id     = Number(btn.dataset.id);
         const titulo = btn.dataset.titulo || '';
         if (!confirm(`¿Eliminar el curso "${titulo}"?\nSe borrarán todos sus temas y archivos.`)) return;
-        btn.disabled = true;
-        const res  = await fetch(`/api/cursos.php?id=${id}`, { method: 'DELETE' });
-        const data = await res.json();
-        if (data.ok) {
-          todosLosCursos = todosLosCursos.filter(x => x.id !== id);
-          construirFiltros();
-          renderizarCursos('todos');
-          actualizarSelectorPacks();
-          window.mostrarToast(`"${titulo}" eliminado`, 'success');
-        } else {
-          btn.disabled = false;
-          window.mostrarToast(data.mensaje || 'Error al eliminar el curso', 'error');
-        }
+        await window.botonCargando(btn, 'Eliminando…', async () => {
+          const res  = await fetch(`/api/cursos.php?id=${id}`, { method: 'DELETE' });
+          const data = await res.json();
+          if (data.ok) {
+            todosLosCursos = todosLosCursos.filter(x => x.id !== id);
+            construirFiltros();
+            renderizarCursos('todos');
+            actualizarSelectorPacks();
+            window.mostrarToast(`"${titulo}" eliminado`, 'success');
+          } else {
+            window.mostrarToast(data.mensaje || 'Error al eliminar el curso', 'error');
+          }
+        });
       });
 
       grid.appendChild(card);

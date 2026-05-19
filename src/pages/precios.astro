@@ -117,21 +117,19 @@ async function cargar() {
     document.addEventListener('click', async (e) => {
       const btn = (e.target as HTMLElement).closest('.btn-comprar') as HTMLButtonElement | null;
       if (!btn) return;
-      btn.disabled = true;
-      btn.textContent = 'Redirigiendo…';
-      const res  = await fetch('/api/stripe-checkout.php', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ tipo: btn.dataset.tipo, id: Number(btn.dataset.id) }),
+      await window.botonCargando(btn, 'Redirigiendo…', async () => {
+        const res  = await fetch('/api/stripe-checkout.php', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ tipo: btn.dataset.tipo, id: Number(btn.dataset.id) }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          window.location.href = data.url;
+        } else {
+          window.mostrarToast(data.mensaje || 'Error al iniciar el pago', 'error');
+        }
       });
-      const data = await res.json();
-      if (data.ok) {
-        window.location.href = data.url;
-      } else {
-        window.mostrarToast(data.mensaje || 'Error al iniciar el pago', 'error');
-        btn.disabled = false;
-        btn.textContent = 'Comprar →';
-      }
     });
 
   } catch {

@@ -158,17 +158,20 @@ document.getElementById('form-password')!.addEventListener('submit', async (e) =
     return;
   }
 
-  const res  = await fetch('/api/cambiar-password.php', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ usuario_id: s.userId, password_nueva: pwd1 }),
+  const submitBtn = (e.target as HTMLFormElement).querySelector('button[type="submit"]') as HTMLButtonElement;
+  await window.botonCargando(submitBtn, 'Guardando…', async () => {
+    const res  = await fetch('/api/cambiar-password.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ usuario_id: s.userId, password_nueva: pwd1 }),
+    });
+    const data = await res.json();
+    mostrarMsg('msg-pwd', data.mensaje || (data.ok ? 'Contraseña actualizada.' : 'Error.'), data.ok);
+    if (data.ok) {
+      (document.getElementById('inp-pwd1') as HTMLInputElement).value = '';
+      (document.getElementById('inp-pwd2') as HTMLInputElement).value = '';
+    }
   });
-  const data = await res.json();
-  mostrarMsg('msg-pwd', data.mensaje || (data.ok ? 'Contraseña actualizada.' : 'Error.'), data.ok);
-  if (data.ok) {
-    (document.getElementById('inp-pwd1') as HTMLInputElement).value = '';
-    (document.getElementById('inp-pwd2') as HTMLInputElement).value = '';
-  }
 });
 </script>
 

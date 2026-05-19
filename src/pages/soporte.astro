@@ -132,30 +132,26 @@ btnEnviar.addEventListener('click', async () => {
   if (!asunto)  { formError.textContent = 'El asunto es obligatorio.'; return; }
   if (!mensaje) { formError.textContent = 'El mensaje es obligatorio.'; return; }
 
-  btnEnviar.disabled = true;
-  btnEnviar.textContent = 'Enviando…';
-
-  try {
-    const res  = await fetch('/api/tickets.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ usuario_id: userId, asunto, mensaje }),
-    });
-    const data = await res.json();
-    if (data.ok) {
-      cerrarModal();
-      cargarTickets();
-    } else {
-      formError.textContent = data.error || 'Error al enviar la consulta.';
-      (window as any).logAppError?.('ticket_crear', 'Servidor rechazó crear ticket', { detalle: data.error || ('HTTP ' + res.status) });
+  await window.botonCargando(btnEnviar, 'Enviando…', async () => {
+    try {
+      const res  = await fetch('/api/tickets.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usuario_id: userId, asunto, mensaje }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        cerrarModal();
+        cargarTickets();
+      } else {
+        formError.textContent = data.error || 'Error al enviar la consulta.';
+        window.logAppError?.('ticket_crear', 'Servidor rechazó crear ticket', { detalle: data.error || ('HTTP ' + res.status) });
+      }
+    } catch (err: any) {
+      formError.textContent = 'Error de conexión. Inténtalo de nuevo.';
+      window.logAppError?.('ticket_crear', 'Error de red al crear ticket', { detalle: err?.message, stack: err?.stack });
     }
-  } catch (err: any) {
-    formError.textContent = 'Error de conexión. Inténtalo de nuevo.';
-    (window as any).logAppError?.('ticket_crear', 'Error de red al crear ticket', { detalle: err?.message, stack: err?.stack });
-  }
-
-  btnEnviar.disabled = false;
-  btnEnviar.textContent = 'Enviar consulta';
+  });
 });
 
 // ── Cargar tickets ────────────────────────────────────────────────────────────
@@ -279,28 +275,24 @@ function crearTarjetaTicket(ticket: any): HTMLElement {
     btnCerrarT.addEventListener('click', async (e) => {
       e.stopPropagation();
       const btn = e.currentTarget as HTMLButtonElement;
-      btn.disabled = true;
-      btn.textContent = 'Cerrando…';
-      try {
-        const res  = await fetch('/api/tickets.php', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ticket_id: parseInt(ticket.id), estado: 'cerrado' }),
-        });
-        const data = await res.json();
-        if (data.ok) {
-          sessionStorage.removeItem('umme_badge');
-          cargarTickets();
-        } else {
-          btn.disabled = false;
-          btn.textContent = 'Cerrar consulta';
-          (window as any).logAppError?.('ticket_cerrar', 'Servidor rechazó cerrar ticket', { detalle: data.error || ('HTTP ' + res.status) });
+      await window.botonCargando(btn, 'Cerrando…', async () => {
+        try {
+          const res  = await fetch('/api/tickets.php', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ticket_id: parseInt(ticket.id), estado: 'cerrado' }),
+          });
+          const data = await res.json();
+          if (data.ok) {
+            sessionStorage.removeItem('umme_badge');
+            cargarTickets();
+          } else {
+            window.logAppError?.('ticket_cerrar', 'Servidor rechazó cerrar ticket', { detalle: data.error || ('HTTP ' + res.status) });
+          }
+        } catch (err: any) {
+          window.logAppError?.('ticket_cerrar', 'Error de red al cerrar ticket', { detalle: err?.message, stack: err?.stack });
         }
-      } catch (err: any) {
-        btn.disabled = false;
-        btn.textContent = 'Cerrar consulta';
-        (window as any).logAppError?.('ticket_cerrar', 'Error de red al cerrar ticket', { detalle: err?.message, stack: err?.stack });
-      }
+      });
     });
   }
 
@@ -315,30 +307,26 @@ function crearTarjetaTicket(ticket: any): HTMLElement {
       const mensaje = txtArea.value.trim();
       errEl.textContent = '';
       if (!mensaje) { errEl.textContent = 'El mensaje no puede estar vacío.'; return; }
-      btn.disabled = true;
-      btn.textContent = 'Enviando…';
-      try {
-        const res  = await fetch('/api/tickets.php', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ticket_id: parseInt(ticket.id), alumno_id: userId, mensaje }),
-        });
-        const data = await res.json();
-        if (data.ok) {
-          sessionStorage.removeItem('umme_badge');
-          cargarTickets();
-        } else {
-          errEl.textContent = data.error || 'Error al enviar.';
-          btn.disabled = false;
-          btn.textContent = 'Enviar';
-          (window as any).logAppError?.('ticket_responder', 'Servidor rechazó respuesta ticket', { detalle: data.error || ('HTTP ' + res.status) });
+      await window.botonCargando(btn, 'Enviando…', async () => {
+        try {
+          const res  = await fetch('/api/tickets.php', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ticket_id: parseInt(ticket.id), alumno_id: userId, mensaje }),
+          });
+          const data = await res.json();
+          if (data.ok) {
+            sessionStorage.removeItem('umme_badge');
+            cargarTickets();
+          } else {
+            errEl.textContent = data.error || 'Error al enviar.';
+            window.logAppError?.('ticket_responder', 'Servidor rechazó respuesta ticket', { detalle: data.error || ('HTTP ' + res.status) });
+          }
+        } catch (err: any) {
+          errEl.textContent = 'Error de conexión.';
+          window.logAppError?.('ticket_responder', 'Error de red respondiendo ticket', { detalle: err?.message, stack: err?.stack });
         }
-      } catch (err: any) {
-        errEl.textContent = 'Error de conexión.';
-        btn.disabled = false;
-        btn.textContent = 'Enviar';
-        (window as any).logAppError?.('ticket_responder', 'Error de red respondiendo ticket', { detalle: err?.message, stack: err?.stack });
-      }
+      });
     });
   }
 

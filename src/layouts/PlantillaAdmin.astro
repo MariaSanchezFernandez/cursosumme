@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import '../styles/PlantillaAdmin.css';
 import Toast from '../components/Toast.astro';
+import BotonCargando from '../components/BotonCargando.astro';
 
 interface Props {
   titulo: string;
@@ -220,6 +221,9 @@ const { titulo, paginaActual } = Astro.props;
 
     <!-- Sistema global de toasts (window.mostrarToast / window.toast.*) -->
     <Toast />
+
+    <!-- Helper global de estado de carga en botones (window.botonCargando) -->
+    <BotonCargando />
 
   <script is:inline>
     var _s = {};

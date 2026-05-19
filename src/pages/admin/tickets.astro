@@ -231,35 +231,30 @@ function crearFilaTicket(ticket: any): HTMLElement {
 
       if (!mensaje) { msgEl.textContent = 'El mensaje no puede estar vacío.'; return; }
 
-      btn.disabled = true;
-      btn.textContent = 'Enviando…';
-
-      try {
-        const res  = await fetch('/api/tickets.php', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ticket_id: tid,
-            admin_id: adminId,
-            mensaje,
-            estado: selEst.value,
-          }),
-        });
-        const data = await res.json();
-        if (data.ok) {
-          cargarTickets();
-        } else {
-          msgEl.textContent = data.error || 'Error al enviar la respuesta.';
-          btn.disabled = false;
-          btn.textContent = 'Enviar respuesta';
-          (window as any).logAppError?.('ticket_admin_responder', 'Servidor rechazó respuesta admin', { detalle: data.error || ('HTTP ' + res.status) });
+      await window.botonCargando(btn, 'Enviando…', async () => {
+        try {
+          const res  = await fetch('/api/tickets.php', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ticket_id: tid,
+              admin_id: adminId,
+              mensaje,
+              estado: selEst.value,
+            }),
+          });
+          const data = await res.json();
+          if (data.ok) {
+            cargarTickets();
+          } else {
+            msgEl.textContent = data.error || 'Error al enviar la respuesta.';
+            window.logAppError?.('ticket_admin_responder', 'Servidor rechazó respuesta admin', { detalle: data.error || ('HTTP ' + res.status) });
+          }
+        } catch (err: any) {
+          msgEl.textContent = 'Error de conexión.';
+          window.logAppError?.('ticket_admin_responder', 'Error de red respondiendo ticket admin', { detalle: err?.message, stack: err?.stack });
         }
-      } catch (err: any) {
-        msgEl.textContent = 'Error de conexión.';
-        btn.disabled = false;
-        btn.textContent = 'Enviar respuesta';
-        (window as any).logAppError?.('ticket_admin_responder', 'Error de red respondiendo ticket admin', { detalle: err?.message, stack: err?.stack });
-      }
+      });
     });
   }
 
