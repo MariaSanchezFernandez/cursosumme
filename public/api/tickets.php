@@ -176,6 +176,17 @@ if ($method === 'PUT') {
 
     // Solo cambio de estado (alumno cierra ticket)
     if (isset($body['estado']) && !isset($body['mensaje'])) {
+        // Verificar que el ticket pertenece al usuario (o es admin)
+        if ($user['rol'] !== 'admin') {
+            $chkOwn = $pdo->prepare('SELECT usuario_id FROM tickets WHERE id = ?');
+            $chkOwn->execute([$ticketId]);
+            $ownerId = (int)$chkOwn->fetchColumn();
+            if ($ownerId !== (int)$user['id']) {
+                http_response_code(403);
+                echo json_encode(['ok' => false, 'error' => 'Acceso denegado']);
+                exit;
+            }
+        }
         $estadosValidos = ['abierto', 'respondido', 'cerrado'];
         $estado = in_array($body['estado'], $estadosValidos) ? $body['estado'] : null;
         if (!$estado) {

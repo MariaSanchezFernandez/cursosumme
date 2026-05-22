@@ -273,6 +273,11 @@
   color: #1d7a52;
 }
 
+.tema-btn.parcial .tema-icono {
+  background: #fff4d6;
+  color: #b07800;
+}
+
 .tema-btn.activo .tema-texto {
   font-weight: 600;
   color: var(--color-text);
@@ -487,6 +492,10 @@
   border-color: var(--curso-color, var(--color-primary));
   font-weight: 600;
   color: var(--color-text);
+}
+
+.video-playlist-item.visto {
+  background: color-mix(in srgb, var(--curso-color, var(--color-primary)) 12%, white);
 }
 
 .video-playlist-item svg {

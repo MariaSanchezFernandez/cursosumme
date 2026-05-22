@@ -42,7 +42,10 @@ require_once __DIR__ . '/db-connect.php';
 $pdo = obtenerPDO();
 
 $authStmt = $pdo->prepare(
-    'SELECT rol, email FROM usuarios WHERE id = :id AND token_sesion = :t AND token_expira > NOW()'
+    'SELECT u.rol, u.email FROM usuarios u
+     INNER JOIN sesiones s ON s.usuario_id = u.id
+     WHERE u.id = :id AND s.token = :t AND s.expira_en > NOW()
+     LIMIT 1'
 );
 $authStmt->execute([':id' => $usuarioId, ':t' => $token]);
 $authRow = $authStmt->fetch(PDO::FETCH_ASSOC);

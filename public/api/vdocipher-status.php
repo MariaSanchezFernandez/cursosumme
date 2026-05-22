@@ -38,7 +38,12 @@ if (!preg_match('/^[a-f0-9]{64}$/', $token)) {
 require_once __DIR__ . '/db-connect.php';
 $pdo = obtenerPDO();
 
-$stmt = $pdo->prepare("SELECT id FROM usuarios WHERE token_sesion = :t AND token_expira > NOW() AND rol = 'admin'");
+$stmt = $pdo->prepare(
+    "SELECT u.id FROM usuarios u
+     INNER JOIN sesiones s ON s.usuario_id = u.id
+     WHERE s.token = :t AND s.expira_en > NOW() AND u.rol = 'admin'
+     LIMIT 1"
+);
 $stmt->execute([':t' => $token]);
 if (!$stmt->fetchColumn()) {
     http_response_code(403);

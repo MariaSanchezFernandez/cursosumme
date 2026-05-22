@@ -5,7 +5,13 @@
       "Bash(curl -s \"http://cursosumme.es/api/leer-html.php?key=umme_s3tup_k3y_2025\" > /tmp/descripciones.json && echo \"OK $\\(wc -c < /tmp/descripciones.json\\) bytes\")",
       "Bash(python3 -c \"import secrets; print\\(secrets.token_urlsafe\\(32\\)\\)\")",
       "Bash(php -l /Users/mariasanchez/Desktop/cursosumme/public/api/restaurar-html.php)",
-      "Bash(curl -s \"http://cursosumme.es/api/restaurar-html.php?key=umme_s3tup_k3y_2025\")"
+      "Bash(curl -s \"http://cursosumme.es/api/restaurar-html.php?key=umme_s3tup_k3y_2025\")",
+      "Bash(grep -A 20 \"CREATE TABLE \\\\`progresos\\\\`\" /Users/mariasanchez/Desktop/cursosumme/backups/2026-05-22_08-17-04.sql)",
+      "Bash(curl -s \"http://cursosumme.es/api/migrar-progreso-materiales.php?key=umme_s3tup_k3y_2025\")",
+      "Bash(node -e \"require\\('dotenv'\\).config\\(\\); const fs=require\\('fs'\\); const c=fs.readFileSync\\('public/api/db-config.php','utf8'\\); const m=c.match\\(/define\\\\\\('SETUP_KEY',\\\\s*'\\([^']+\\)'\\\\\\)/\\); console.log\\(m[1]\\);\")",
+      "Bash(curl -s http://cursosumme.es/api/setup.php?key=__TRACKED_VAR__)",
+      "Bash(python3 -m json.tool)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(r['msg'], '-', 'OK' if r['ok'] else 'ERR'\\) for r in d.get\\('resultados',[]\\) if 'rate' in r['msg']]\")"
     ],
     "additionalDirectories": [
       "/tmp"

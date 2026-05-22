@@ -46,12 +46,18 @@ if (!$token || !preg_match('/^[a-f0-9]{64}$/', $token)) {
 // Si llega uid lo usamos (más específico); si no, buscamos solo por token
 if ($usuarioId > 0) {
     $stmt = $pdo->prepare(
-        "SELECT id FROM usuarios WHERE id = :uid AND token_sesion = :t AND token_expira > NOW() AND rol = 'admin'"
+        "SELECT u.id FROM usuarios u
+         INNER JOIN sesiones s ON s.usuario_id = u.id
+         WHERE u.id = :uid AND s.token = :t AND s.expira_en > NOW() AND u.rol = 'admin'
+         LIMIT 1"
     );
     $stmt->execute([':uid' => $usuarioId, ':t' => $token]);
 } else {
     $stmt = $pdo->prepare(
-        "SELECT id FROM usuarios WHERE token_sesion = :t AND token_expira > NOW() AND rol = 'admin'"
+        "SELECT u.id FROM usuarios u
+         INNER JOIN sesiones s ON s.usuario_id = u.id
+         WHERE s.token = :t AND s.expira_en > NOW() AND u.rol = 'admin'
+         LIMIT 1"
     );
     $stmt->execute([':t' => $token]);
 }

@@ -5,43 +5,417 @@ import '../styles/global.css';
 ---
 
 <Plantilla>
-  <!-- Cabecera pública -->
-  <header style="background:#fff; border-bottom:1px solid #e8eeec; padding:0.9rem 2rem; display:flex; align-items:center; gap:1rem;">
-    <a href="/" style="text-decoration:none; font-weight:800; font-size:1.05rem; color:#1a3a28;">
-      Cursos <span style="color:#2e7d55;">Umme</span>
+  <header class="cabecera-publica">
+    <a href="/" class="logo">
+      <span class="logo-marca">Cursos</span>
+      <span class="logo-umme">Umme</span>
     </a>
-    <nav style="margin-left:auto; display:flex; gap:1rem; align-items:center;">
-      <a href="/" style="font-size:0.85rem; color:#555; text-decoration:none; font-weight:500;">Inicio</a>
-      <a href="/precios" style="font-size:0.85rem; color:#2e7d55; text-decoration:none; font-weight:700;">Cursos</a>
+    <nav class="cabecera-nav">
+      <a href="/">Inicio</a>
+      <a href="/precios" class="activo">Cursos</a>
     </nav>
   </header>
 
-  <main style="max-width:900px; margin:0 auto; padding:3rem 1.5rem 5rem;">
-    <div style="text-align:center; margin-bottom:3rem;">
-      <h1 style="font-size:2rem; font-weight:800; color:#1a3a28; margin:0 0 0.75rem;">Formación para oposiciones</h1>
-      <p style="color:#666; font-size:1rem; margin:0;">Elige el curso que necesitas o accede a todo el contenido con un pack.</p>
+  <main class="contenido">
+    <div class="pagina-titulo">
+      <h1>Prepara tu oposición</h1>
+      <p>Temarios actualizados, vídeo explicativo y acceso desde cualquier dispositivo.</p>
     </div>
 
-    <!-- Packs -->
-    <div id="packs-section" style="margin-bottom:3rem;"></div>
+    <div id="loading" class="estado-carga">Cargando cursos…</div>
+    <div id="error" class="estado-error" style="display:none;"></div>
 
-    <!-- Cursos individuales -->
-    <h2 style="font-size:1.1rem; font-weight:700; color:#1a3a28; margin:0 0 1.25rem;">Cursos individuales</h2>
-    <div id="cursos-section" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:1.25rem;"></div>
+    <div id="packs-section"></div>
 
-    <div id="loading" style="text-align:center; padding:3rem; color:#aaa; font-size:0.9rem;">Cargando cursos…</div>
-    <div id="error"  style="display:none; text-align:center; padding:3rem; color:#c00; font-size:0.9rem;"></div>
+    <section id="cursos-section-wrap" style="display:none;">
+      <h2 class="seccion-titulo">Cursos individuales</h2>
+      <div id="cursos-section" class="cursos-grid"></div>
+    </section>
   </main>
 
   <PiePagina />
 </Plantilla>
 
+<style is:global>
+/* ── Cabecera ──────────────────────────────────────────────── */
+.cabecera-publica {
+  background: #fff;
+  border-bottom: 1px solid #e8eeec;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  padding: 0 2rem;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.logo {
+  display: flex;
+  align-items: baseline;
+  gap: 0.2rem;
+  text-decoration: none;
+}
+.logo-marca {
+  font-size: 0.9rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+.logo-umme {
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--color-text);
+}
+.cabecera-nav {
+  margin-left: auto;
+  display: flex;
+  gap: 1.5rem;
+}
+.cabecera-nav a {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  font-weight: 500;
+}
+.cabecera-nav a.activo {
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+/* ── Contenido ─────────────────────────────────────────────── */
+.contenido {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 5rem;
+  min-height: calc(100vh - 56px - 64px); /* 56px cabecera, 64px footer aprox */
+}
+
+/* ── Título de página ──────────────────────────────────────── */
+.pagina-titulo {
+  margin-bottom: 2.5rem;
+}
+.pagina-titulo h1 {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 800;
+  color: var(--color-text);
+  margin-bottom: 0.4rem;
+  letter-spacing: -0.02em;
+}
+.pagina-titulo p {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+/* ── Estados ───────────────────────────────────────────────── */
+.estado-carga {
+  text-align: center;
+  padding: 4rem 0;
+  color: #aaa;
+  font-size: 0.9rem;
+}
+.estado-error {
+  text-align: center;
+  padding: 3rem 0;
+  color: #c00;
+  font-size: 0.9rem;
+}
+
+/* ── Título de sección ─────────────────────────────────────── */
+.seccion-titulo {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  margin: 0 0 1rem;
+}
+
+/* ── Pack card ─────────────────────────────────────────────── */
+.packs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+}
+.pack-card {
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.pack-card:hover {
+  border-color: #c8c8c8;
+  box-shadow: var(--shadow-md);
+}
+.pack-acento {
+  height: 5px;
+  background: var(--color-primary);
+}
+.pack-body {
+  padding: 1.4rem 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+}
+.pack-badge {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--color-text-muted);
+}
+.pack-nombre {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--color-text);
+  line-height: 1.3;
+  margin: 0;
+}
+.pack-desc {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  margin: 0;
+  flex: 1;
+}
+.pack-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+.pack-precio {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--color-text);
+  line-height: 1;
+}
+.pack-precio span {
+  font-size: 0.95rem;
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+/* ── Curso card ────────────────────────────────────────────── */
+.cursos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+.curso-card {
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.curso-card:hover {
+  border-color: #c8c8c8;
+  box-shadow: var(--shadow-md);
+}
+.curso-fila {
+  display: flex;
+  align-items: stretch;
+  gap: 0.85rem;
+  padding: 1.1rem 1.2rem 1rem;
+  flex: 1;
+}
+.curso-acento {
+  flex-shrink: 0;
+  width: 4px;
+  align-self: stretch;
+  border-radius: 2px;
+}
+.curso-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.curso-etiqueta {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--color-text-muted);
+}
+.curso-titulo {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.4;
+  margin: 0;
+}
+.curso-meta {
+  font-size: 0.72rem;
+  color: #bbb;
+  margin-top: 0.1rem;
+}
+.curso-footer {
+  padding: 0 1.2rem 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.curso-precio {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+/* ── Botones ───────────────────────────────────────────────── */
+.btn-comprar {
+  background: var(--color-coral);
+  color: var(--color-text);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 1rem;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 800;
+  font-size: 0.82rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.btn-comprar:hover { opacity: 0.85; }
+
+/* ── Responsive ────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .cabecera-publica { padding: 0.85rem 1rem; }
+  .contenido { padding: 2rem 1rem 4rem; }
+  .pack-footer { flex-direction: column; align-items: flex-start; }
+  .btn-comprar { width: 100%; text-align: center; }
+}
+</style>
+
 <script>
-const PALETA = ['#b5d8cc','#b5c8e8','#d4c8e8','#e8d4b5','#e8c8b5','#c8e8b5'];
+const PALETA = ['#b3e8da','#b5c8e8','#d4c8e8','#fff8b7','#ffb5a7','#c8e8b5'];
+
+const PREVIEW_PACKS = [
+  { id: 1, nombre: 'Pack Oposiciones Completo', descripcion: 'Acceso a todos los cursos de la academia: temario, test y vídeos explicativos para las principales oposiciones de la Junta de Andalucía.', precio: '149.00' },
+  { id: 2, nombre: 'Pack Administración General', descripcion: 'Cuerpo General Administrativo y Auxiliar. Incluye todas las materias comunes y específicas actualizadas para la convocatoria vigente.', precio: '89.00' },
+];
+
+const PREVIEW_CURSOS = [
+  { id: 1, titulo: 'Derecho Constitucional', etiqueta: 'Materia común', precio: '39.00', color: '#b3e8da', num_temas: 14 },
+  { id: 2, titulo: 'Organización del Estado', etiqueta: 'Materia común', precio: '35.00', color: '#b5c8e8', num_temas: 10 },
+  { id: 3, titulo: 'Procedimiento Administrativo', etiqueta: 'Materia específica', precio: '39.00', color: '#d4c8e8', num_temas: 12 },
+  { id: 4, titulo: 'Ofimática e Informática', etiqueta: 'Materia específica', precio: '29.00', color: '#fff8b7', num_temas: 8 },
+];
+
+const esPreview = new URLSearchParams(location.search).has('preview');
+
+function renderizar(dataPacks: any, dataCursos: any) {
+  // ── Packs ─────────────────────────────────────────────────
+  const packsSection = document.getElementById('packs-section')!;
+  const packs = (dataPacks.packs ?? []).filter((p: any) => p.precio);
+  if (packs.length > 0) {
+    const titulo = document.createElement('h2');
+    titulo.className = 'seccion-titulo';
+    titulo.textContent = 'Packs';
+    packsSection.appendChild(titulo);
+
+    const grid = document.createElement('div');
+    grid.className = 'packs-grid';
+    packs.forEach((pack: any, idx: number) => {
+      const color = PALETA[idx % PALETA.length];
+      const card  = document.createElement('div');
+      card.className = 'pack-card';
+      card.innerHTML = `
+        <div class="pack-acento" style="background:${color};"></div>
+        <div class="pack-body">
+          <div class="pack-badge">Pack completo</div>
+          <h3 class="pack-nombre">${pack.nombre}</h3>
+          ${pack.descripcion ? `<p class="pack-desc">${pack.descripcion}</p>` : ''}
+          <div class="pack-footer">
+            <div class="pack-precio">${parseFloat(pack.precio).toFixed(2).replace('.',',')} <span>€</span></div>
+            <button class="btn-comprar" data-tipo="pack" data-id="${pack.id}">Comprar →</button>
+          </div>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+    packsSection.appendChild(grid);
+  }
+
+  // ── Cursos individuales ────────────────────────────────────
+  const wrap   = document.getElementById('cursos-section-wrap')!;
+  const grid   = document.getElementById('cursos-section')!;
+  const cursos = (dataCursos.cursos ?? []).filter((c: any) => c.precio);
+
+  wrap.style.display = 'block';
+  if (cursos.length > 0) {
+    cursos.forEach((curso: any, idx: number) => {
+      const color    = curso.color || PALETA[idx % PALETA.length];
+      const numTemas = Number(curso.num_temas ?? 0);
+      const card     = document.createElement('div');
+      card.className = 'curso-card';
+      card.innerHTML = `
+        <div class="curso-fila">
+          <div class="curso-acento" style="background:${color};"></div>
+          <div class="curso-info">
+            <div class="curso-etiqueta">${curso.etiqueta ?? ''}</div>
+            <h3 class="curso-titulo">${curso.titulo}</h3>
+            ${numTemas > 0 ? `<div class="curso-meta">${numTemas} tema${numTemas !== 1 ? 's' : ''}</div>` : ''}
+          </div>
+        </div>
+        <div class="curso-footer">
+          <span class="curso-precio">${parseFloat(curso.precio).toFixed(2).replace('.',',')} €</span>
+          <button class="btn-comprar" data-tipo="curso" data-id="${curso.id}">Comprar →</button>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  } else {
+    grid.innerHTML = '<p style="color:#aaa;font-size:0.85rem;">No hay cursos disponibles aún.</p>';
+  }
+
+  // ── Botones de compra ──────────────────────────────────────
+  document.addEventListener('click', async (e) => {
+    const btn = (e.target as HTMLElement).closest('.btn-comprar') as HTMLButtonElement | null;
+    if (!btn) return;
+    if (esPreview) {
+      window.mostrarToast('Modo preview — el pago no está activo', 'info');
+      return;
+    }
+    await window.botonCargando(btn, 'Redirigiendo…', async () => {
+      const res  = await fetch('/api/stripe-checkout.php', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ tipo: btn.dataset.tipo, id: Number(btn.dataset.id) }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        window.location.href = data.url;
+      } else {
+        window.mostrarToast(data.mensaje || 'Error al iniciar el pago', 'error');
+      }
+    });
+  });
+}
 
 async function cargar() {
   const loading = document.getElementById('loading')!;
   const errorEl = document.getElementById('error')!;
+
+  if (esPreview) {
+    loading.style.display = 'none';
+    renderizar({ packs: PREVIEW_PACKS }, { cursos: PREVIEW_CURSOS });
+    return;
+  }
 
   try {
     const [resCursos, resPacks] = await Promise.all([
@@ -51,91 +425,11 @@ async function cargar() {
     const dataCursos = await resCursos.json();
     const dataPacks  = await resPacks.json();
     loading.style.display = 'none';
-
-    // Packs
-    const packsSection = document.getElementById('packs-section')!;
-    const packs = (dataPacks.packs ?? []).filter((p: any) => p.precio);
-    if (packs.length > 0) {
-      packsSection.innerHTML = `<h2 style="font-size:1.1rem;font-weight:700;color:#1a3a28;margin:0 0 1.25rem;">Packs</h2>`;
-      const grid = document.createElement('div');
-      grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.25rem;margin-bottom:3rem;';
-      packs.forEach((pack: any) => {
-        const card = document.createElement('div');
-        card.style.cssText = 'background:#fff;border:1px solid #e8eeec;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.05);display:flex;flex-direction:column;';
-        card.innerHTML = `
-          <div style="background:#2e7d55;padding:1.25rem 1.5rem;">
-            <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.7);margin-bottom:0.3rem;">Pack completo</div>
-            <h3 style="margin:0;color:#fff;font-size:1rem;font-weight:700;">${pack.nombre}</h3>
-          </div>
-          <div style="padding:1.25rem 1.5rem;flex:1;display:flex;flex-direction:column;gap:0.75rem;">
-            ${pack.descripcion ? `<p style="margin:0;font-size:0.85rem;color:#666;line-height:1.6;">${pack.descripcion}</p>` : ''}
-            <div style="margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:0.75rem;">
-              <span style="font-size:1.5rem;font-weight:800;color:#1a3a28;">${parseFloat(pack.precio).toFixed(2).replace('.',',')} €</span>
-              <button class="btn-comprar" data-tipo="pack" data-id="${pack.id}"
-                style="background:#2e7d55;color:#fff;border:none;border-radius:8px;padding:0.6rem 1.25rem;font-weight:700;font-size:0.85rem;cursor:pointer;white-space:nowrap;">
-                Comprar pack →
-              </button>
-            </div>
-          </div>
-        `;
-        grid.appendChild(card);
-      });
-      packsSection.appendChild(grid);
-    }
-
-    // Cursos individuales
-    const cursosSection = document.getElementById('cursos-section')!;
-    const cursos = (dataCursos.cursos ?? []).filter((c: any) => c.precio);
-    if (cursos.length === 0) {
-      cursosSection.innerHTML = '<p style="color:#aaa;font-size:0.85rem;">No hay cursos individuales disponibles aún.</p>';
-    } else {
-      cursos.forEach((curso: any, idx: number) => {
-        const color = curso.color || PALETA[idx % PALETA.length];
-        const card  = document.createElement('div');
-        card.style.cssText = 'background:#fff;border:1px solid #e8eeec;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.05);display:flex;flex-direction:column;';
-        const numTemas = curso.num_temas ?? 0;
-        card.innerHTML = `
-          <div style="height:6px;background:${color};"></div>
-          <div style="padding:1.25rem 1.5rem;flex:1;display:flex;flex-direction:column;gap:0.5rem;">
-            <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#aaa;">${curso.etiqueta ?? ''}</div>
-            <h3 style="margin:0;font-size:0.95rem;font-weight:700;color:#1a3a28;line-height:1.4;">${curso.titulo}</h3>
-            ${numTemas > 0 ? `<div style="font-size:0.78rem;color:#aaa;">${numTemas} tema${numTemas !== 1 ? 's' : ''}</div>` : ''}
-            <div style="margin-top:auto;padding-top:0.75rem;display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
-              <span style="font-size:1.3rem;font-weight:800;color:#1a3a28;">${parseFloat(curso.precio).toFixed(2).replace('.',',')} €</span>
-              <button class="btn-comprar" data-tipo="curso" data-id="${curso.id}"
-                style="background:#2e7d55;color:#fff;border:none;border-radius:8px;padding:0.5rem 1rem;font-weight:700;font-size:0.82rem;cursor:pointer;">
-                Comprar →
-              </button>
-            </div>
-          </div>
-        `;
-        cursosSection.appendChild(card);
-      });
-    }
-
-    // Botones de compra
-    document.addEventListener('click', async (e) => {
-      const btn = (e.target as HTMLElement).closest('.btn-comprar') as HTMLButtonElement | null;
-      if (!btn) return;
-      await window.botonCargando(btn, 'Redirigiendo…', async () => {
-        const res  = await fetch('/api/stripe-checkout.php', {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ tipo: btn.dataset.tipo, id: Number(btn.dataset.id) }),
-        });
-        const data = await res.json();
-        if (data.ok) {
-          window.location.href = data.url;
-        } else {
-          window.mostrarToast(data.mensaje || 'Error al iniciar el pago', 'error');
-        }
-      });
-    });
-
+    renderizar(dataPacks, dataCursos);
   } catch {
     loading.style.display = 'none';
     errorEl.style.display = 'block';
-    errorEl.textContent   = 'Error al cargar los cursos. Inténtalo de nuevo.';
+    errorEl.textContent = 'Error al cargar los cursos. Inténtalo de nuevo.';
   }
 }
 
