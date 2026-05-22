@@ -205,13 +205,18 @@ function normalizarRte(html: string): string {
   const tmp = document.createElement('div');
   tmp.innerHTML = html;
 
-  // Quitar atributos de estilo inline y class de todos los elementos
-  tmp.querySelectorAll<HTMLElement>('[style], [class], [color], [face], [size]').forEach(el => {
+  // Quitar style/class solo de elementos inline que genera el contenteditable
+  // (span, font, b, i) — conservar style en divs y elementos de layout intencionales
+  tmp.querySelectorAll<HTMLElement>('span, font, b, i').forEach(el => {
     el.removeAttribute('style');
     el.removeAttribute('class');
     el.removeAttribute('color');
     el.removeAttribute('face');
     el.removeAttribute('size');
+  });
+  // Quitar class de elementos de bloque (pero NO el style — puede ser intencional)
+  tmp.querySelectorAll<HTMLElement>('[class]').forEach(el => {
+    el.removeAttribute('class');
   });
 
   // <font> → desenvolver (quitar el tag, conservar contenido)
@@ -237,8 +242,10 @@ function normalizarRte(html: string): string {
   });
 
   // Chrome envuelve párrafos en <div>; convertir a <p> solo si no contiene bloques
+  // y NO tiene style (un div con style es intencional, no artefacto del contenteditable)
   const BLOQUES = 'ul, ol, h2, h3, h4, blockquote, p, div';
   tmp.querySelectorAll<HTMLElement>(':scope > div').forEach(div => {
+    if (div.hasAttribute('style')) return; // div de layout intencional, conservar
     if (div.querySelector(BLOQUES)) {
       while (div.firstChild) div.parentNode!.insertBefore(div.firstChild, div);
       div.remove();

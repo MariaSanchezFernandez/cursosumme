@@ -155,6 +155,25 @@ const { titulo, paginaActual } = Astro.props;
       };
     </script>
 
+    <!-- Interceptor fetch: añade X-Token automáticamente a todas las llamadas /api/ -->
+    <script is:inline>
+    (function () {
+      var _origFetch = window.fetch.bind(window);
+      window.fetch = function (url, opts) {
+        try {
+          var urlStr = typeof url === 'string' ? url : (url instanceof URL ? url.toString() : '');
+          if (urlStr.startsWith('/api/')) {
+            var s = {};
+            try { s = JSON.parse(sessionStorage.getItem('umme_session') || '{}'); } catch (e) {}
+            opts = opts ? Object.assign({}, opts) : {};
+            opts.headers = Object.assign({ 'X-Token': s.token || '' }, opts.headers || {});
+          }
+        } catch (e) {}
+        return _origFetch(url, opts);
+      };
+    })();
+    </script>
+
   <script is:inline>
     var _s = {};
     try {

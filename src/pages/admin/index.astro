@@ -108,10 +108,11 @@ async function cargarDashboard() {
   try {
     const s: any = (() => { try { return JSON.parse(sessionStorage.getItem('umme_session') || '{}'); } catch { return {}; } })();
 
+    const authH = { 'X-Token': s.token || '' };
     const [resAlumnos, resCursos, resTickets] = await Promise.all([
-      fetch('/api/alumnos.php'),
-      fetch('/api/cursos.php'),
-      s.userId ? fetch('/api/tickets.php?admin=1&usuario_id=' + s.userId) : Promise.resolve(null),
+      fetch('/api/alumnos.php',  { headers: authH }),
+      fetch('/api/cursos.php',   { headers: authH }),
+      s.userId ? fetch('/api/tickets.php?admin=1&usuario_id=' + s.userId, { headers: authH }) : Promise.resolve(null),
     ]);
     const [dataAlumnos, dataCursos, dataTickets] = await Promise.all([
       resAlumnos.json(),
