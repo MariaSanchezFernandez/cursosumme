@@ -1,14 +1,15 @@
 <?php
 // ─────────────────────────────────────────────────────────────
 // api/cambiar-password.php
-// POST { usuario_id, password_nueva, actor_id? }  →  {ok, mensaje}
-// Si actor_id != usuario_id → reset por admin (queda en logs).
+// POST { usuario_id, password_nueva }  →  {ok, mensaje}
+// Cambio propio: usuario autenticado == usuario_id
+// Reset por admin: usuario autenticado con rol admin, usuario_id distinto
 // ─────────────────────────────────────────────────────────────
 
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Headers: Content-Type, X-Token');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
@@ -18,20 +19,35 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$body      = json_decode(file_get_contents('php://input'), true);
-$userId    = isset($body['usuario_id']) ? (int)$body['usuario_id'] : 0;
-$actorId   = isset($body['actor_id'])   ? (int)$body['actor_id']   : $userId;
-$nuevaPwd  = trim($body['password_nueva'] ?? '');
+require_once __DIR__ . '/db-connect.php';
+require_once __DIR__ . '/log-helper.php';
+$pdo  = obtenerPDO();
+$user = requireAuth($pdo);
 
-if (!$userId || strlen($nuevaPwd) < 6) {
+$body     = json_decode(file_get_contents('php://input'), true);
+$userId   = isset($body['usuario_id']) ? (int)$body['usuario_id'] : 0;
+$nuevaPwd = trim($body['password_nueva'] ?? '');
+
+if (!$userId) {
     http_response_code(400);
-    echo json_encode(['ok' => false, 'mensaje' => 'La contraseña debe tener al menos 6 caracteres.']);
+    echo json_encode(['ok' => false, 'mensaje' => 'Falta usuario_id']);
     exit;
 }
 
-require_once __DIR__ . '/db-connect.php';
-require_once __DIR__ . '/log-helper.php';
-$pdo = obtenerPDO();
+// Propio cambio o reset por admin
+if ($userId !== (int)$user['id'] && $user['rol'] !== 'admin') {
+    http_response_code(403);
+    echo json_encode(['ok' => false, 'mensaje' => 'No tienes permiso para cambiar esta contraseña']);
+    exit;
+}
+
+if (strlen($nuevaPwd) < 8) {
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'mensaje' => 'La contraseña debe tener al menos 8 caracteres.']);
+    exit;
+}
+
+$actorId = (int)$user['id'];
 
 $hash = password_hash($nuevaPwd, PASSWORD_BCRYPT, ['cost' => 12]);
 $stmt = $pdo->prepare('UPDATE usuarios SET contrasena = :hash WHERE id = :id');

@@ -22,6 +22,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+require_once __DIR__ . '/db-connect.php';
+require_once __DIR__ . '/log-helper.php';
+$pdo = obtenerPDO();
+requireAdmin($pdo);
+
 $uploadId    = $_GET['upload_id']             ?? '';
 $chunkIndex  = isset($_GET['chunk_index'])    ? (int)$_GET['chunk_index']  : -1;
 $totalChunks = isset($_GET['total_chunks'])   ? (int)$_GET['total_chunks'] : 0;
@@ -154,10 +159,6 @@ if (!rename($partPath, $rutaFisica)) {
 }
 
 // Registrar en base de datos
-require_once __DIR__ . '/db-connect.php';
-require_once __DIR__ . '/log-helper.php';
-$pdo = obtenerPDO();
-
 $tamanoKb = (int)ceil($partSize / 1024);
 $pdo->prepare(
     'INSERT INTO materiales (tema_id, tipo, nombre, ruta, tamano_kb, duracion_seg)

@@ -8,13 +8,14 @@
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Headers: Content-Type, X-Token');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
 require_once __DIR__ . '/db-connect.php';
 require_once __DIR__ . '/log-helper.php';
-$pdo = obtenerPDO();
+$pdo  = obtenerPDO();
+$user = requireAuth($pdo);
 
 $metodo = $_SERVER['REQUEST_METHOD'];
 
@@ -37,6 +38,7 @@ if ($metodo === 'GET') {
 
 // ── PUT (renombrar / reordenar) ───────────────────────────────
 if ($metodo === 'PUT') {
+    if ($user['rol'] !== 'admin') { http_response_code(403); echo json_encode(['ok' => false, 'mensaje' => 'Acceso denegado']); exit; }
     $body = json_decode(file_get_contents('php://input'), true);
 
     // Reordenar: recibe { accion:'reordenar', ids:[1,2,3,...] }
@@ -69,6 +71,7 @@ if ($metodo === 'PUT') {
 
 // ── DELETE ───────────────────────────────────────────────────
 if ($metodo === 'DELETE') {
+    if ($user['rol'] !== 'admin') { http_response_code(403); echo json_encode(['ok' => false, 'mensaje' => 'Acceso denegado']); exit; }
     $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
     if (!$id) {
         $body = json_decode(file_get_contents('php://input'), true);

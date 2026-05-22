@@ -9,7 +9,7 @@
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Headers: Content-Type, X-Token');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
@@ -21,11 +21,7 @@ $metodo = $_SERVER['REQUEST_METHOD'];
 
 // ── GET ──────────────────────────────────────────────────────
 if ($metodo === 'GET') {
-    // duracion_seg = suma de duracion_seg de cada material en cada
-    // tema del curso. Se usa una subquery porque hacer LEFT JOIN a
-    // materiales junto al de temas multiplicaría filas y rompería
-    // el COUNT(t.id) AS num_temas.
-    // Modo público: solo cursos activos con precio para la página de precios
+    // Modo público: solo cursos activos con precio para la página de precios (sin auth)
     if (!empty($_GET['publicos'])) {
         $stmt = $pdo->query(
             'SELECT c.id, c.titulo, c.etiqueta, c.color, c.imagen, c.precio, c.stripe_price_id,
@@ -39,6 +35,8 @@ if ($metodo === 'GET') {
         echo json_encode(['ok' => true, 'cursos' => $stmt->fetchAll()]);
         exit;
     }
+
+    requireAdmin($pdo);
 
     $cursos = $pdo->query(
         'SELECT c.id, c.titulo, c.descripcion, c.etiqueta, c.nivel, c.duracion, c.pack, c.pack_color, c.color, c.imagen, c.activo, c.creado_en,
@@ -87,6 +85,7 @@ if ($metodo === 'GET') {
 
 // ── POST ─────────────────────────────────────────────────────
 if ($metodo === 'POST') {
+    requireAdmin($pdo);
     $body = json_decode(file_get_contents('php://input'), true);
 
     // ── Duplicar curso ──────────────────────────────────────
@@ -198,6 +197,7 @@ if ($metodo === 'POST') {
 
 // ── PUT ──────────────────────────────────────────────────────
 if ($metodo === 'PUT') {
+    requireAdmin($pdo);
     $body = json_decode(file_get_contents('php://input'), true);
     if (empty($body['id'])) {
         http_response_code(400);
@@ -232,6 +232,7 @@ if ($metodo === 'PUT') {
 
 // ── DELETE ───────────────────────────────────────────────────
 if ($metodo === 'DELETE') {
+    requireAdmin($pdo);
     $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
     if (!$id) {
         http_response_code(400);

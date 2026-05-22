@@ -163,6 +163,15 @@ ejecutar($pdo, "CREATE TABLE IF NOT EXISTS errores (
     INDEX idx_err_usuario (usuario_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", 'tabla errores', $resultados);
 
+// ── Rate limiting genérico ────────────────────────────────────
+ejecutar($pdo, "CREATE TABLE IF NOT EXISTS api_rate_limits (
+    ip             VARCHAR(45)  NOT NULL,
+    endpoint       VARCHAR(100) NOT NULL,
+    intentos       INT          NOT NULL DEFAULT 1,
+    ventana_inicio DATETIME     NOT NULL,
+    PRIMARY KEY (ip, endpoint)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", 'tabla api_rate_limits', $resultados);
+
 // ── Índices (mejoran rendimiento en JOINs y filtros frecuentes) ──
 ejecutar($pdo, 'ALTER TABLE usuarios_cursos ADD INDEX IF NOT EXISTS idx_uc_usuario (usuario_id)', 'índice usuarios_cursos.usuario_id', $resultados);
 ejecutar($pdo, 'ALTER TABLE usuarios_cursos ADD INDEX IF NOT EXISTS idx_uc_curso   (curso_id)',   'índice usuarios_cursos.curso_id', $resultados);

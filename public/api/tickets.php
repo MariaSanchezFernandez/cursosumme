@@ -3,7 +3,7 @@ header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Headers: Content-Type, X-Token');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(204);
@@ -12,7 +12,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once __DIR__ . '/db-connect.php';
 require_once __DIR__ . '/log-helper.php';
-$pdo = obtenerPDO();
+$pdo  = obtenerPDO();
+$user = requireAuth($pdo);
 
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -21,17 +22,10 @@ if ($method === 'GET') {
 
     // Admin: todos los tickets con info del alumno
     if (isset($_GET['admin'])) {
-        // Verificar que el solicitante es realmente admin
-        $adminId = isset($_GET['usuario_id']) ? (int)$_GET['usuario_id'] : 0;
-        if ($adminId) {
-            $chk = $pdo->prepare("SELECT rol FROM usuarios WHERE id = ?");
-            $chk->execute([$adminId]);
-            $rol = $chk->fetchColumn();
-            if ($rol !== 'admin') {
-                http_response_code(403);
-                echo json_encode(['ok' => false, 'error' => 'Acceso denegado']);
-                exit;
-            }
+        if ($user['rol'] !== 'admin') {
+            http_response_code(403);
+            echo json_encode(['ok' => false, 'error' => 'Acceso denegado']);
+            exit;
         }
         try {
             $stmt = $pdo->query("
@@ -85,6 +79,11 @@ if ($method === 'GET') {
     // Alumno: sus propios tickets
     if (isset($_GET['usuario_id'])) {
         $usuarioId = (int)$_GET['usuario_id'];
+        if ($usuarioId !== (int)$user['id'] && $user['rol'] !== 'admin') {
+            http_response_code(403);
+            echo json_encode(['ok' => false, 'error' => 'Acceso denegado']);
+            exit;
+        }
         try {
             $stmt = $pdo->prepare("
                 SELECT id, usuario_id, asunto, mensaje, estado, creado_en
@@ -136,14 +135,15 @@ if ($method === 'GET') {
 
 // ── POST: crear ticket ────────────────────────────────────────────────────────
 if ($method === 'POST') {
-    $body = json_decode(file_get_contents('php://input'), true);
-    $usuarioId = isset($body['usuario_id']) ? (int)$body['usuario_id'] : 0;
-    $asunto    = isset($body['asunto'])     ? trim($body['asunto'])     : '';
-    $mensaje   = isset($body['mensaje'])    ? trim($body['mensaje'])    : '';
+    rateLimit($pdo, 'tickets_post', 5);
+    $body      = json_decode(file_get_contents('php://input'), true);
+    $usuarioId = (int)$user['id'];
+    $asunto    = sanitizeText($body['asunto']  ?? '', 200);
+    $mensaje   = sanitizeText($body['mensaje'] ?? '', 5000);
 
-    if (!$usuarioId || $asunto === '' || $mensaje === '') {
+    if ($asunto === '' || $mensaje === '') {
         http_response_code(400);
-        echo json_encode(['ok' => false, 'error' => 'Faltan campos: usuario_id, asunto, mensaje']);
+        echo json_encode(['ok' => false, 'error' => 'Faltan campos: asunto y mensaje']);
         exit;
     }
 
@@ -196,8 +196,11 @@ if ($method === 'PUT') {
 
     // Alumno responde (reply en conversación)
     if (isset($body['alumno_id']) && isset($body['mensaje']) && !isset($body['admin_id'])) {
-        $alumnoId = (int)$body['alumno_id'];
-        $mensaje  = trim($body['mensaje']);
+        $alumnoId = (int)$user['id'];
+        if ($alumnoId !== (int)$body['alumno_id'] && $user['rol'] !== 'admin') {
+            http_response_code(403); echo json_encode(['ok' => false, 'error' => 'Acceso denegado']); exit;
+        }
+        $mensaje  = sanitizeText($body['mensaje'] ?? '', 5000);
         if (!$alumnoId || $mensaje === '') {
             http_response_code(400);
             echo json_encode(['ok' => false, 'error' => 'Faltan campos: alumno_id, mensaje']);
@@ -221,8 +224,11 @@ if ($method === 'PUT') {
     }
 
     // Admin responde + actualiza estado
-    $adminId = isset($body['admin_id']) ? (int)$body['admin_id'] : 0;
-    $mensaje  = isset($body['mensaje'])  ? trim($body['mensaje'])  : '';
+    if ($user['rol'] !== 'admin') {
+        http_response_code(403); echo json_encode(['ok' => false, 'error' => 'Acceso denegado']); exit;
+    }
+    $adminId = (int)$user['id'];
+    $mensaje  = sanitizeText($body['mensaje'] ?? '', 5000);
     $estado   = isset($body['estado'])   ? $body['estado']         : 'respondido';
 
     $estadosValidos = ['abierto', 'respondido', 'cerrado'];
@@ -260,6 +266,9 @@ if ($method === 'PUT') {
 
 // ── DELETE: eliminar ticket ───────────────────────────────────
 if ($method === 'DELETE') {
+    if ($user['rol'] !== 'admin') {
+        http_response_code(403); echo json_encode(['ok' => false, 'error' => 'Acceso denegado']); exit;
+    }
     $ticketId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
     if (!$ticketId) {
         http_response_code(400);

@@ -14,7 +14,7 @@
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Token');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
@@ -23,6 +23,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['ok' => false, 'mensaje' => 'Método no permitido']);
     exit;
 }
+
+require_once __DIR__ . '/db-connect.php';
+require_once __DIR__ . '/log-helper.php';
+$pdo = obtenerPDO();
+requireAdmin($pdo);
 
 $temaId      = isset($_GET['tema_id'])        ? (int)$_GET['tema_id']       : 0;
 $tipo        = $_GET['tipo']                   ?? '';
@@ -128,10 +133,6 @@ if ($errorEscritura || $totalBytes === 0) {
 }
 
 $tamanoKb = (int)ceil($totalBytes / 1024);
-
-require_once __DIR__ . '/db-connect.php';
-require_once __DIR__ . '/log-helper.php';
-$pdo = obtenerPDO();
 
 $durSegPersistir = ($tipo === 'video' && $duracionSeg > 0) ? $duracionSeg : null;
 $pdo->prepare(
