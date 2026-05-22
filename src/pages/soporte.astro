@@ -92,7 +92,8 @@ const s = (() => {
   try { return JSON.parse(sessionStorage.getItem('umme_session') || '{}'); } catch { return {}; }
 })();
 
-const userId = parseInt(s.userId) || 0;
+const userId    = parseInt(s.userId) || 0;
+const userToken = s.token || '';
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
 const overlay        = document.getElementById('modalOverlay') as HTMLElement;
@@ -162,7 +163,7 @@ btnEnviar.addEventListener('click', async () => {
     try {
       const res  = await fetch('/api/tickets.php', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Token': userToken },
         body: JSON.stringify({ usuario_id: userId, asunto, mensaje }),
       });
       const data = await res.json();
@@ -183,7 +184,7 @@ btnEnviar.addEventListener('click', async () => {
 // ── Cargar tickets ────────────────────────────────────────────────────────────
 async function cargarTickets() {
   try {
-    const res  = await fetch(`/api/tickets.php?usuario_id=${userId}`);
+    const res  = await fetch(`/api/tickets.php?usuario_id=${userId}`, { headers: { 'X-Token': userToken } });
     const data = await res.json();
 
     estadoCargando.style.display = 'none';
@@ -305,7 +306,7 @@ function crearTarjetaTicket(ticket: any): HTMLElement {
         try {
           const res  = await fetch('/api/tickets.php', {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-Token': userToken },
             body: JSON.stringify({ ticket_id: parseInt(ticket.id), estado: 'cerrado' }),
           });
           const data = await res.json();
@@ -337,7 +338,7 @@ function crearTarjetaTicket(ticket: any): HTMLElement {
         try {
           const res  = await fetch('/api/tickets.php', {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'X-Token': userToken },
             body: JSON.stringify({ ticket_id: parseInt(ticket.id), alumno_id: userId, mensaje }),
           });
           const data = await res.json();

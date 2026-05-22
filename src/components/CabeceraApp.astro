@@ -93,7 +93,7 @@ import '../styles/CabeceraApp.css';
       if (Date.now() < hasta) { if (valor) badge.style.display = 'block'; return; }
     }
     try {
-      const res  = await fetch(`/api/tickets.php?usuario_id=${s.userId}`);
+      const res  = await fetch(`/api/tickets.php?usuario_id=${s.userId}`, { headers: { 'X-Token': s.token || '' } });
       const data = await res.json();
       if (!data.ok) return;
       const hayRespuesta = (data.tickets || []).some((t: any) => t.estado === 'respondido');

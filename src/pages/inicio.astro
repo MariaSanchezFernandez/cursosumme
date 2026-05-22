@@ -175,9 +175,9 @@ const videoPlayer      = document.getElementById('videoPlayer') as HTMLVideoElem
 const videoPlaceholder = document.getElementById('videoPlaceholder')!;
 const videoBox         = videoPlaceholder.closest('.video-box') as HTMLElement;
 const videoTitulo      = document.getElementById('videoTitulo')!;
-const vdoWrapper        = document.getElementById('vdoWrapper')    as HTMLElement;
-const vdoPlayer         = document.getElementById('vdoPlayer')     as HTMLIFrameElement;
-const vdoProcesando     = document.getElementById('vdoProcesando') as HTMLElement;
+const vdoWrapper        = document.getElementById('vdoWrapper')         as HTMLElement;
+const vdoContainer      = document.getElementById('vdoPlayerContainer') as HTMLElement;
+const vdoProcesando     = document.getElementById('vdoProcesando')      as HTMLElement;
 const materialesLista  = document.getElementById('materialesLista')!;
 const videoPlaylist    = document.getElementById('videoPlaylist') as HTMLElement;
 const panelIntro       = document.getElementById('panelIntro')!;
@@ -199,70 +199,56 @@ function stripHtml(html: string, maxLen = 110): string {
   return text.length > maxLen ? text.slice(0, maxLen) + '…' : text;
 }
 
-// Normaliza el HTML que produce el contenteditable del admin.
+// Sanitiza el HTML de descripciones: lista blanca estricta de tags y atributos.
+// Ningún style ni class puede escaparse al layout global.
 function normalizarRte(html: string): string {
   if (!html?.trim()) return '';
   const tmp = document.createElement('div');
   tmp.innerHTML = html;
 
-  // Quitar style/class solo de elementos inline que genera el contenteditable
-  // (span, font, b, i) — conservar style en divs y elementos de layout intencionales
-  tmp.querySelectorAll<HTMLElement>('span, font, b, i').forEach(el => {
-    el.removeAttribute('style');
-    el.removeAttribute('class');
-    el.removeAttribute('color');
-    el.removeAttribute('face');
-    el.removeAttribute('size');
-  });
-  // Quitar class de elementos de bloque (pero NO el style — puede ser intencional)
-  tmp.querySelectorAll<HTMLElement>('[class]').forEach(el => {
-    el.removeAttribute('class');
-  });
+  // Tags que se eliminan con todo su contenido
+  const BORRAR = new Set(['script', 'style', 'iframe', 'object', 'embed', 'noscript', 'form', 'input', 'button']);
+  // Tags permitidos → atributos seguros que pueden conservar
+  const SAFE: Record<string, string[]> = {
+    p: [], strong: [], em: [], u: [], s: [], br: [],
+    ul: [], ol: [], li: [],
+    h2: [], h3: [], h4: [],
+    blockquote: [],
+    a: ['href'],
+  };
 
-  // <font> → desenvolver (quitar el tag, conservar contenido)
-  tmp.querySelectorAll('font').forEach(el => {
-    el.replaceWith(...Array.from(el.childNodes));
-  });
+  function limpiar(el: Element): void {
+    // Post-order: sanear hijos antes que el padre
+    Array.from(el.children).forEach(limpiar);
 
-  // <span> → desenvolver salvo que no tenga contenido relevante
-  tmp.querySelectorAll('span').forEach(el => {
-    el.replaceWith(...Array.from(el.childNodes));
-  });
+    const tag = el.tagName.toLowerCase();
 
-  // <b> → <strong>, <i> → <em>
-  tmp.querySelectorAll('b').forEach(el => {
-    const s = document.createElement('strong');
-    s.innerHTML = el.innerHTML;
-    el.replaceWith(s);
-  });
-  tmp.querySelectorAll('i').forEach(el => {
-    const e = document.createElement('em');
-    e.innerHTML = el.innerHTML;
-    el.replaceWith(e);
-  });
+    if (BORRAR.has(tag)) { el.remove(); return; }
 
-  // Chrome envuelve párrafos en <div>; convertir a <p> solo si no contiene bloques
-  // y NO tiene style (un div con style es intencional, no artefacto del contenteditable)
-  const BLOQUES = 'ul, ol, h2, h3, h4, blockquote, p, div';
-  tmp.querySelectorAll<HTMLElement>(':scope > div').forEach(div => {
-    if (div.hasAttribute('style')) return; // div de layout intencional, conservar
-    if (div.querySelector(BLOQUES)) {
-      while (div.firstChild) div.parentNode!.insertBefore(div.firstChild, div);
-      div.remove();
+    if (tag in SAFE) {
+      // Quitar todos los atributos no permitidos (style, class, onclick, data-*, etc.)
+      Array.from(el.attributes).forEach(attr => {
+        if (!SAFE[tag].includes(attr.name)) el.removeAttribute(attr.name);
+      });
+      // Evitar href javascript: o data:
+      if (tag === 'a') {
+        const href = (el.getAttribute('href') || '').trim();
+        if (/^javascript:/i.test(href) || /^data:/i.test(href)) el.removeAttribute('href');
+      }
     } else {
-      const p = document.createElement('p');
-      p.innerHTML = div.innerHTML;
-      div.replaceWith(p);
+      // Tag no permitido (div, span, font, b, i, table, img…): desenvolver, sus hijos ya están limpios
+      el.replaceWith(...Array.from(el.childNodes));
     }
+  }
+
+  Array.from(tmp.children).forEach(limpiar);
+
+  // Eliminar elementos de bloque vacíos
+  tmp.querySelectorAll('p, h2, h3, h4, li, blockquote').forEach(el => {
+    if (!el.textContent?.trim() && !el.querySelector('br')) el.remove();
   });
 
-  // Eliminar párrafos/divs vacíos (solo <br>, &nbsp; o espacios)
-  tmp.querySelectorAll('p, div').forEach(el => {
-    const t = el.innerHTML.trim().replace(/&nbsp;/g, '').replace(/<br\s*\/?>/gi, '').trim();
-    if (t === '' && !el.querySelector('img')) el.remove();
-  });
-
-  // &nbsp; → espacio normal en nodos de texto
+  // Normalizar &nbsp; → espacio en nodos de texto
   const walk = (node: Node) => {
     if (node.nodeType === Node.TEXT_NODE) {
       node.textContent = (node.textContent || '').replace(/ /g, ' ');
@@ -272,7 +258,7 @@ function normalizarRte(html: string): string {
   };
   walk(tmp);
 
-  // Eliminar <br> sueltos al principio y al final
+  // Quitar <br> sueltos al inicio y al final
   while (tmp.firstChild instanceof HTMLBRElement) tmp.firstChild.remove();
   while (tmp.lastChild  instanceof HTMLBRElement) tmp.lastChild.remove();
 
@@ -442,7 +428,7 @@ function registrarVideoVisto() {
   marcarPlaylistItemVisto(materialActualId);
   fetch('/api/progreso.php', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-Token': sesion.token || '' },
     body: JSON.stringify({ usuario_id: sesion.userId, material_id: materialActualId, tema_id: temaActualId }),
   }).then(r => r.json()).then(data => {
     if (!data.ok) return;
@@ -465,9 +451,10 @@ window.addEventListener('message', (e) => {
 
 async function cargarCursos() {
   try {
+    const authHeaders = { 'X-Token': sesion.token || '' };
     const [resCursos, resProgreso] = await Promise.all([
-      fetch(`/api/mis-cursos.php?usuario_id=${sesion.userId}`),
-      fetch(`/api/progreso.php?usuario_id=${sesion.userId}`),
+      fetch(`/api/mis-cursos.php?usuario_id=${sesion.userId}`, { headers: authHeaders }),
+      fetch(`/api/progreso.php?usuario_id=${sesion.userId}`,   { headers: authHeaders }),
     ]);
     const data     = await resCursos.json();
     const dataProg = await resProgreso.json();
@@ -805,7 +792,7 @@ function ocultarReproductores() {
   videoPlayer.src             = '';
   videoPlayer.style.display   = 'none';
   vdoWrapper.style.display    = 'none';
-  vdoPlayer.src               = '';
+  vdoContainer.innerHTML      = '';
   vdoProcesando.style.display = 'none';
 }
 
@@ -822,8 +809,13 @@ async function reproducirVideo(videoMat: any) {
       const data = await res.json();
       if (data.ok) {
         vdoWrapper.style.display = 'block';
-        const playerParam = data.player ? `&player=${encodeURIComponent(data.player)}` : '';
-        vdoPlayer.src = `https://player.vdocipher.com/v2/?otp=${encodeURIComponent(data.otp)}&playbackInfo=${encodeURIComponent(data.playbackInfo)}${playerParam}`;
+        vdoContainer.innerHTML   = '';
+        const vdoEl = document.createElement('vdocipher-player');
+        vdoEl.setAttribute('otp',          data.otp);
+        vdoEl.setAttribute('playbackInfo', data.playbackInfo);
+        if (data.player) vdoEl.setAttribute('player', data.player);
+        vdoEl.style.cssText = 'width:100%;height:100%;display:block;';
+        vdoContainer.appendChild(vdoEl);
       }
     } else {
       vdoProcesando.style.display = 'block';

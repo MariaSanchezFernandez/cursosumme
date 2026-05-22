@@ -11,9 +11,35 @@ import Modal from '../components/Modal.astro';
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
     <title>Cursos Umme</title>
-    <script defer src="https://player.vdocipher.com/v2/api.js"></script>
+    <script data-cfasync="false" data-no-defer="1" src="https://player.vdocipher.com/v2/player.js"></script>
   </head>
   <body>
+    <!-- Interceptor global: añade X-Token a todas las llamadas /api/ automáticamente -->
+    <script is:inline>
+    (function () {
+      var _fetch = window.fetch;
+      window.fetch = function (url, opts) {
+        if (typeof url === 'string' && url.startsWith('/api/')) {
+          try {
+            var s = JSON.parse(sessionStorage.getItem('umme_session') || '{}');
+            var t = s.token || '';
+            if (t) {
+              opts = opts ? Object.assign({}, opts) : {};
+              var h = opts.headers
+                ? (opts.headers instanceof Headers
+                    ? opts.headers
+                    : Object.assign({}, opts.headers))
+                : {};
+              if (!h['X-Token']) h['X-Token'] = t;
+              opts.headers = h;
+            }
+          } catch (e) {}
+        }
+        return _fetch.call(this, url, opts);
+      };
+    })();
+    </script>
+
     <!-- Hidratar sesión "Recordarme": copiar localStorage → sessionStorage si la sesión sigue vigente -->
     <script is:inline>
     (function () {
