@@ -55,7 +55,7 @@ import PiePagina from '../components/PiePagina.astro';
 
       <!-- Lista de tickets -->
       <div id="listaTickets">
-        <div class="sp-cargando" id="estadoCargando">Cargando tus consultas…</div>
+        <div class="sp-cargando" id="estadoCargando">Un momento, cargando tus consultas…</div>
       </div>
 
     </div>
@@ -106,16 +106,42 @@ const formError      = document.getElementById('formError') as HTMLElement;
 const listaTickets   = document.getElementById('listaTickets') as HTMLElement;
 const estadoCargando = document.getElementById('estadoCargando') as HTMLElement;
 
+let openerModal: HTMLElement | null = null;
+
+function trapTeclas(e: KeyboardEvent) {
+  if (e.key === 'Escape') { e.preventDefault(); cerrarModal(); return; }
+  if (e.key === 'Tab') {
+    const focusables = overlay.querySelectorAll<HTMLElement>(
+      'button, input, select, textarea, a[href], [tabindex]:not([tabindex="-1"])'
+    );
+    if (!focusables.length) return;
+    const primero = focusables[0];
+    const ultimo  = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === primero) {
+      e.preventDefault(); ultimo.focus();
+    } else if (!e.shiftKey && document.activeElement === ultimo) {
+      e.preventDefault(); primero.focus();
+    }
+  }
+}
+
 function abrirModal() {
+  openerModal = document.activeElement as HTMLElement;
   overlay.classList.add('activo');
+  overlay.addEventListener('keydown', trapTeclas);
   inputAsunto.focus();
 }
 
 function cerrarModal() {
   overlay.classList.remove('activo');
-  inputAsunto.value  = '';
-  inputMensaje.value = '';
+  overlay.removeEventListener('keydown', trapTeclas);
+  inputAsunto.value     = '';
+  inputMensaje.value    = '';
   formError.textContent = '';
+  if (openerModal && document.body.contains(openerModal)) {
+    try { openerModal.focus(); } catch {}
+  }
+  openerModal = null;
 }
 
 btnNueva.addEventListener('click', abrirModal);
@@ -144,7 +170,7 @@ btnEnviar.addEventListener('click', async () => {
         cerrarModal();
         cargarTickets();
       } else {
-        formError.textContent = data.error || 'Error al enviar la consulta.';
+        formError.textContent = data.error || 'No se pudo enviar la consulta. Inténtalo de nuevo.';
         window.logAppError?.('ticket_crear', 'Servidor rechazó crear ticket', { detalle: data.error || ('HTTP ' + res.status) });
       }
     } catch (err: any) {
@@ -186,7 +212,7 @@ async function cargarTickets() {
     const badge = document.getElementById('soporteBadge') as HTMLElement | null;
     if (badge) badge.style.display = hayRespondido ? 'block' : 'none';
   } catch {
-    estadoCargando.textContent = 'Error al cargar las consultas.';
+    estadoCargando.textContent = 'No se pudieron cargar tus consultas. Recarga la página.';
   }
 }
 
@@ -319,11 +345,11 @@ function crearTarjetaTicket(ticket: any): HTMLElement {
             sessionStorage.removeItem('umme_badge');
             cargarTickets();
           } else {
-            errEl.textContent = data.error || 'Error al enviar.';
+            errEl.textContent = data.error || 'No se pudo enviar. Inténtalo de nuevo.';
             window.logAppError?.('ticket_responder', 'Servidor rechazó respuesta ticket', { detalle: data.error || ('HTTP ' + res.status) });
           }
         } catch (err: any) {
-          errEl.textContent = 'Error de conexión.';
+          errEl.textContent = 'Sin conexión. Comprueba tu red e inténtalo de nuevo.';
           window.logAppError?.('ticket_responder', 'Error de red respondiendo ticket', { detalle: err?.message, stack: err?.stack });
         }
       });

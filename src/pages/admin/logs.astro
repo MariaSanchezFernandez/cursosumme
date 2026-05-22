@@ -40,8 +40,14 @@ import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
       </thead>
       <tbody id="logs-tbody"></tbody>
     </table>
-    <div id="logs-vacio" style="display:none; padding:2rem 1.5rem; color:#aaa; font-size:0.85rem;">
-      No hay registros aún.
+    <div id="logs-vacio" class="estado-vacio" style="display:none;">
+      <svg viewBox="0 0 48 48" fill="none" width="48" height="48" aria-hidden="true">
+        <circle cx="24" cy="24" r="20" stroke="#c8dcd3" stroke-width="2"/>
+        <rect x="16" y="14" width="16" height="20" rx="2" stroke="#c8dcd3" stroke-width="1.8"/>
+        <path d="M20 21h8M20 25h8M20 29h5" stroke="#c8dcd3" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      <p class="estado-vacio-titulo">Sin registros aún</p>
+      <p class="estado-vacio-sub">Los accesos y actividad de los alumnos aparecerán aquí</p>
     </div>
   </div>
 

@@ -59,10 +59,14 @@ import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
 
   <div id="contenido-cursos"></div>
 
-  <div id="estado-vacio" style="display:none; padding:3rem; text-align:center; background:#fff;
-    border:1px dashed #ddd; border-radius:14px; color:#aaa; font-size:0.85rem;">
-    No hay cursos aún.
-    <a href="/admin/cursos/crear-curso" style="color:inherit; font-weight:600;">Crear el primero →</a>
+  <div id="estado-vacio" class="estado-vacio" style="display:none; background:#fff; border:1.5px dashed #d4e8e0; border-radius:14px;">
+    <svg viewBox="0 0 48 48" fill="none" width="48" height="48" aria-hidden="true">
+      <circle cx="24" cy="24" r="20" stroke="#c8dcd3" stroke-width="2"/>
+      <path d="M15 18h18M15 24h18M15 30h11" stroke="#c8dcd3" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <p class="estado-vacio-titulo">Aún no hay ningún curso</p>
+    <p class="estado-vacio-sub">Crea el primero para empezar a organizar el contenido</p>
+    <a href="/admin/cursos/crear-curso" class="estado-vacio-cta">Crear primer curso</a>
   </div>
 
 </PlantillaAdmin>
@@ -561,10 +565,10 @@ function renderizarCursos(filtro: string) {
           });
           const data = await res.json();
           if (data.ok) {
-            window.mostrarToast(`"${titulo}" duplicado correctamente`, 'success');
+            window.mostrarToast(`"${titulo}" duplicado`, 'success');
             await cargarCursos();
           } else {
-            window.mostrarToast(data.mensaje || 'Error al duplicar el curso', 'error');
+            window.mostrarToast(data.mensaje || 'No se pudo duplicar el curso', 'error');
           }
         });
       });
@@ -628,7 +632,7 @@ function renderizarCursos(filtro: string) {
             actualizarSelectorPacks();
             window.mostrarToast(`"${titulo}" eliminado`, 'success');
           } else {
-            window.mostrarToast(data.mensaje || 'Error al eliminar el curso', 'error');
+            window.mostrarToast(data.mensaje || 'No se pudo eliminar el curso', 'error');
           }
         });
       });

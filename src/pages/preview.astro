@@ -12,6 +12,8 @@
 // Cuando esté pulido el pack "polish UX", esta página se puede
 // borrar o dejar como referencia interna.
 import Plantilla from '../layouts/Plantilla.astro';
+import CampoFormulario from '../components/CampoFormulario.astro';
+import Boton from '../components/Boton.astro';
 ---
 
 <Plantilla>
@@ -227,6 +229,215 @@ import Plantilla from '../layouts/Plantilla.astro';
         </button>
       </div>
     </section>
+
+    <!-- ─── Focus management en modales ─────────────────────── -->
+
+    <section class="prev-section">
+      <h2>6. Focus management en modales</h2>
+      <p class="prev-section-desc">
+        Verifica los tres comportamientos: <strong>Tab</strong> no escapa del modal,
+        <strong>Escape</strong> cierra, y al cerrar el <strong>foco vuelve</strong>
+        al botón que lo abrió (observa el anillo de foco en el botón tras cerrar).
+      </p>
+
+      <div class="prev-grid">
+        <button class="prev-btn prev-btn-neutral" id="prevFocusModal">
+          Abrir modal de prueba
+        </button>
+      </div>
+
+      <!-- Modal de prueba (mismo patrón que soporte.astro) -->
+      <div id="prevModalFocusOverlay" style="display:none; position:fixed; inset:0; z-index:9000;
+        background:rgba(0,0,0,0.45); align-items:center; justify-content:center; padding:1.5rem;">
+        <div role="dialog" aria-modal="true" aria-labelledby="prevFocusTitulo"
+          style="background:#fff; border-radius:14px; border:1.5px solid var(--color-primary);
+            box-shadow:0 16px 48px rgba(0,0,0,0.18); padding:1.5rem; width:100%; max-width:420px;
+            display:flex; flex-direction:column; gap:1rem;">
+          <h2 id="prevFocusTitulo" style="font-size:1rem; font-weight:800; margin:0;">
+            Modal de prueba de foco
+          </h2>
+          <p style="font-size:0.85rem; color:var(--color-text-muted); margin:0; line-height:1.5;">
+            Pulsa <kbd style="background:#f0f4f2; border:1px solid #dde8e4; border-radius:4px;
+              padding:0.1em 0.4em; font-size:0.8em;">Tab</kbd> para comprobar que el foco no sale
+            del modal. Pulsa
+            <kbd style="background:#f0f4f2; border:1px solid #dde8e4; border-radius:4px;
+              padding:0.1em 0.4em; font-size:0.8em;">Escape</kbd> para cerrar.
+          </p>
+          <input id="prevFocusInput1" type="text" placeholder="Campo 1 (Tab aquí)"
+            style="padding:0.65rem 0.85rem; border:1.5px solid var(--color-primary);
+              border-radius:8px; font-family:inherit; font-size:0.9rem; outline:none;" />
+          <input id="prevFocusInput2" type="text" placeholder="Campo 2 (Tab aquí)"
+            style="padding:0.65rem 0.85rem; border:1.5px solid var(--color-primary);
+              border-radius:8px; font-family:inherit; font-size:0.9rem; outline:none;" />
+          <div style="display:flex; gap:0.6rem; justify-content:flex-end;">
+            <button id="prevFocusCancelar" class="prev-btn prev-btn-neutral"
+              style="width:auto; padding:0.55rem 1rem;">Cancelar</button>
+            <button id="prevFocusAceptar" class="prev-btn prev-btn-coral"
+              style="width:auto; padding:0.55rem 1rem;">Aceptar</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="prevFocusResult" style="margin-top:1rem; font-size:0.82rem;
+        color:var(--color-text-muted); min-height:1.2em;"></div>
+    </section>
+
+    <!-- ─── Estados vacíos ──────────────────────────────────── -->
+
+    <section class="prev-section">
+      <h2>6. Estados vacíos</h2>
+      <p class="prev-section-desc">
+        Patrón para listas sin datos: icono SVG suave + título + subtexto + CTA opcional.
+        El mismo lenguaje cromático en todas las páginas.
+      </p>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:1rem;">
+
+        <!-- Cursos (admin) -->
+        <div style="border:1.5px dashed #d4e8e0; border-radius:14px; background:#fff;">
+          <div class="estado-vacio">
+            <svg viewBox="0 0 48 48" fill="none" width="48" height="48" aria-hidden="true">
+              <circle cx="24" cy="24" r="20" stroke="#c8dcd3" stroke-width="2"/>
+              <path d="M15 18h18M15 24h18M15 30h11" stroke="#c8dcd3" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <p class="estado-vacio-titulo">Aún no hay ningún curso</p>
+            <p class="estado-vacio-sub">Crea el primero para empezar a organizar el contenido</p>
+            <a href="#" class="estado-vacio-cta" onclick="return false">Crear primer curso</a>
+          </div>
+        </div>
+
+        <!-- Alumnos (admin) -->
+        <div style="border:1.5px dashed #d4e8e0; border-radius:14px; background:#fff;">
+          <div class="estado-vacio">
+            <svg viewBox="0 0 48 48" fill="none" width="48" height="48" aria-hidden="true">
+              <circle cx="24" cy="24" r="20" stroke="#c8dcd3" stroke-width="2"/>
+              <circle cx="24" cy="20" r="5" stroke="#c8dcd3" stroke-width="1.8"/>
+              <path d="M13 37c0-6.1 4.9-10 11-10s11 3.9 11 10" stroke="#c8dcd3" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <p class="estado-vacio-titulo">Aún no hay alumnos</p>
+            <p class="estado-vacio-sub">Crea el primero para que puedan acceder a los cursos</p>
+            <a href="#" class="estado-vacio-cta" onclick="return false">Crear primer alumno</a>
+          </div>
+        </div>
+
+        <!-- Sin errores (positivo) -->
+        <div style="border:1.5px dashed #d4e8e0; border-radius:14px; background:#fff;">
+          <div class="estado-vacio">
+            <svg viewBox="0 0 48 48" fill="none" width="48" height="48" aria-hidden="true">
+              <circle cx="24" cy="24" r="20" stroke="var(--color-primary)" stroke-width="2"/>
+              <path d="M15 24l7 7 11-14" stroke="var(--color-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <p class="estado-vacio-titulo">Sin errores registrados</p>
+            <p class="estado-vacio-sub">¡Todo en orden!</p>
+          </div>
+        </div>
+
+        <!-- Temas (editar curso) -->
+        <div style="border:1.5px dashed #d4e8e0; border-radius:14px; background:#fff;">
+          <div class="estado-vacio">
+            <svg viewBox="0 0 48 48" fill="none" width="48" height="48" aria-hidden="true">
+              <circle cx="24" cy="24" r="20" stroke="#c8dcd3" stroke-width="2"/>
+              <path d="M13 22l11-6 11 6-11 6-11-6z" stroke="#c8dcd3" stroke-width="1.8" stroke-linejoin="round"/>
+              <path d="M13 28l11 6 11-6" stroke="#c8dcd3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <p class="estado-vacio-titulo">Este curso no tiene temas</p>
+            <p class="estado-vacio-sub">Pulsa "Añadir tema" para empezar a estructurar el contenido</p>
+          </div>
+        </div>
+
+        <!-- Sin cursos (alumno) -->
+        <div style="border:1.5px dashed #d4e8e0; border-radius:14px; background:#fff;">
+          <div class="estado-vacio">
+            <svg viewBox="0 0 48 48" fill="none" width="48" height="48" aria-hidden="true">
+              <circle cx="24" cy="24" r="20" stroke="#c8dcd3" stroke-width="2"/>
+              <path d="M15 18h18M15 24h18M15 30h11" stroke="#c8dcd3" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <p class="estado-vacio-titulo">Aún no tienes cursos</p>
+            <p class="estado-vacio-sub">Tu administrador te asignará los cursos en breve</p>
+          </div>
+        </div>
+
+        <!-- Logs -->
+        <div style="border:1.5px dashed #d4e8e0; border-radius:14px; background:#fff;">
+          <div class="estado-vacio">
+            <svg viewBox="0 0 48 48" fill="none" width="48" height="48" aria-hidden="true">
+              <circle cx="24" cy="24" r="20" stroke="#c8dcd3" stroke-width="2"/>
+              <rect x="16" y="14" width="16" height="20" rx="2" stroke="#c8dcd3" stroke-width="1.8"/>
+              <path d="M20 21h8M20 25h8M20 29h5" stroke="#c8dcd3" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            <p class="estado-vacio-titulo">Sin registros aún</p>
+            <p class="estado-vacio-sub">Los accesos y actividad de los alumnos aparecerán aquí</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ─── Estados de error en campos ──────────────────────── -->
+
+    <section class="prev-section">
+      <h2>6. Estados de error en formularios</h2>
+      <p class="prev-section-desc">
+        Prop <code>error="mensaje"</code> en <code>CampoFormulario</code>:
+        borde coral, icono aviso y texto bajo el campo. El helper global
+        <code>window.enfocarPrimerError(form)</code> mueve el foco al
+        primer campo con error al hacer submit.
+      </p>
+
+      <h3 class="prev-subtitulo">Campos con error (estático, prop SSR)</h3>
+      <div style="max-width:380px;">
+        <CampoFormulario
+          label="Email"
+          type="email"
+          id="prev-email-err"
+          name="email"
+          placeholder="tucorreo@ejemplo.com"
+          error="Introduce un email válido"
+        />
+        <CampoFormulario
+          label="Contraseña"
+          type="password"
+          id="prev-pwd-err"
+          name="password"
+          placeholder="••••••••"
+          error="La contraseña es obligatoria"
+        />
+        <CampoFormulario
+          label="Nombre (sin error)"
+          type="text"
+          id="prev-nombre-ok"
+          name="nombre"
+          placeholder="Tu nombre"
+        />
+      </div>
+
+      <h3 class="prev-subtitulo" style="margin-top:1.75rem;">
+        Interactivo: validar al enviar + enfocarPrimerError
+      </h3>
+      <p class="prev-section-desc">
+        El formulario valida al submit y llama a
+        <code>window.enfocarPrimerError(form)</code>.
+      </p>
+      <div style="max-width:380px;">
+        <form id="prevFormError" novalidate>
+          <CampoFormulario
+            label="Email"
+            type="email"
+            id="prev-f-email"
+            name="email"
+            placeholder="tucorreo@ejemplo.com"
+          />
+          <CampoFormulario
+            label="Contraseña"
+            type="password"
+            id="prev-f-pwd"
+            name="password"
+            placeholder="••••••••"
+          />
+          <Boton text="Enviar (deja campos vacíos)" type="submit" />
+        </form>
+      </div>
+    </section>
   </main>
 </Plantilla>
 
@@ -364,6 +575,102 @@ import Plantilla from '../layouts/Plantilla.astro';
     if (!datos) return window.toast.info('Operación cancelada');
     window.toast.success('Guardado: precio=' + (datos.precio || '—') + ', stripe=' + (datos.stripe || '—'));
   });
+
+  // ── 6. Focus management en modales ────────────────────────
+  (function () {
+    var overlay   = document.getElementById('prevModalFocusOverlay');
+    var btnAbrir  = document.getElementById('prevFocusModal');
+    var btnCerrar = document.getElementById('prevFocusCancelar');
+    var btnAceptar= document.getElementById('prevFocusAceptar');
+    var resultado = document.getElementById('prevFocusResult');
+    var opener    = null;
+
+    function trapTeclas(e) {
+      if (e.key === 'Escape') { e.preventDefault(); cerrar('Cerrado con Escape ✓'); return; }
+      if (e.key === 'Tab') {
+        var focusables = overlay.querySelectorAll('button, input, [tabindex]:not([tabindex="-1"])');
+        var primero = focusables[0];
+        var ultimo  = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === primero) {
+          e.preventDefault(); ultimo.focus();
+        } else if (!e.shiftKey && document.activeElement === ultimo) {
+          e.preventDefault(); primero.focus();
+        }
+      }
+    }
+
+    function abrir() {
+      opener = document.activeElement;
+      overlay.style.display = 'flex';
+      overlay.addEventListener('keydown', trapTeclas);
+      document.getElementById('prevFocusInput1').focus();
+      resultado.textContent = '';
+    }
+
+    function cerrar(msg) {
+      overlay.style.display = 'none';
+      overlay.removeEventListener('keydown', trapTeclas);
+      document.getElementById('prevFocusInput1').value = '';
+      document.getElementById('prevFocusInput2').value = '';
+      if (opener && document.body.contains(opener)) {
+        try { opener.focus(); } catch(e) {}
+      }
+      if (msg) resultado.textContent = msg + ' — foco devuelto al botón que lo abrió ✓';
+      opener = null;
+    }
+
+    btnAbrir.addEventListener('click', abrir);
+    btnCerrar.addEventListener('click', function () { cerrar('Cerrado con Cancelar ✓'); });
+    btnAceptar.addEventListener('click', function () { cerrar('Cerrado con Aceptar ✓'); });
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) cerrar('Cerrado con clic en fondo ✓'); });
+  }());
+
+  // ── 7. Error en formulario ────────────────────────────────
+  (function () {
+    var form = document.getElementById('prevFormError');
+    if (!form) return;
+
+    function setError(id, msg) {
+      var field = form.querySelector('#' + id)?.closest('.field');
+      if (!field) return;
+      field.classList.toggle('field--error', !!msg);
+      var span = field.querySelector('.field-error-msg');
+      if (span) {
+        var txt = span.querySelector('svg') ? span.querySelector('svg').outerHTML : '';
+        span.innerHTML = txt + (msg || '');
+      }
+    }
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var email = form.querySelector('#prev-f-email').value.trim();
+      var pwd   = form.querySelector('#prev-f-pwd').value;
+
+      setError('prev-f-email', email ? '' : 'El email es obligatorio');
+      setError('prev-f-pwd',   pwd   ? '' : 'La contraseña es obligatoria');
+
+      var hayError = !email || !pwd;
+      if (hayError) {
+        window.enfocarPrimerError(form);
+      } else {
+        window.toast.success('Formulario enviado correctamente');
+        setError('prev-f-email', '');
+        setError('prev-f-pwd', '');
+      }
+    });
+
+    // Limpiar error al empezar a escribir
+    form.querySelectorAll('input').forEach(function (input) {
+      input.addEventListener('input', function () {
+        var field = input.closest('.field');
+        if (field) {
+          field.classList.remove('field--error');
+          var span = field.querySelector('.field-error-msg');
+          if (span) { var svg = span.querySelector('svg'); span.innerHTML = svg ? svg.outerHTML : ''; }
+        }
+      });
+    });
+  }());
 
   // ── 3. Combinado: botón cargando + toast ───────────────────
   document.getElementById('prevComboOk').addEventListener('click', async function (e) {

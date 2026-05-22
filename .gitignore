@@ -20,6 +20,9 @@ tests/.auth/
 .DS_Store
 Thumbs.db
 
+# Backups de base de datos
+backups/
+
 # Logs
 *.log
 npm-debug.log*

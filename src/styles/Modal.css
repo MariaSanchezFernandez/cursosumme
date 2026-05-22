@@ -31,7 +31,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1.5rem;
+  padding: var(--space-3);
   background: rgba(0, 0, 0, 0.45);
   animation: modal-backdrop-in 180ms ease-out;
 }
@@ -68,9 +68,9 @@
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-2);
 }
-.modal-campo:last-of-type { margin-bottom: 1.5rem; }
+.modal-campo:last-of-type { margin-bottom: var(--space-3); }
 
 .modal-campo label {
   font-size: 0.85rem;
@@ -81,7 +81,7 @@
 .modal-input {
   padding: 0.65rem 0.85rem;
   border: 1.5px solid var(--color-primary);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-family: 'DM Sans', sans-serif;
   font-size: 0.95rem;
   color: var(--color-text);

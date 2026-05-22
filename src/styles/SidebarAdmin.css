@@ -1,0 +1,193 @@
+/*
+ * COMPONENTE: SidebarAdmin
+ * ------------------------
+ * Estilos del sidebar de navegación del panel admin:
+ * logo, nav, footer con perfil, overlay móvil y botón hamburguesa.
+ */
+
+/* ── Sidebar ── */
+.sidebar {
+  flex: 0 0 224px;
+  background: #fff;
+  border-right: 1px solid #e4ede9;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  box-shadow: 2px 0 12px rgba(0,0,0,0.04);
+}
+
+.sidebar-logo {
+  padding: 1.5rem 1.5rem 1.25rem;
+  border-bottom: 1px solid #f0f5f2;
+}
+
+.sidebar-logo a {
+  text-decoration: none;
+  display: flex;
+  align-items: baseline;
+  gap: 0.2rem;
+}
+
+.sidebar-logo .logo-marca {
+  font-size: 0.88rem;
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.sidebar-logo .logo-umme {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.sidebar-seccion {
+  padding: 1.25rem 0 0.5rem;
+}
+
+.sidebar-seccion-label {
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #c0c8c4;
+  padding: 0 1.25rem 0.6rem;
+}
+
+.sidebar-nav {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-nav li a {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.65rem 1.25rem;
+  font-size: 0.83rem;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  margin-right: 0.75rem;
+  transition: background 0.12s, color 0.12s;
+}
+
+.sidebar-nav li a svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+.sidebar-nav li a:hover {
+  background: #f2faf7;
+  color: var(--color-text);
+}
+
+.sidebar-nav li a.activo {
+  background: var(--color-light);
+  color: var(--color-text);
+  font-weight: 700;
+  border-left-color: var(--color-primary);
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid #f0f5f2;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.sidebar-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sidebar-avatar svg { width: 17px; height: 17px; }
+
+.sidebar-usuario-info { flex: 1; min-width: 0; }
+
+.sidebar-usuario-nombre {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-text);
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-usuario-rol {
+  font-size: 0.66rem;
+  color: var(--color-text-muted);
+}
+
+/* ── Botón menú móvil (hamburguesa) ── */
+.btn-menu-mobile {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-right: 0.6rem;
+  border: 1px solid #e4ede9;
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--color-text);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.12s, border-color 0.12s;
+}
+.btn-menu-mobile:hover { background: var(--color-light); border-color: var(--color-primary); }
+.btn-menu-mobile svg { width: 20px; height: 20px; }
+
+/* ── Overlay del drawer (oscurece el fondo en móvil) ── */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 80;
+  opacity: 0;
+  transition: opacity 0.22s ease;
+}
+.sidebar-overlay.activo {
+  display: block;
+  opacity: 1;
+}
+
+/* ── Responsive tablet ── */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .sidebar { flex: 0 0 196px; }
+}
+
+/* ── Responsive móvil ── */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 84vw;
+    max-width: 320px;
+    z-index: 90;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    box-shadow: 4px 0 18px rgba(0,0,0,0.18);
+  }
+
+  .sidebar.abierto { transform: translateX(0); }
+  .btn-menu-mobile { display: inline-flex; }
+  .sidebar-nav li a { min-height: 44px; }
+}

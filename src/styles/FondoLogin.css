@@ -115,3 +115,32 @@
   50%  { transform: translateY(-30px) rotate(2deg);  }
   100% { transform: translateY(0px)   rotate(-2deg); }
 }
+
+/* ── Tablet (769–1024px) ── */
+@media (max-width: 1024px) {
+  .balloon { display: none; }
+  .cloud-4 { width: 260px; }
+}
+
+/* ── Móvil (≤480px) ── */
+@media (max-width: 480px) {
+  .cloud-1 { width: 150px; }
+  .cloud-2 { width: 140px; }
+  .cloud-3 { width: 180px; }
+  .cloud-4 { display: none; }
+  .cloud-5 { width: 160px; }
+  .cloud-6 { width: 140px; }
+  .birds-1 { width: 90px; }
+  .birds-2 { width: 70px; }
+  .birds-3 { display: none; }
+}
+
+/* ── Sin animaciones (accesibilidad) ── */
+@media (prefers-reduced-motion: reduce) {
+  .cloud-1, .cloud-2, .cloud-3, .cloud-4,
+  .cloud-5, .cloud-6, .birds-1, .birds-2, .birds-3 {
+    animation: none;
+    display: none;
+  }
+  .balloon { animation: none; }
+}

@@ -1,222 +1,64 @@
 # TODO — CursosUmme
 
-Organizado en dos bloques: **Hecho** (lo que ya está en producción o
-mergeado) y **Pendiente** (próximos pasos). Dentro de cada bloque,
-agrupado por área para mantener el contexto.
+Lo completado está en [DONE.md](DONE.md).
 
 ---
 
-## Hecho
+## UX del alumno
 
-### Funcionalidad
+Auditoría completa realizada el 2026-05-20. Hallazgos organizados por impacto.
 
-- [x] Barra de progreso real en subida de vídeos (XMLHttpRequest con
-  `progress` event).
-- [x] UI para reordenar temas mediante drag & drop (columna `orden` ya
-  existe en BD).
+### Alta prioridad
 
-### Panel admin
+- [ ] **FOUC en login**: el formulario aparece un flash antes de que el script compruebe si hay sesión activa. Ocultar `.login-page` por defecto en CSS y mostrarla solo si no hay sesión (`index.astro` script inline).
+- [ ] **Progreso guardado en silencio**: cuando termina un vídeo, el POST a `/api/progreso.php` falla sin decirle nada al alumno. Mostrar toast "✓ Progreso guardado" si va bien, y advertencia si falla (`inicio.astro` ~línea 295).
+- [ ] **Foto de perfil desincronizada en cabecera**: al cambiar foto en `/perfil`, el header sigue mostrando la antigua hasta recargar (cache `umme_foto` en sessionStorage no se invalida). Limpiar cache tras subida exitosa (`CabeceraApp.astro` + `perfil.astro`).
+- [ ] **Badge de soporte con TTL innecesario**: el badge tiene cache de 5 min en sessionStorage — si el admin responde, el alumno no lo ve hasta que expire. Eliminar TTL, refrescar siempre al cargar tickets (`CabeceraApp.astro` línea ~100).
+- [x] **Nombre largo rompe el header en mobile**: `.avatar-nombre` sin truncamiento → overflow en pantallas pequeñas. Añadir `max-width` + `text-overflow: ellipsis` (`CabeceraApp.astro` / su CSS).
+- [x] **Volver al listado en mobile poco visible**: en móvil al abrir un curso el listado desaparece. El botón `#btnVolver` existe pero no es suficientemente prominente. Hacer más visible o añadir breadcrumb `Mis cursos › Nombre curso` (`inicio.astro` + `inicio.css`).
 
-- [x] Búsqueda / filtro de cursos en el listado admin.
-- [x] Estadísticas por curso: alumnos inscritos y % progreso medio en la
-  tarjeta del listado admin.
+### Experiencia dentro del curso
 
-### Robustez de uploads
+- [ ] **Sin animación al completar un tema**: cuando el vídeo termina, el check ✓ aparece en el sidebar sin ninguna transición. Añadir una animación pequeña (fade + scale) al cambiar el icono de ▶ a ✓ para que el alumno perciba claramente que su progreso quedó guardado.
+- [ ] **Sin feedback de guardado de progreso**: el POST a `/api/progreso.php` ocurre en silencio. Si falla, el alumno pierde el progreso sin saberlo. Mostrar toast "✓ Progreso guardado" al éxito y advertencia si falla (`inicio.astro` ~línea 295).
+- [ ] **Sin forma de volver a la intro del curso**: una vez que abres un tema, la pantalla de intro (descripción + índice) desaparece y no hay botón para recuperarla. Añadir un item "Presentación" o "Inicio del curso" al principio del sidebar de temas.
+- [ ] **Sidebar de temas sin scroll visible**: si hay muchos temas, no hay indicador de que se puede scrollear. Añadir `overflow-y: auto` con scrollbar siempre visible o un fade-out en el borde inferior.
+- [ ] **Playlist poco visible cuando hay múltiples vídeos**: los botones de la playlist quedan debajo del reproductor y no es obvio que existen. Mejorar su diseño y posición.
+- [ ] **Sin indicador de carga al cambiar de vídeo en la playlist**: al cambiar entre vídeos no hay transición, parece que el clic no hizo nada. Añadir spinner o estado de "Cargando vídeo…" entre cambios.
 
-Tras el incidente del 2026-04-29, los uploads de vídeo y documento
-fallaban con "No se pudo guardar el archivo en el servidor". Causa
-confirmada (2026-05-01): IONOS escribe primero en `/tmp` y luego copia
-al servidor web, necesitando el doble de espacio temporalmente —
-excedía la cuota de la cuenta. Solución aplicada: raw body streaming
-(`php://input` → destino directo, sin `/tmp`). Ver
-`feedback-uploads.md`.
+### Media prioridad
 
-- [x] **Raw body streaming en uploads**: vídeos y documentos se
-  escriben directamente al destino sin pasar por `/tmp`, eliminando el
-  doble-write que causaba los fallos.
-- [x] **Limpieza automática de archivos temporales**: `upload-chunk.php`
-  borra archivos `.part` huérfanos (>6 h) al iniciar cada nuevo upload.
-  Ya no existe el directorio `.tmp-uploads/`.
-- [x] **Indicador de cuota en el dashboard**: card con nº de archivos en
-  `uploads/` vs. límite de inodos de IONOS (262.144), barra
-  verde/ámbar/rojo.
+- [ ] **Sin feedback de vídeo procesando en VdoCipher**: si `vdo_status !== 'ready'` se muestra "procesando…" pero sin polling — el alumno nunca sabe cuándo estará listo. Hacer polling a `/api/vdocipher-status.php` cada 10 s y mostrar toast al completar (`PanelDetalleTabs.astro`).
+- [ ] **Sin fallback si VdoCipher falla**: si el iframe no carga, el área queda vacía. Añadir mensaje "No pudimos cargar el vídeo. Recarga o contacta con soporte" (`PanelDetalleTabs.astro`).
+- [ ] **Cerrar ticket sin aclarar consecuencias**: el modal de confirmación no avisa que no se podrá reabrir. Mejorar el texto (`soporte.astro`).
+- [ ] **Validación de nueva contraseña débil**: se acepta "123456". Añadir mínimo 8 caracteres y al menos 1 número (`perfil.astro` + `cambiar-password.php`).
 
-### UX y usabilidad
+### Baja prioridad
 
-- [x] **Sistema de toasts reutilizable** (2026-05-04): componente
-  `src/components/Toast.astro` + `src/styles/Toast.css` montado en
-  `Plantilla.astro` y `PlantillaAdmin.astro`. API global
-  `window.mostrarToast(mensaje, tipo, duracion?)` y alias
-  `toast.success/error/info/warning(...)`. 4 tipos con la paleta Umme
-  (turquesa, coral, amarillo/oro, blanco-con-borde). Auto-cierre 4 s,
-  pausa al hover, cierre con ×, accesible (`role=status` +
-  `aria-live`). Tipos declarados en `src/env.d.ts`. Test E2E en
-  `tests/e2e/toast.spec.ts`. **8 `alert()` sustituidos** en
-  `admin/cursos.astro` (×2), `admin/alumnos/detalle.astro`,
-  `components/CabeceraApp.astro` (×2), `pages/perfil.astro` (×2) y
-  `pages/precios.astro`.
-
-- [x] **Estados de carga en botones** (2026-05-04): helper global
-  `src/components/BotonCargando.astro` + `src/styles/BotonCargando.css`
-  montado en ambos layouts. API
-  `await window.botonCargando(btn, texto, accion)`: guarda el HTML,
-  `disabled` y ancho del botón, lo deja con spinner + texto contextual
-  mientras dura `accion`, y restaura todo en `finally` (también si la
-  acción lanza). Anti-doble-click (segunda llamada se ignora), respeta
-  `prefers-reduced-motion`, accesible (`aria-busy`). Tipos en
-  `src/env.d.ts`. Test E2E en `tests/e2e/boton-cargando.spec.ts` (estado
-  intermedio + restauración, anti-doble-click, restauración tras
-  excepción). **Aplicado en 10 sitios críticos**: login
-  (`TarjetaLogin.astro`), duplicar/eliminar curso, eliminar alumno,
-  crear alumno, crear curso, añadir tema, responder/cerrar/crear
-  ticket, cambiar contraseña (admin + alumno), comprar curso.
-
-- [x] **Página de preview `/preview`** (2026-05-04): playground de los
-  componentes UX (`src/pages/preview.astro`) para validar visualmente
-  toasts, botones cargando y skeleton screens **sin tocar la API**.
-  Todas las acciones son simuladas con `setTimeout`. Útil como
-  referencia para futuros componentes y para hacer demo del pack
-  "polish UX" sin necesidad de login ni BD.
-
-- [x] **Skeleton screens en listados** (2026-05-04): primitivas
-  reutilizables en `src/styles/Skeleton.css` (`.skeleton`,
-  `.skeleton-text`/`-sm`/`-lg`, `.skeleton-circle`, `.skeleton-box` +
-  modificadores `.skeleton-w-25`/`50`/`75`/`90`) con shimmer animado
-  de 1.4 s y respeto a `prefers-reduced-motion`. Cargado globalmente
-  desde `global.css`. **Aplicado en 5 listados**: `/inicio` (tarjetas
-  de curso del alumno), `/admin/alumnos` (filas con avatar + nombre
-  + email), `/admin/cursos` (grid de tarjetas de curso),
-  `/admin/tickets` (3 tickets con cabecera + cuerpo),
-  `/admin/errores` (filas con columnas fecha/tipo/usuario/mensaje).
-  Cada página tiene su composición de skeletons que imita la forma
-  del contenido real. Test E2E en `tests/e2e/skeleton.spec.ts`.
-
-- [x] **Estados de carga en `editar.astro`** (2026-05-19): aplicado
-  `window.botonCargando` en los 7 botones críticos del editor de curso:
-  "Guardar cambios" (con bucle de temas dirty dentro), "Añadir tema",
-  "Guardar tema" del panel de edición, "Eliminar tema" (icono, solo
-  spinner), "Subir vídeo" (manteniendo la barra de progreso separada
-  para el %), "Subir archivo" documento (igual que vídeo), "Eliminar
-  material" (icono ×, solo spinner). Pequeña mejora al helper: ahora
-  `botonCargando(btn, '', accion)` muestra solo el spinner sin texto
-  por defecto — necesario para botones icono pequeños.
-
-- [x] **Modales reutilizables para confirmar y pedir datos**
-  (2026-05-19): componente `src/components/Modal.astro` +
-  `src/styles/Modal.css` montado en ambos layouts. **Dos APIs
-  globales** que comparten infraestructura:
-    - `await window.confirmar(opcionesOMensaje) → Promise<boolean>`:
-      sustituye al `confirm()` nativo. **10 `confirm()` sustituidos**
-      en `admin/cursos.astro` (duplicar, eliminar, disolver pack),
-      `editar.astro` (eliminar tema y material), `crear-curso.astro`
-      (eliminar tema y material), `alumnos/detalle.astro` (eliminar
-      alumno), `tickets.astro` (eliminar conversación) y
-      `errores.astro` (borrar todos los errores).
-    - `await window.pedirDato({ campos: [...] }) → Promise<object | null>`:
-      sustituye al `prompt()` nativo. Soporta varios inputs en un
-      solo modal (text/number/email/tel/url) con etiquetas, valores
-      iniciales, placeholders y validación (min/max/step). **2
-      `prompt()` consecutivos sustituidos** en
-      `admin/cursos.astro` por un solo modal con precio + Stripe ID
-      cuando se hace clic en el badge de precio del curso.
-  Características comunes: Escape/clic fuera/Cancelar cierran como
-  cancelación; trap del foco genérico entre todos los elementos
-  enfocables; Enter en input de `pedirDato` dispara Confirmar; foco
-  inicial en Cancelar si `peligro: true` (más seguro); devolución de
-  foco al disparador al cerrar; animaciones fade+scale (respeta
-  `prefers-reduced-motion`). Tipos en `src/env.d.ts`. Demos en
-  sección 5 de `/preview` (4 escenarios de `confirmar` + 2 de
-  `pedirDato`).
+- [ ] **Tabs del panel sin `aria-selected`** (accesibilidad).
+- [ ] **Skeletons de inicio siempre son 3** independientemente del número real de cursos.
+- [ ] **Contador de cursos por filtro** (ej. "Diseño (5)").
+- [ ] **Indicador "Vídeo X de Y"** en la playlist.
+- [ ] **Ctrl+Enter para enviar** en el textarea de soporte.
 
 ---
 
-## Pendiente
+## Funcionalidad
 
-### Funcionalidad
+- [ ] Recuperación de contraseña (email + token de un solo uso).
+- [x] Notificaciones por email: credenciales al crear alumno + aviso al responder ticket.
+- [x] Integración Stripe: pagos y alta automática de alumnos. Ver `project-stripe.md`.
 
-- [ ] Implementar recuperación de contraseña funcional (email + token
-  de un solo uso).
-- [ ] Notificaciones por email: credenciales al crear alumno + aviso al
-  responder ticket.
-- [ ] Mostrar al alumno su fecha de expiración de acceso.
-- [ ] Integración Stripe: pagos y alta automática de alumnos.
-- [ ] Límite de personas que pueden iniciar sesión con una misma cuenta.
+---
 
-### Robustez de uploads
+## Robustez de uploads
 
-- [ ] **Reintentos automáticos en uploads**: cuando un upload falla
-  por causa transitoria (network error, timeout, 5xx, o respuesta
-  ok:false con `diagnostico` que no sea de validación), reintentar
-  hasta 3 veces con backoff (1 s, 3 s, 8 s) antes de mostrar error al
-  usuario. Aplicar a `subirArchivo`, `subirArchivoChunked` y
-  `subirImagen` en `editar.astro` y `crear-curso.astro`. Distinguir
-  transitorio (sí reintenta) de validación (no reintenta: extensión
-  inválida, tamaño excedido, 4xx con mensaje claro). En chunked:
-  reintentar solo el chunk fallido, no recomenzar el upload completo.
+- [ ] **Reintentos automáticos**: cuando un upload falla por causa transitoria (network error, timeout, 5xx), reintentar hasta 3 veces con backoff (1 s, 3 s, 8 s). Distinguir error transitorio de validación (no reintentar). En chunked: reintentar solo el chunk fallido.
+- [ ] **Endpoint de mantenimiento**: botón en `/admin` para listar materiales en BD cuyo archivo físico no exista.
+- [ ] Usar `info-limites.php` antes de cada upload grande para avisar al admin si el disco está al 90 %.
 
-- [ ] **Endpoint de mantenimiento desde el panel admin**: botón en
-  `/admin` para "Limpiar archivos huérfanos" que liste materiales en
-  BD cuyo archivo físico no exista y reporte el estado. (La limpieza
-  de `.part` ya es automática.)
+---
 
-- [ ] Usar `info-limites.php` (ya devuelve `disco_libre_mb`) en el
-  cliente antes de cada upload grande para avisar al admin si el
-  filesystem está al 90 %, antes de que empiece a subir.
+## Accesibilidad
 
-### UX y usabilidad — Pack "polish UX" (alta prioridad)
-
-Auditoría hecha el 2026-05-04 sobre toda la superficie de UI (alumno +
-admin). Este pack es el más visible en demo y el más defendible como
-mejora del TFM.
-
-- [ ] **Empty states con jerarquía y CTA**: para cada lista que pueda
-  estar vacía, diseñar un estado vacío con: icono SVG suave (mismo
-  lenguaje cromático), título corto ("Aún no tienes cursos"), texto
-  explicativo ("Tu administrador te asignará cursos en breve") y,
-  donde aplique, un CTA primario ("Crear primer curso", "Crear primer
-  alumno"). No dejar páginas en blanco.
-
-- [ ] **Estados de error en formularios**: cada `CampoFormulario` debe
-  soportar `error="mensaje"` que pinta el borde en rojo, muestra el
-  mensaje bajo el campo con un icono de aviso y mueve el foco al
-  primer campo con error al hacer submit. Crítico antes de Stripe (un
-  formulario de pago sin validación visible es caso de soporte
-  directo).
-
-### UX y usabilidad — Medio plazo
-
-- [ ] **Tokens de diseño centralizados**: ampliar `global.css` con
-  escalas reutilizables — `--space-1`/`--space-2`/`--space-3`/`--space-4`,
-  `--text-sm`/`--text-base`/`--text-lg`, `--radius-sm`/`--radius-md`,
-  `--shadow-sm`/`--shadow-md`. Sustituir los valores sueltos (0.5 rem,
-  0.75 rem, 1.25 rem…) en CSS de componentes. Vacuna contra
-  inconsistencias futuras y facilita un eventual rediseño.
-
-- [ ] **Auditoría de contraste WCAG AA**: el turquesa `#b3e8da` sobre
-  blanco y los tonos pastel rozan el fallo de AA. Pasar todas las
-  combinaciones por Wave/axe y ajustar (oscurecer levemente el texto
-  sobre fondos pastel, garantizar 4.5:1 en texto y 3:1 en componentes
-  UI).
-
-- [ ] **Microcopy con identidad Umme**: los mensajes genéricos
-  ("Cargando…", "Error", "Guardar") podrían tener tono propio. Pasada
-  global: textos de botones, mensajes vacíos, toasts y errores.
-  Coherente con la marca, sin perder claridad.
-
-- [ ] **Mobile — tamaños touch y breakpoint tablet**: hoy solo hay un
-  breakpoint (768 px). Auditar que todos los botones e iconos
-  clicables tengan **mínimo 44×44 px** y añadir breakpoint intermedio
-  para tablet (768–1024). Probar en iPad y móvil real.
-
-- [ ] **Focus management en modales**: el modal de soporte ya tiene
-  `role=dialog` y `aria-modal`, pero falta: trap del foco dentro del
-  modal, cierre con Escape, y devolución del foco al botón que lo
-  abrió al cerrarlo.
-
-- [ ] **Refactor de monolitos UI (solo si los tocamos)**:
-  `PanelDetalle.astro` (~600 líneas) y `PlantillaAdmin.css` (~921
-  líneas) son monolíticos. No es bug, pero ralentiza iterar UX. Si
-  vamos a meter mano fuerte en esas zonas, partir en piezas más
-  pequeñas (`PanelDetalleTabs`, `PanelDetalleMaterial`, sidebar admin
-  como componente con su CSS).
-
+- [ ] **Auditoría de contraste WCAG AA**: el turquesa `#b3e8da` sobre blanco roza el fallo de AA. Pasar por Wave/axe y ajustar (4.5:1 en texto, 3:1 en componentes UI).

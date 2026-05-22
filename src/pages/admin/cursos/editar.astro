@@ -47,8 +47,10 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
               <button type="button" class="rte-btn" data-cmd="insertOrderedList" title="Lista numerada">
                 <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><path d="M2 4h1.5V7.5H2M2 9.5h2v.5l-2 2h2M2.5 14.5v-2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 5h7M6 9h7M6 13h7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
               </button>
+              <button type="button" class="rte-btn rte-btn-html" title="Editar HTML fuente">&lt;/&gt;</button>
             </div>
             <div class="rte-body" id="descripcion-editor" contenteditable="true" data-placeholder="Describe el curso: objetivos, a quién va dirigido, qué aprenderán…"></div>
+            <textarea class="rte-html-src" spellcheck="false" autocomplete="off"></textarea>
           </div>
         </div>
       </div>
@@ -192,9 +194,14 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
     <!-- Lista de temas -->
     <div id="temas-carga" style="color:#aaa; font-size:0.85rem; padding:1rem 0;">Cargando temas…</div>
     <div id="temas-lista"></div>
-    <div id="temas-vacio" style="display:none; padding:2rem; text-align:center; background:#fff;
-      border:1.5px dashed #d4e8e0; border-radius:12px; color:#aaa; font-size:0.85rem;">
-      No hay temas todavía. Pulsa "Añadir tema" para empezar.
+    <div id="temas-vacio" class="estado-vacio" style="display:none; background:#fff; border:1.5px dashed #d4e8e0; border-radius:12px;">
+      <svg viewBox="0 0 48 48" fill="none" width="48" height="48" aria-hidden="true">
+        <circle cx="24" cy="24" r="20" stroke="#c8dcd3" stroke-width="2"/>
+        <path d="M13 22l11-6 11 6-11 6-11-6z" stroke="#c8dcd3" stroke-width="1.8" stroke-linejoin="round"/>
+        <path d="M13 28l11 6 11-6" stroke="#c8dcd3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <p class="estado-vacio-titulo">Este curso no tiene temas</p>
+      <p class="estado-vacio-sub">Pulsa "Añadir tema" para empezar a estructurar el contenido</p>
     </div>
 
   </div>
@@ -234,6 +241,16 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
 .rte-btn:hover  { background: #eaf3ed; border-color: #c4d9d2; }
 .rte-btn.activo { background: #d6eddf; border-color: var(--color-primary); color: var(--color-primary); }
 .rte-div { width: 1px; height: 16px; background: #dde8e4; margin: 0 0.25rem; flex-shrink: 0; }
+.rte-btn-html { margin-left: auto; font-family: monospace; font-size: 0.72rem; letter-spacing: -0.03em; }
+.rte-html-src {
+  display: none; width: 100%; min-height: 110px;
+  padding: 0.7rem 0.9rem; box-sizing: border-box;
+  font-family: 'Courier New', monospace; font-size: 0.78rem; line-height: 1.6;
+  color: #334; background: #f7faf9; border: none; outline: none; resize: vertical;
+}
+.rte-wrap[data-html-mode] .rte-body    { display: none; }
+.rte-wrap[data-html-mode] .rte-html-src { display: block; }
+.rte-wrap[data-html-mode] .rte-btn:not(.rte-btn-html) { opacity: 0.3; pointer-events: none; }
 .rte-body {
   min-height: 100px;
   padding: 0.7rem 0.9rem;
@@ -673,7 +690,15 @@ async function guardarCurso(): Promise<boolean> {
       body: JSON.stringify({
         id:          cursoId,
         titulo:      (document.getElementById('titulo')   as HTMLInputElement).value.trim(),
-        descripcion: (() => { const h = (document.getElementById('descripcion-editor') as HTMLElement).innerHTML.trim(); return h === '<br>' ? '' : h; })(),
+        descripcion: (() => {
+          const descWrap = (document.getElementById('descripcion-editor') as HTMLElement).closest('.rte-wrap') as HTMLElement;
+          const descEl   = document.getElementById('descripcion-editor') as HTMLElement;
+          if (descWrap.hasAttribute('data-html-mode')) {
+            descEl.innerHTML = (descWrap.querySelector<HTMLTextAreaElement>('.rte-html-src')!).value;
+          }
+          const h = descEl.innerHTML.trim();
+          return h === '<br>' ? '' : h;
+        })(),
         etiqueta:    (document.getElementById('etiqueta') as HTMLInputElement).value.trim(),
         pack:        (document.getElementById('pack')     as HTMLInputElement).value.trim(),
         duracion:    calcularDuracionTotal(),
@@ -931,8 +956,10 @@ async function crearTemaCard(tema: any): Promise<HTMLElement> {
           <span class="rte-div"></span>
           <button type="button" class="rte-btn" data-cmd="insertUnorderedList" title="Lista con viñetas"><svg viewBox="0 0 16 16" fill="none" width="14" height="14"><circle cx="3" cy="5" r="1.2" fill="currentColor"/><circle cx="3" cy="9" r="1.2" fill="currentColor"/><circle cx="3" cy="13" r="1.2" fill="currentColor"/><path d="M6 5h7M6 9h7M6 13h7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>
           <button type="button" class="rte-btn" data-cmd="insertOrderedList" title="Lista numerada"><svg viewBox="0 0 16 16" fill="none" width="14" height="14"><path d="M2 4h1.5V7.5H2M2 9.5h2v.5l-2 2h2M2.5 14.5v-2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 5h7M6 9h7M6 13h7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>
+          <button type="button" class="rte-btn rte-btn-html" title="Editar HTML fuente">&lt;/&gt;</button>
         </div>
         <div class="rte-body input-desc-tema" contenteditable="true" data-placeholder="Breve descripción de este tema…">${tema.descripcion || ''}</div>
+        <textarea class="rte-html-src" spellcheck="false" autocomplete="off"></textarea>
       </div>
     </div>
     <div style="display:flex; gap:0.5rem;">
@@ -1002,9 +1029,11 @@ async function crearTemaCard(tema: any): Promise<HTMLElement> {
   // Inicializar RTE del tema
   const temaWrap   = editPanel.querySelector('.rte-wrap') as HTMLElement;
   const temaEditor = editPanel.querySelector('.input-desc-tema') as HTMLElement;
-  temaWrap.querySelectorAll<HTMLButtonElement>('.rte-btn').forEach(btn => {
+  temaWrap.querySelectorAll<HTMLButtonElement>('.rte-btn:not(.rte-btn-html)').forEach(btn => {
     btn.addEventListener('mousedown', e => { e.preventDefault(); rteExec(btn); actualizarEstado(temaWrap); });
   });
+  temaWrap.querySelector<HTMLElement>('.rte-btn-html')!
+    .addEventListener('mousedown', e => { e.preventDefault(); toggleHtmlMode(temaWrap); });
   temaEditor.addEventListener('keyup',  () => actualizarEstado(temaWrap));
   temaEditor.addEventListener('mouseup', () => actualizarEstado(temaWrap));
 
@@ -1022,6 +1051,9 @@ async function crearTemaCard(tema: any): Promise<HTMLElement> {
     const titulo      = (editPanel.querySelector('.input-titulo-tema') as HTMLInputElement).value.trim();
     const duracion    = (editPanel.querySelector('.input-dur-tema')    as HTMLInputElement).value.trim();
     const descEl = editPanel.querySelector('.input-desc-tema') as HTMLElement;
+    if (temaWrap.hasAttribute('data-html-mode')) {
+      descEl.innerHTML = (temaWrap.querySelector<HTMLTextAreaElement>('.rte-html-src')!).value;
+    }
     const descripcion = descEl.innerHTML.trim() === '<br>' ? '' : descEl.innerHTML.trim();
     if (!titulo) return false;
     const res  = await fetch('/api/temas.php', {
@@ -1778,6 +1810,22 @@ inputNuevo.addEventListener('keydown', (e: KeyboardEvent) => {
 });
 
 // ── Editor de texto enriquecido ──────────────────────────────
+function toggleHtmlMode(wrap: HTMLElement) {
+  const body = wrap.querySelector<HTMLElement>('.rte-body')!;
+  const src  = wrap.querySelector<HTMLTextAreaElement>('.rte-html-src')!;
+  const btn  = wrap.querySelector<HTMLElement>('.rte-btn-html')!;
+  if (!wrap.hasAttribute('data-html-mode')) {
+    src.value = body.innerHTML;
+    wrap.setAttribute('data-html-mode', '');
+    btn.classList.add('activo');
+    src.focus();
+  } else {
+    body.innerHTML = src.value;
+    wrap.removeAttribute('data-html-mode');
+    btn.classList.remove('activo');
+    body.focus();
+  }
+}
 function rteExec(btn: HTMLElement) {
   const val = btn.dataset.val;
   if (val) {
@@ -1799,9 +1847,11 @@ function actualizarEstado(wrap: HTMLElement) {
 (function initRTE() {
   const wrap   = document.getElementById('descripcion-editor')!.closest('.rte-wrap') as HTMLElement;
   const editor = document.getElementById('descripcion-editor')!;
-  wrap.querySelectorAll<HTMLButtonElement>('.rte-btn').forEach(btn => {
+  wrap.querySelectorAll<HTMLButtonElement>('.rte-btn:not(.rte-btn-html)').forEach(btn => {
     btn.addEventListener('mousedown', e => { e.preventDefault(); rteExec(btn); actualizarEstado(wrap); });
   });
+  wrap.querySelector<HTMLElement>('.rte-btn-html')!
+    .addEventListener('mousedown', e => { e.preventDefault(); toggleHtmlMode(wrap); });
   editor.addEventListener('keyup',  () => actualizarEstado(wrap));
   editor.addEventListener('mouseup', () => actualizarEstado(wrap));
 })();

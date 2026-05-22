@@ -16,3 +16,4 @@ Ver [../AGENTS.md](../AGENTS.md): documentar al inicio de cada archivo, leer ant
 @.claude/memory/project-vdocipher.md
 @.claude/memory/feedback-uploads.md
 @.claude/memory/reference-ionos.md
+@.claude/memory/feedback-backup-db.md

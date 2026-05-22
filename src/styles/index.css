@@ -5,4 +5,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 1.5rem;
+}
+
+@media (max-width: 480px) {
+  .login-page {
+    align-items: flex-start;
+    padding: 12vh 1rem 2rem;
+  }
 }

@@ -101,6 +101,25 @@ import Modal from '../components/Modal.astro';
     <!-- Helper global de modal de confirmación (window.confirmar) -->
     <Modal />
 
+    <!-- Helper global de estados vacíos (window.htmlEstadoVacio) -->
+    <script is:inline>
+      window.htmlEstadoVacio = function (o) {
+        var ico  = o.icono  || '';
+        var sub  = o.sub    ? '<p class="estado-vacio-sub">'   + o.sub   + '</p>' : '';
+        var cta  = o.cta    ? '<a href="' + o.cta.href + '" class="estado-vacio-cta">' + o.cta.texto + '</a>' : '';
+        return '<div class="estado-vacio">' + ico +
+          '<p class="estado-vacio-titulo">' + o.titulo + '</p>' + sub + cta + '</div>';
+      };
+    </script>
+
+    <!-- Helper global de errores en formularios (window.enfocarPrimerError) -->
+    <script is:inline>
+      window.enfocarPrimerError = function (form) {
+        var primer = form.querySelector('.field--error input, .field--error select, .field--error textarea');
+        if (primer) primer.focus();
+      };
+    </script>
+
     <!-- Firma de marca: aparece en todas las páginas, esquina inferior izquierda -->
     <span class="firma">cursos umme</span>
   </body>

@@ -91,6 +91,7 @@ import '../styles/TarjetaLogin.css';
           email: datos.email,
           nombre: datos.nombre,
           token: datos.token,
+          fechaBaja: datos.fecha_baja || null,
           exp: Date.now() + duracion,
         };
         const raw = JSON.stringify(sesion);

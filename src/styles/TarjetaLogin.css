@@ -45,7 +45,7 @@
   align-items: center;
   gap: 0.55rem;
   margin: 0.25rem 0 0.5rem;
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
   cursor: pointer;
   user-select: none;
@@ -56,4 +56,38 @@
   accent-color: var(--color-primary);
   cursor: pointer;
   flex-shrink: 0;
+}
+
+/* ── Tablet ── */
+@media (max-width: 768px) {
+  .login-card {
+    padding: 2.25rem 2rem 1.75rem;
+  }
+}
+
+/* ── Móvil ── */
+@media (max-width: 480px) {
+  .login-card {
+    padding: 2rem 1.5rem 1.5rem;
+    border-radius: 16px;
+    max-width: 100%;
+  }
+
+  .login-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .login-header h1 {
+    font-size: 1.65rem;
+  }
+
+  /* Touch target del checkbox */
+  .login-recordarme {
+    min-height: 44px;
+  }
+
+  .login-recordarme input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+  }
 }

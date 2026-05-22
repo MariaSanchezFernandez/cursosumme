@@ -10,14 +10,16 @@
  *   - id          {string}  Id del input (vincula label y input)
  *   - name        {string}  Nombre del campo para el formulario
  *   - placeholder {string}  Texto de ayuda dentro del input
+ *   - error       {string}  Mensaje de error (borde coral, icono aviso)
  */
 import '../styles/CampoFormulario.css';
-const { label, type, id, name, placeholder, autocomplete } = Astro.props;
+const { label, type, id, name, placeholder, autocomplete, error } = Astro.props;
 const esPassword = type === 'password';
+const errorId = `${id}-error`;
 ---
 
 <!-- Grupo label + input -->
-<div class="field">
+<div class:list={['field', { 'field--error': !!error }]}>
   <label for={id}>{label}</label>
   {esPassword ? (
     <div class="field-pwd-wrap">
@@ -27,6 +29,8 @@ const esPassword = type === 'password';
         name={name}
         placeholder={placeholder}
         autocomplete={autocomplete}
+        aria-invalid={error ? 'true' : undefined}
+        aria-describedby={error ? errorId : undefined}
         data-pwd-input
       />
       <button type="button" class="field-pwd-toggle" aria-label="Mostrar contraseña" data-pwd-toggle>
@@ -47,8 +51,18 @@ const esPassword = type === 'password';
       name={name}
       placeholder={placeholder}
       autocomplete={autocomplete}
+      aria-invalid={error ? 'true' : undefined}
+      aria-describedby={error ? errorId : undefined}
     />
   )}
+  <span class="field-error-msg" id={errorId} role="alert">
+    <svg viewBox="0 0 16 16" fill="none" width="13" height="13" aria-hidden="true">
+      <path d="M8 2.5L14 13.5H2L8 2.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+      <line x1="8" y1="7" x2="8" y2="10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      <circle cx="8" cy="12" r="0.7" fill="currentColor"/>
+    </svg>
+    {error}
+  </span>
 </div>
 
 <script>

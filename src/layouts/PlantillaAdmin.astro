@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import '../styles/PlantillaAdmin.css';
+import SidebarAdmin from '../components/SidebarAdmin.astro';
 import Toast from '../components/Toast.astro';
 import BotonCargando from '../components/BotonCargando.astro';
 import Modal from '../components/Modal.astro';
@@ -98,101 +99,7 @@ const { titulo, paginaActual } = Astro.props;
 
     <div class="admin-layout">
 
-      <!-- Overlay (solo móvil, cubre el contenido cuando el drawer está abierto) -->
-      <div id="sidebarOverlay" class="sidebar-overlay" aria-hidden="true"></div>
-
-      <!-- Sidebar -->
-      <aside class="sidebar" id="sidebarAdmin">
-        <div class="sidebar-logo">
-          <a href="/admin">
-            <span class="logo-marca">Cursos</span>
-            <span class="logo-umme">Umme</span>
-          </a>
-        </div>
-
-        <div class="sidebar-seccion">
-          <p class="sidebar-seccion-label">General</p>
-          <ul class="sidebar-nav">
-            <li>
-              <a href="/admin" class={paginaActual === 'dashboard' ? 'activo' : ''}>
-                <svg viewBox="0 0 16 16" fill="none">
-                  <rect x="1" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
-                  <rect x="9" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
-                  <rect x="1" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
-                  <rect x="9" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
-                </svg>
-                Dashboard
-              </a>
-            </li>
-          </ul>
-        </div>
-
-        <div class="sidebar-seccion">
-          <p class="sidebar-seccion-label">Gestion</p>
-          <ul class="sidebar-nav">
-            <li>
-              <a href="/admin/alumnos" class={paginaActual === 'alumnos' ? 'activo' : ''}>
-                <svg viewBox="0 0 16 16" fill="none">
-                  <circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.4"/>
-                  <path d="M2 14c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-                </svg>
-                Alumnos
-              </a>
-            </li>
-            <li>
-              <a href="/admin/cursos" class={paginaActual === 'cursos' ? 'activo' : ''}>
-                <svg viewBox="0 0 16 16" fill="none">
-                  <rect x="1" y="3" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
-                  <path d="M5 7h6M5 10h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-                </svg>
-                Cursos
-              </a>
-            </li>
-            <li>
-              <a href="/admin/tickets" id="linkTickets" class={paginaActual === 'tickets' ? 'activo' : ''} style="position:relative;">
-                <svg viewBox="0 0 16 16" fill="none">
-                  <path d="M2 3.5A1.5 1.5 0 013.5 2h9A1.5 1.5 0 0114 3.5v7A1.5 1.5 0 0112.5 12H9l-3 2v-2H3.5A1.5 1.5 0 012 10.5v-7z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
-                  <path d="M5 6h6M5 8.5h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-                </svg>
-                Soporte
-                <span id="adminTicketsBadge" style="display:none; position:absolute; top:6px; right:10px; width:8px; height:8px; background:#e53; border-radius:50%; border:1.5px solid #fff;"></span>
-              </a>
-            </li>
-            <li>
-              <a href="/admin/logs" class={paginaActual === 'logs' ? 'activo' : ''}>
-                <svg viewBox="0 0 16 16" fill="none">
-                  <path d="M3 3h10M3 6h10M3 9h6M3 12h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-                </svg>
-                Log de cambios
-              </a>
-            </li>
-            <li>
-              <a href="/admin/errores" id="linkErrores" class={paginaActual === 'errores' ? 'activo' : ''} style="position:relative;">
-                <svg viewBox="0 0 16 16" fill="none">
-                  <path d="M8 2l6 11H2L8 2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
-                  <path d="M8 7v3M8 11.5v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-                </svg>
-                Errores
-                <span id="erroresBadge" style="display:none; position:absolute; top:6px; right:10px; min-width:16px; height:16px; background:#e53; border-radius:8px; border:1.5px solid #fff; font-size:0.6rem; font-weight:800; color:#fff; display:none; align-items:center; justify-content:center; padding:0 3px;"></span>
-              </a>
-            </li>
-          </ul>
-        </div>
-
-        <!-- Footer del sidebar: perfil admin -->
-        <a href="/admin/perfil" class="sidebar-footer" style="text-decoration:none; cursor:pointer;" title="Mi perfil">
-          <div class="sidebar-avatar">
-            <svg viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="8" r="4" fill="#555"/>
-              <path d="M4 20c0-4.418 3.582-8 8-8s8 3.582 8 8" fill="#555"/>
-            </svg>
-          </div>
-          <div class="sidebar-usuario-info">
-            <span class="sidebar-usuario-nombre" id="sidebarNombreAdmin">—</span>
-            <span class="sidebar-usuario-rol">Administradora</span>
-          </div>
-        </a>
-      </aside>
+      <SidebarAdmin paginaActual={paginaActual} />
 
       <!-- Contenido -->
       <div class="admin-contenido">
@@ -228,6 +135,25 @@ const { titulo, paginaActual } = Astro.props;
 
     <!-- Helper global de modal de confirmación (window.confirmar) -->
     <Modal />
+
+    <!-- Helper global de estados vacíos (window.htmlEstadoVacio) -->
+    <script is:inline>
+      window.htmlEstadoVacio = function (o) {
+        var ico  = o.icono  || '';
+        var sub  = o.sub    ? '<p class="estado-vacio-sub">'   + o.sub   + '</p>' : '';
+        var cta  = o.cta    ? '<a href="' + o.cta.href + '" class="estado-vacio-cta">' + o.cta.texto + '</a>' : '';
+        return '<div class="estado-vacio">' + ico +
+          '<p class="estado-vacio-titulo">' + o.titulo + '</p>' + sub + cta + '</div>';
+      };
+    </script>
+
+    <!-- Helper global de errores en formularios (window.enfocarPrimerError) -->
+    <script is:inline>
+      window.enfocarPrimerError = function (form) {
+        var primer = form.querySelector('.field--error input, .field--error select, .field--error textarea');
+        if (primer) primer.focus();
+      };
+    </script>
 
   <script is:inline>
     var _s = {};
@@ -279,8 +205,17 @@ const { titulo, paginaActual } = Astro.props;
       if (window.innerWidth > 768) cerrarDrawer();
     });
 
-    // Logout (limpia también la sesión persistente "Recordarme")
-    document.getElementById('btn-logout').addEventListener('click', function () {
+    // Logout: invalida el token en BD y limpia el storage local
+    document.getElementById('btn-logout').addEventListener('click', async function () {
+      try {
+        var _s2 = JSON.parse(sessionStorage.getItem('umme_session') || '{}');
+        if (_s2.token) {
+          await fetch('/api/logout.php', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + _s2.token },
+          });
+        }
+      } catch (e) {}
       sessionStorage.removeItem('umme_session');
       sessionStorage.removeItem('umme_admin_badge');
       localStorage.removeItem('umme_session');

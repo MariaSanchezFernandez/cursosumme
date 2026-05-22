@@ -1,20 +1,20 @@
 .curso {
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
-  transition: box-shadow 0.22s, transform 0.22s;
   background: #fff;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04);
+  border: 1px solid #e8e8e8;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.12s;
 }
 
 .curso:hover {
-  box-shadow: 0 6px 24px rgba(0,0,0,0.10);
-  transform: translateY(-2px);
+  border-color: #c8c8c8;
+  background: #fafafa;
 }
 
 .curso.activo {
-  box-shadow: 0 4px 18px rgba(66,178,134,0.16);
-  outline: 2px solid var(--color-primary);
-  outline-offset: -1px;
+  border-color: var(--color-primary);
+  background: #f5fbf8;
 }
 
 /* Imagen de portada del curso */
@@ -27,49 +27,42 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  background: #f3f6f4;
   display: block;
 }
 
 .curso-fila {
   width: 100%;
   display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1.2rem 1rem;
+  align-items: stretch;
+  gap: 0.9rem;
+  padding: 1rem 1rem 0.85rem;
   background: transparent;
   border: none;
   cursor: pointer;
   font-family: inherit;
   text-align: left;
-  transition: background 0.12s;
 }
 
-.curso-fila:hover {
-  background: #f7fbf9;
-}
+.curso-fila:hover { background: transparent; }
+.curso.activo .curso-fila { background: transparent; }
 
-.curso.activo .curso-fila {
-  background: transparent;
-}
-
-/* Acento lateral de color */
+/* Acento lateral de color — barra izquierda a toda la altura del contenido */
 .curso-acento {
   flex-shrink: 0;
-  width: 6px;
-  height: 50px;
-  border-radius: 4px;
+  width: 4px;
+  align-self: stretch;
+  border-radius: 2px;
+  margin: 0.1rem 0;
 }
-
-.c1 { background: var(--color-primary); }
-.c2 { background: var(--color-secondary); }
-.c3 { background: var(--color-coral); }
-.c4 { background: #d4c9f7; }
 
 /* Info */
 .curso-info {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.18rem;
 }
 
 .etiqueta {
@@ -79,24 +72,25 @@
   text-transform: uppercase;
   letter-spacing: 0.09em;
   color: var(--color-text-muted);
-  margin-bottom: 0.28rem;
+  margin-bottom: 0.1rem;
 }
 
 .curso-info h2 {
-  font-size: 0.92rem;
+  font-size: 0.97rem;
   font-weight: 700;
-  margin-bottom: 0.28rem;
+  margin-bottom: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   color: var(--color-text);
+  letter-spacing: -0.01em;
+  line-height: 1.3;
 }
 
 .curso-desc-preview {
-  font-size: 0.72rem;
+  font-size: 0.73rem;
   color: var(--color-text-muted);
-  line-height: 1.45;
-  margin-bottom: 0.28rem;
+  line-height: 1.4;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -106,32 +100,28 @@
   display: flex;
   gap: 0.35rem;
   align-items: center;
-  font-size: 0.71rem;
-  color: #b5bfbb;
+  font-size: 0.7rem;
+  color: #bbb;
+  margin-top: 0.1rem;
 }
 
 /* Chevron */
 .chevron-fila {
   flex-shrink: 0;
-  width: 18px;
-  height: 18px;
-  color: #ccd5d1;
-  transition: color 0.15s, transform 0.2s;
+  align-self: center;
+  width: 16px;
+  height: 16px;
+  color: #ddd;
+  transition: color 0.15s;
 }
 
-.curso-fila:hover .chevron-fila {
-  color: var(--color-primary);
-  transform: translateX(2px);
-}
-
-.curso.activo .chevron-fila {
-  color: var(--color-primary);
-}
+.curso:hover .chevron-fila { color: #aaa; }
+.curso.activo .chevron-fila { color: var(--color-primary); }
 
 /* Barra de progreso en la tarjeta */
 .curso-prog-bar {
   height: 3px;
-  background: #e8eeec;
+  background: #f0f0f0;
 }
 
 .curso-prog-fill {

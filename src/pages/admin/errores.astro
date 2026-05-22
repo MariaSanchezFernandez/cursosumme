@@ -63,8 +63,13 @@ import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
       </thead>
       <tbody id="err-tbody"></tbody>
     </table>
-    <div id="err-vacio" style="display:none; padding:2rem 1.5rem; color:#aaa; font-size:0.85rem;">
-      Sin errores registrados. ¡Todo en orden!
+    <div id="err-vacio" class="estado-vacio" style="display:none;">
+      <svg viewBox="0 0 48 48" fill="none" width="48" height="48" aria-hidden="true">
+        <circle cx="24" cy="24" r="20" stroke="var(--color-primary)" stroke-width="2"/>
+        <path d="M15 24l7 7 11-14" stroke="var(--color-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <p class="estado-vacio-titulo">Sin errores registrados</p>
+      <p class="estado-vacio-sub">¡Todo en orden!</p>
     </div>
   </div>
 

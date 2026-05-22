@@ -56,6 +56,10 @@ import '../styles/global.css';
           <label class="pf-label">Correo electrónico</label>
           <p class="pf-valor" id="pfEmail">—</p>
         </div>
+        <div class="pf-dato-group" id="pfAccesoWrap" style="display:none;">
+          <label class="pf-label">Acceso hasta</label>
+          <p class="pf-valor" id="pfAcceso">—</p>
+        </div>
       </div>
 
       <hr class="pf-divider" />
@@ -100,7 +104,7 @@ import '../styles/global.css';
               </button>
             </div>
           </div>
-          <button class="pf-btn-guardar" id="pfBtnPwd">Guardar contraseña</button>
+          <button class="pf-btn-guardar" id="pfBtnPwd">Actualizar contraseña</button>
           <p class="pf-msg" id="pfMsgPwd"></p>
         </div>
       </div>
@@ -133,6 +137,36 @@ const s = (() => { try { return JSON.parse(sessionStorage.getItem('umme_session'
 // Rellenar datos
 document.getElementById('pfNombre')!.textContent = s.nombre || '—';
 document.getElementById('pfEmail')!.textContent  = s.email  || '—';
+
+// Fecha de expiración de acceso
+(async () => {
+  if (s.rol === 'admin') return;
+  let fechaBaja: string | null = s.fechaBaja ?? null;
+  if (!fechaBaja) {
+    try {
+      const res  = await fetch('/api/mi-acceso.php', { headers: { 'X-Token': s.token || '' } });
+      const data = await res.json();
+      if (data.ok && data.fecha_baja) {
+        fechaBaja = data.fecha_baja;
+        s.fechaBaja = fechaBaja;
+        sessionStorage.setItem('umme_session', JSON.stringify(s));
+      }
+    } catch {}
+  }
+  if (!fechaBaja) return;
+
+  const hoy    = new Date(); hoy.setHours(0, 0, 0, 0);
+  const expira = new Date(fechaBaja + 'T00:00:00');
+  const dias   = Math.ceil((expira.getTime() - hoy.getTime()) / 86400000);
+  const fechaFmt = expira.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  const el = document.getElementById('pfAcceso') as HTMLElement;
+  el.textContent = fechaFmt;
+  if (dias <= 7)       { el.style.color = '#a33'; el.style.fontWeight = '700'; }
+  else if (dias <= 30) { el.style.color = '#7a5500'; }
+
+  document.getElementById('pfAccesoWrap')!.style.display = 'block';
+})();
 
 // Salir (limpia también la sesión persistente "Recordarme")
 document.getElementById('btnSalirPerfil')!.addEventListener('click', () => {
@@ -189,7 +223,7 @@ pfFile.addEventListener('change', async () => {
     }
   } catch (err: any) {
     window.logAppError?.('foto_perfil', 'Error de red al subir foto', { detalle: err?.message, stack: err?.stack });
-    window.mostrarToast('Error de conexión al subir la foto.', 'error');
+    window.mostrarToast('Sin conexión. No se pudo subir la foto.', 'error');
   }
   pfFile.value = '';
 });
@@ -221,7 +255,7 @@ btnPwd.addEventListener('click', async () => {
   if (nueva.length < 6) { msgPwd.textContent = 'La contraseña debe tener al menos 6 caracteres.'; return; }
   if (nueva !== confirm) { msgPwd.textContent = 'Las contraseñas no coinciden.'; return; }
 
-  await window.botonCargando(btnPwd, 'Guardando…', async () => {
+  await window.botonCargando(btnPwd, 'Actualizando…', async () => {
     try {
       const res  = await fetch('/api/cambiar-password.php', {
         method: 'POST',
@@ -231,15 +265,15 @@ btnPwd.addEventListener('click', async () => {
       const data = await res.json();
       if (data.ok) {
         msgPwd.style.color = '#1d7a52';
-        msgPwd.textContent = '✓ Contraseña actualizada correctamente.';
+        msgPwd.textContent = '✓ Contraseña guardada. Ya puedes usarla en tu próximo acceso.';
         (document.getElementById('pfPwdNueva') as HTMLInputElement).value = '';
         (document.getElementById('pfPwdConfirm') as HTMLInputElement).value = '';
       } else {
-        msgPwd.textContent = data.mensaje || 'Error al actualizar la contraseña.';
+        msgPwd.textContent = data.mensaje || 'No se pudo guardar la contraseña. Inténtalo de nuevo.';
         window.logAppError?.('cambio_password', 'Servidor rechazó cambio de contraseña', { detalle: data.mensaje || ('HTTP ' + res.status) });
       }
     } catch (err: any) {
-      msgPwd.textContent = 'Error de conexión.';
+      msgPwd.textContent = 'Sin conexión. Comprueba tu red e inténtalo de nuevo.';
       window.logAppError?.('cambio_password', 'Error de red al cambiar contraseña', { detalle: err?.message, stack: err?.stack });
     }
   });

@@ -10,6 +10,8 @@ import '../styles/TarjetaCurso.css';
 <Plantilla>
   <CabeceraApp />
 
+  <div id="banner-acceso" style="display:none;"></div>
+
   <div id="banner-vista-admin" style="display:none; background:#fff8e6; border-bottom:2px solid #f0c040; padding:0.55rem 2.5rem; font-size:0.8rem; font-weight:600; color:#7a5500; align-items:center; gap:0.75rem;">
     <svg viewBox="0 0 16 16" fill="none" width="14" height="14" style="flex-shrink:0;">
       <path d="M8 2a6 6 0 100 12A6 6 0 008 2z" stroke="currentColor" stroke-width="1.4"/>
@@ -60,6 +62,7 @@ import '../styles/TarjetaCurso.css';
             </div>
           </div>
         </section>
+
       </div>
 
       <!-- Columna derecha: panel de detalle -->
@@ -106,6 +109,56 @@ try {
   if (s.esVistaAdmin) document.getElementById('banner-vista-admin')!.style.display = 'flex';
 } catch {}
 
+// Banner fecha de expiración de acceso
+(async () => {
+  try {
+    const s = JSON.parse(sessionStorage.getItem('umme_session') || '{}');
+    if (s.rol === 'admin') return; // no aplica al admin
+
+    let fechaBaja: string | null = s.fechaBaja ?? null;
+
+    // Fallback: pedir al servidor si la sesión no tiene el dato
+    if (!fechaBaja) {
+      const res  = await fetch('/api/mi-acceso.php', { headers: { 'X-Token': s.token || '' } });
+      const data = await res.json();
+      if (data.ok && data.fecha_baja) {
+        fechaBaja = data.fecha_baja;
+        // Guardar para no volver a pedir en esta sesión
+        s.fechaBaja = fechaBaja;
+        sessionStorage.setItem('umme_session', JSON.stringify(s));
+      }
+    }
+
+    if (!fechaBaja) return;
+
+    const hoy    = new Date(); hoy.setHours(0, 0, 0, 0);
+    const expira = new Date(fechaBaja + 'T00:00:00');
+    const dias   = Math.ceil((expira.getTime() - hoy.getTime()) / 86400000);
+    const banner = document.getElementById('banner-acceso') as HTMLElement;
+
+    if (dias < 0) {
+      // Ya expiró — no debería llegar aquí (login lo bloquea), pero por si acaso
+      return;
+    }
+
+    let bg = '', borde = '', color = '', texto = '';
+    const fechaFmt = expira.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+
+    if (dias <= 7) {
+      bg = '#fff0f0'; borde = '#f5c6c6'; color = '#a33';
+      texto = `⚠ Tu acceso expira en <strong>${dias} día${dias !== 1 ? 's' : ''}</strong> (${fechaFmt}). Contacta con tu administrador para renovarlo.`;
+    } else if (dias <= 30) {
+      bg = '#fff8e6'; borde = '#f0c040'; color = '#7a5500';
+      texto = `Tu acceso expira el <strong>${fechaFmt}</strong> (en ${dias} días).`;
+    } else {
+      return; // Más de 30 días: no molestar
+    }
+
+    banner.innerHTML = `<div style="background:${bg};border-bottom:2px solid ${borde};padding:0.5rem 2.5rem;font-size:0.8rem;font-weight:600;color:${color};">${texto}</div>`;
+    banner.style.display = 'block';
+  } catch {}
+})();
+
 // ── Referencias DOM ───────────────────────────────────────────
 const vista            = document.getElementById('vista')!;
 const listaCursos      = document.getElementById('lista-cursos')!;
@@ -115,6 +168,7 @@ const detalleTit       = document.getElementById('detalleTitulo')!;
 const listaTemas       = document.getElementById('listaTemas')!;
 const panelSubtemas    = document.getElementById('panelSubtemas') as HTMLElement;
 const btnVolver        = document.getElementById('btnVolver')!;
+const btnToggleLista   = document.getElementById('btnToggleLista')!;
 const leccionTit       = document.getElementById('leccionTitulo')!;
 const leccionDesc      = document.getElementById('leccionDescripcion')!;
 const videoPlayer      = document.getElementById('videoPlayer') as HTMLVideoElement;
@@ -130,6 +184,8 @@ const panelIntro       = document.getElementById('panelIntro')!;
 const panelContenido   = document.getElementById('panelContenido')!;
 const introDesc        = document.getElementById('introDescripcion')!;
 const introTemaLista   = document.getElementById('introTemaLista')!;
+const introCursoTitulo = document.getElementById('introCursoTitulo')!;
+const introStats       = document.getElementById('introStats')!;
 
 let todosCursos: any[] = [];
 let visitedIds: Set<number> = new Set();
@@ -140,6 +196,90 @@ function stripHtml(html: string, maxLen = 110): string {
   tmp.innerHTML = html;
   const text = (tmp.textContent || '').replace(/\s+/g, ' ').trim();
   return text.length > maxLen ? text.slice(0, maxLen) + '…' : text;
+}
+
+// Normaliza el HTML que produce el contenteditable del admin.
+function normalizarRte(html: string): string {
+  if (!html?.trim()) return '';
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+
+  // Quitar atributos de estilo inline y class de todos los elementos
+  tmp.querySelectorAll<HTMLElement>('[style], [class], [color], [face], [size]').forEach(el => {
+    el.removeAttribute('style');
+    el.removeAttribute('class');
+    el.removeAttribute('color');
+    el.removeAttribute('face');
+    el.removeAttribute('size');
+  });
+
+  // <font> → desenvolver (quitar el tag, conservar contenido)
+  tmp.querySelectorAll('font').forEach(el => {
+    el.replaceWith(...Array.from(el.childNodes));
+  });
+
+  // <span> → desenvolver salvo que no tenga contenido relevante
+  tmp.querySelectorAll('span').forEach(el => {
+    el.replaceWith(...Array.from(el.childNodes));
+  });
+
+  // <b> → <strong>, <i> → <em>
+  tmp.querySelectorAll('b').forEach(el => {
+    const s = document.createElement('strong');
+    s.innerHTML = el.innerHTML;
+    el.replaceWith(s);
+  });
+  tmp.querySelectorAll('i').forEach(el => {
+    const e = document.createElement('em');
+    e.innerHTML = el.innerHTML;
+    el.replaceWith(e);
+  });
+
+  // Chrome envuelve párrafos en <div>; convertir a <p> solo si no contiene bloques
+  const BLOQUES = 'ul, ol, h2, h3, h4, blockquote, p, div';
+  tmp.querySelectorAll<HTMLElement>(':scope > div').forEach(div => {
+    if (div.querySelector(BLOQUES)) {
+      while (div.firstChild) div.parentNode!.insertBefore(div.firstChild, div);
+      div.remove();
+    } else {
+      const p = document.createElement('p');
+      p.innerHTML = div.innerHTML;
+      div.replaceWith(p);
+    }
+  });
+
+  // Eliminar párrafos/divs vacíos (solo <br>, &nbsp; o espacios)
+  tmp.querySelectorAll('p, div').forEach(el => {
+    const t = el.innerHTML.trim().replace(/&nbsp;/g, '').replace(/<br\s*\/?>/gi, '').trim();
+    if (t === '' && !el.querySelector('img')) el.remove();
+  });
+
+  // &nbsp; → espacio normal en nodos de texto
+  const walk = (node: Node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      node.textContent = (node.textContent || '').replace(/ /g, ' ');
+    } else {
+      node.childNodes.forEach(walk);
+    }
+  };
+  walk(tmp);
+
+  // Eliminar <br> sueltos al principio y al final
+  while (tmp.firstChild instanceof HTMLBRElement) tmp.firstChild.remove();
+  while (tmp.lastChild  instanceof HTMLBRElement) tmp.lastChild.remove();
+
+  return tmp.innerHTML;
+}
+
+// Fade-in de un panel: pone display:flex y anima opacidad 0→1 en 150ms
+function fadeInPanel(el: HTMLElement) {
+  el.style.display = 'flex';
+  el.style.opacity = '0';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    el.style.transition = 'opacity 0.15s ease';
+    el.style.opacity    = '1';
+    setTimeout(() => { el.style.transition = ''; }, 160);
+  }));
 }
 
 // ── Cargar cursos desde la BD ─────────────────────────────────
@@ -265,14 +405,22 @@ async function cargarCursos() {
     if (dataProg.ok) visitedIds = new Set((dataProg.vistos as number[]).map(Number));
 
     if (!data.ok) {
-      listaCursos.innerHTML = '<p style="padding:2rem; color:#aaa; font-size:0.85rem;">Error al cargar los cursos.</p>';
+      listaCursos.innerHTML = window.htmlEstadoVacio({
+        icono: '<svg viewBox="0 0 48 48" fill="none" width="48" height="48" aria-hidden="true"><circle cx="24" cy="24" r="20" stroke="#c8dcd3" stroke-width="2"/><path d="M24 16v8l5 3" stroke="#c8dcd3" stroke-width="2" stroke-linecap="round"/></svg>',
+        titulo: 'No se pudieron cargar los cursos',
+        sub:    'Comprueba tu conexión y recarga la página',
+      });
       return;
     }
 
     todosCursos = data.cursos;
 
     if (todosCursos.length === 0) {
-      listaCursos.innerHTML = '<p style="padding:2rem; color:#aaa; font-size:0.85rem;">No tienes cursos asignados todavía.</p>';
+      listaCursos.innerHTML = window.htmlEstadoVacio({
+        icono: '<svg viewBox="0 0 48 48" fill="none" width="48" height="48" aria-hidden="true"><circle cx="24" cy="24" r="20" stroke="#c8dcd3" stroke-width="2"/><path d="M15 18h18M15 24h18M15 30h11" stroke="#c8dcd3" stroke-width="2" stroke-linecap="round"/></svg>',
+        titulo: 'Aún no tienes cursos',
+        sub:    'Tu administrador te asignará los cursos en breve',
+      });
       return;
     }
 
@@ -291,7 +439,11 @@ async function cargarCursos() {
     renderCursos(todosCursos);
     setupFiltros();
   } catch {
-    listaCursos.innerHTML = '<p style="padding:2rem; color:#aaa; font-size:0.85rem;">Error de conexión.</p>';
+    listaCursos.innerHTML = window.htmlEstadoVacio({
+      icono: '<svg viewBox="0 0 48 48" fill="none" width="48" height="48" aria-hidden="true"><circle cx="24" cy="24" r="20" stroke="#c8dcd3" stroke-width="2"/><path d="M24 16v8l5 3" stroke="#c8dcd3" stroke-width="2" stroke-linecap="round"/></svg>',
+      titulo: 'No se pudieron cargar los cursos',
+      sub:    'Comprueba tu conexión y recarga la página',
+    });
   }
 }
 
@@ -355,7 +507,7 @@ function renderCursos(cursos: any[]) {
         </button>
         ${numTemas > 0 ? `<div class="curso-prog-bar"><div class="curso-prog-fill" style="width:${pct}%; background:${color}"></div></div>` : ''}
       `;
-      article.querySelector('.curso-fila')!.addEventListener('click', () => abrirCurso(curso, article));
+      article.addEventListener('click', () => abrirCurso(curso, article));
       packBody.appendChild(article);
     });
 
@@ -437,6 +589,36 @@ function abrirCurso(curso: any, articleEl: HTMLElement) {
 
   // ── Lista de temas en sidebar ────────────────────────────
   listaTemas.innerHTML = '';
+
+  // Botón "Presentación" al inicio del sidebar para volver a la intro del curso
+  const liPresentacion = document.createElement('li');
+  liPresentacion.className = 'tema-item tema-item-presentacion';
+  liPresentacion.innerHTML = `
+    <button class="tema-btn tema-btn-presentacion activo">
+      <span class="tema-icono" style="--curso-color:${color}">
+        <svg viewBox="0 0 16 16" fill="none" width="14" height="14" style="display:block">
+          <path d="M2 7L8 2l6 5v7a1 1 0 01-1 1H3a1 1 0 01-1-1V7z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+          <path d="M6 15V9h4v6" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <span class="tema-info">
+        <span class="tema-texto">Presentación</span>
+      </span>
+    </button>
+  `;
+  const btnPresentacion = liPresentacion.querySelector<HTMLButtonElement>('.tema-btn')!;
+  btnPresentacion.addEventListener('click', () => {
+    listaTemas.querySelectorAll('.tema-btn').forEach(b => b.classList.remove('activo'));
+    btnPresentacion.classList.add('activo');
+    panelSubtemas.style.flex     = '0 0 0';
+    panelSubtemas.style.opacity  = '0';
+    panelContenido.style.display = 'none';
+    fadeInPanel(panelIntro);
+    ocultarReproductores();
+    temaActualId = null;
+  });
+  listaTemas.appendChild(liPresentacion);
+
   (curso.temas ?? []).forEach((tema: any, idx: number) => {
     const li = document.createElement('li');
     li.className = 'tema-item';
@@ -466,52 +648,68 @@ function abrirCurso(curso: any, articleEl: HTMLElement) {
     listaTemas.appendChild(li);
   });
 
-  // ── Panel intro: imagen + descripción + índice de temas ──
+  // ── Panel intro: título, imagen, descripción, stats e índice ──
+  introCursoTitulo.textContent = curso.titulo;
+
   const introImgWrap = document.getElementById('introCursoBanner') as HTMLElement;
   if (curso.imagen) {
     (introImgWrap.querySelector('img') as HTMLImageElement).src = curso.imagen;
-    introImgWrap.style.display = 'block';
+    introImgWrap.style.display = '';
   } else {
     introImgWrap.style.display = 'none';
   }
-  if (curso.descripcion?.trim()) {
-    introDesc.innerHTML     = curso.descripcion.trim();
-    introDesc.style.display = '';
-  } else {
-    introDesc.innerHTML     = '';
-    introDesc.style.display = 'none';
-  }
+
+  const descTexto = normalizarRte(curso.descripcion || '');
+  introDesc.innerHTML = descTexto;
+  introDesc.style.display = descTexto ? '' : 'none';
+
+  // Stats: nº temas + duración total
+  const numTemas  = (curso.temas ?? []).length;
+  const durTotal  = calcularDuracionTotal(curso.temas ?? [], curso.duracion_seg);
+  introStats.innerHTML = `
+    <span class="intro-stat">
+      <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M5 6h6M5 9h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      ${numTemas} tema${numTemas !== 1 ? 's' : ''}
+    </span>
+    ${durTotal ? `<span class="intro-stat">
+      <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M8 5v3l2 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      ${durTotal}
+    </span>` : ''}
+  `;
+
   introTemaLista.innerHTML = '';
   (curso.temas ?? []).forEach((tema: any, idx: number) => {
+    const li  = document.createElement('li');
     const btn = document.createElement('button');
     btn.className = 'intro-tema-item';
     const tieneVideo = tema.materiales?.some((m: any) => m.tipo === 'video');
+    const dur = duracionTemaTexto(tema);
     btn.innerHTML = `
-      <span class="intro-tema-num" style="background:${color}">${idx + 1}</span>
-      <span class="intro-tema-info">
-        <span class="intro-tema-titulo">${tema.titulo}</span>
-        ${tema.descripcion?.trim() ? `<span class="intro-tema-desc">${stripHtml(tema.descripcion.trim(), 80)}</span>` : ''}
-        <span class="intro-tema-dur">
-          ${tieneVideo ? '▶ Video · ' : ''}${duracionTemaTexto(tema)}
-        </span>
+      <span class="intro-tema-icono">
+        ${tieneVideo
+          ? `<svg viewBox="0 0 16 16" fill="none" width="15" height="15"><polygon points="5,3 13,8 5,13" fill="currentColor"/></svg>`
+          : `<svg viewBox="0 0 16 16" fill="none" width="15" height="15"><path d="M4 2h6l4 4v8a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="currentColor" stroke-width="1.4"/><path d="M10 2v4h4" stroke="currentColor" stroke-width="1.4"/></svg>`
+        }
       </span>
-      <svg viewBox="0 0 16 16" fill="none" width="14" height="14" style="flex-shrink:0;color:#ccc">
-        <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
+      <span class="intro-tema-info">
+        <span class="intro-tema-titulo">${idx + 1}. ${tema.titulo}</span>
+        ${tema.descripcion?.trim() ? `<span class="intro-tema-desc">${stripHtml(tema.descripcion.trim(), 120)}</span>` : ''}
+      </span>
+      ${dur ? `<span class="intro-tema-dur">${dur}</span>` : ''}
     `;
-    // Al clicar en intro, ir directamente al tema
     btn.addEventListener('click', () => {
-      const li = listaTemas.querySelectorAll<HTMLElement>('.tema-item')[idx];
-      if (li) li.querySelector<HTMLButtonElement>('.tema-btn')!.click();
+      const liSidebar = listaTemas.querySelectorAll<HTMLElement>('.tema-item:not(.tema-item-presentacion)')[idx];
+      if (liSidebar) liSidebar.querySelector<HTMLButtonElement>('.tema-btn')!.click();
     });
-    introTemaLista.appendChild(btn);
+    li.appendChild(btn);
+    introTemaLista.appendChild(li);
   });
 
   // Mostrar intro, ocultar sidebar y tabs/video
   panelSubtemas.style.flex    = '0 0 0';
   panelSubtemas.style.opacity = '0';
-  panelIntro.style.display     = 'flex';
   panelContenido.style.display = 'none';
+  fadeInPanel(panelIntro);
 
   document.querySelectorAll('.curso').forEach(c => c.classList.remove('activo'));
   articleEl.classList.add('activo');
@@ -558,13 +756,13 @@ async function seleccionarTema(tema: any, liEl: HTMLElement) {
   // Pasar de intro a panel de contenido (mostrar sidebar)
   panelSubtemas.style.flex    = '0 0 250px';
   panelSubtemas.style.opacity = '1';
-  panelIntro.style.display     = 'none';
-  panelContenido.style.display = 'flex';
+  panelIntro.style.display    = 'none';
+  fadeInPanel(panelContenido);
 
   listaTemas.querySelectorAll('.tema-btn').forEach(b => b.classList.remove('activo'));
   liEl.querySelector('.tema-btn')!.classList.add('activo');
   leccionTit.textContent  = tema.titulo;
-  leccionDesc.innerHTML = tema.descripcion || '';
+  leccionDesc.innerHTML = normalizarRte(tema.descripcion || '');
   temaActualId = tema.id ?? null;
 
   const videosMat = (tema.materiales ?? []).filter((m: any) => m.tipo === 'video');
@@ -634,9 +832,16 @@ async function seleccionarTema(tema: any, liEl: HTMLElement) {
   }
 }
 
+// ── Toggle panel izquierdo ────────────────────────────────────
+btnToggleLista.addEventListener('click', () => {
+  vista.classList.toggle('lista-oculta');
+  const oculta = vista.classList.contains('lista-oculta');
+  btnToggleLista.title = oculta ? 'Mostrar panel de cursos' : 'Ocultar panel de cursos';
+});
+
 // ── Cerrar panel ──────────────────────────────────────────────
 btnVolver.addEventListener('click', () => {
-  vista.classList.remove('con-detalle');
+  vista.classList.remove('con-detalle', 'lista-oculta');
   document.querySelectorAll('.curso').forEach(c => c.classList.remove('activo'));
   ocultarReproductores();
   videoPlaceholder.style.display = 'flex';

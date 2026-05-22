@@ -49,7 +49,7 @@
   padding: 0.85rem 0.95rem;
   background: var(--toast-bg, #fff);
   border: 1.5px solid var(--toast-border, var(--color-primary));
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   box-shadow:
     0 6px 24px rgba(0, 0, 0, 0.08),
     0 1px 3px rgba(0, 0, 0, 0.04);

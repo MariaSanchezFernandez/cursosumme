@@ -58,6 +58,24 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
       border:1px solid #f3dfb6;"></p>
   </div>
 
+  <!-- Sesiones activas -->
+  <div id="sesiones-wrap" style="display:none; margin-bottom:1.75rem;">
+    <p class="seccion-titulo" style="margin-bottom:0.75rem;">Sesiones activas</p>
+    <div id="sesiones-lista" style="margin-bottom:0.85rem;"></div>
+    <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap; row-gap:0.5rem;">
+      <label class="form-label" style="margin:0; white-space:nowrap;">Dispositivos simultáneos:</label>
+      <input type="number" id="inp-max-sesiones" min="1" max="10" step="1"
+        class="form-input" style="width:72px; height:36px; text-align:center;" />
+      <button id="btn-guardar-sesiones" class="btn-admin primario" style="height:36px; font-size:0.78rem;">
+        Guardar
+      </button>
+      <button id="btn-cerrar-sesiones" class="btn-admin"
+        style="height:36px; font-size:0.78rem; color:#c33; border-color:#f5c6c6;">
+        Cerrar todas las sesiones
+      </button>
+    </div>
+  </div>
+
   <!-- Progreso del alumno -->
   <div id="progreso-wrap" style="display:none; margin-bottom:2rem;">
     <p class="seccion-titulo" style="margin-bottom:0.75rem;">Progreso del alumno</p>
@@ -70,8 +88,13 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
 
   <div id="cursos-container" style="display:none;"></div>
 
-  <div id="cursos-vacio" style="display:none; font-size:0.85rem; color:#aaa; margin-bottom:1rem;">
-    No hay cursos disponibles todavía.
+  <div id="cursos-vacio" class="estado-vacio" style="display:none;">
+    <svg viewBox="0 0 48 48" fill="none" width="48" height="48" aria-hidden="true">
+      <circle cx="24" cy="24" r="20" stroke="#c8dcd3" stroke-width="2"/>
+      <path d="M15 18h18M15 24h18M15 30h11" stroke="#c8dcd3" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <p class="estado-vacio-titulo">Sin cursos asignados</p>
+    <p class="estado-vacio-sub">Asigna cursos a este alumno desde el listado de cursos</p>
   </div>
 
   <div style="margin-top:1.5rem; display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
@@ -114,6 +137,34 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
 .pack-grupo-solo-label {
   font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
   letter-spacing: 0.1em; color: #bbb; margin: 1rem 0 0.5rem;
+}
+.sesion-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.75rem;
+  background: #f4f9f6;
+  border: 1px solid #d8e8e0;
+  border-radius: 8px;
+  margin-bottom: 0.4rem;
+  font-size: 0.8rem;
+  flex-wrap: wrap;
+}
+.sesion-dispositivo {
+  font-weight: 600;
+  color: #2e5c42;
+  flex: 1;
+  min-width: 120px;
+}
+.sesion-meta {
+  color: #888;
+  white-space: nowrap;
+}
+#sesiones-wrap .btn-admin {
+  white-space: nowrap;
+}
+@media (max-width: 480px) {
+  .sesion-meta { width: 100%; padding-left: 1.4rem; }
 }
 </style>
 
@@ -228,12 +279,81 @@ async function cargar() {
     const data = await res.json();
     btnCambiar.disabled = false; btnCambiar.textContent = 'Guardar contraseña';
     if (data.ok) {
-      mostrarMsg('✓ Contraseña actualizada.', 'ok');
+      mostrarMsg('✓ Contraseña guardada.', 'ok');
       pwdAviso.textContent = `Nueva contraseña: ${nueva} — cópiala ahora, no se podrá ver de nuevo.`;
       pwdAviso.style.display = 'block';
     } else {
-      mostrarMsg(data.mensaje || 'Error al cambiar la contraseña.', 'error');
+      mostrarMsg(data.mensaje || 'No se pudo cambiar la contraseña.', 'error');
     }
+  });
+
+  // ── Sesiones activas ──────────────────────────────────────
+  const sesionesWrap  = document.getElementById('sesiones-wrap') as HTMLElement;
+  const sesionesLista = document.getElementById('sesiones-lista') as HTMLElement;
+  const inpMaxSes     = document.getElementById('inp-max-sesiones') as HTMLInputElement;
+  const btnGuardarSes = document.getElementById('btn-guardar-sesiones') as HTMLButtonElement;
+  const btnCerrarSes  = document.getElementById('btn-cerrar-sesiones') as HTMLButtonElement;
+
+  const token = JSON.parse(sessionStorage.getItem('umme_session') || '{}').token || '';
+  const authH = { 'Content-Type': 'application/json', 'X-Token': token };
+
+  async function cargarSesiones() {
+    try {
+      const res  = await fetch(`/api/sesiones.php?usuario_id=${alumnoId}`, { headers: authH });
+      const data = await res.json();
+      if (!data.ok) { console.error('[sesiones] API error:', data); return; }
+      inpMaxSes.value = String(data.max);
+      const lista: any[] = data.lista || [];
+      if (lista.length === 0) {
+        sesionesLista.innerHTML = '<p style="font-size:0.82rem;color:#888;margin:0;">Sin sesiones activas ahora mismo.</p>';
+      } else {
+        sesionesLista.innerHTML = lista.map((s: any) => {
+          const fecha = new Date(s.creado_en).toLocaleString('es-ES', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+          return `<div class="sesion-item">
+            <svg viewBox="0 0 16 16" fill="none" width="14" height="14" style="flex-shrink:0;color:#5a8a72">
+              <rect x="1" y="2" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M5 14h6M8 12v2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+            <span class="sesion-dispositivo">${s.dispositivo || 'Dispositivo desconocido'}</span>
+            <span class="sesion-meta">${s.ip || '—'} · desde ${fecha}</span>
+          </div>`;
+        }).join('');
+      }
+    } catch (e) { console.error('[sesiones] excepción:', e); }
+  }
+
+  await cargarSesiones();
+  sesionesWrap.style.display = 'block';
+
+  btnGuardarSes.addEventListener('click', async () => {
+    const max = parseInt(inpMaxSes.value);
+    if (isNaN(max) || max < 1 || max > 10) {
+      mostrarMsg('El límite debe ser entre 1 y 10.', 'error'); return;
+    }
+    await window.botonCargando(btnGuardarSes, 'Guardando…', async () => {
+      const res  = await fetch('/api/sesiones.php', {
+        method: 'PATCH', headers: authH,
+        body: JSON.stringify({ usuario_id: alumnoId, max_sesiones: max }),
+      });
+      const data = await res.json();
+      mostrarMsg(data.ok ? '✓ Límite guardado.' : (data.mensaje || 'No se pudo guardar'), data.ok ? 'ok' : 'error');
+    });
+  });
+
+  btnCerrarSes.addEventListener('click', async () => {
+    const ok = await window.confirmar({
+      titulo: 'Cerrar todas las sesiones',
+      mensaje: 'El alumno tendrá que iniciar sesión de nuevo en todos sus dispositivos. ¿Continuar?',
+      textoConfirmar: 'Cerrar sesiones',
+      peligro: true,
+    });
+    if (!ok) return;
+    await window.botonCargando(btnCerrarSes, 'Cerrando…', async () => {
+      const res  = await fetch(`/api/sesiones.php?usuario_id=${alumnoId}`, { method: 'DELETE', headers: authH });
+      const data = await res.json();
+      if (data.ok) { mostrarMsg('✓ Todas las sesiones han sido cerradas.', 'ok'); await cargarSesiones(); }
+      else mostrarMsg(data.mensaje || 'No se pudo cerrar las sesiones.', 'error');
+    });
   });
 
   document.getElementById('btn-guardar-fechas')!.addEventListener('click', async () => {
@@ -250,7 +370,7 @@ async function cargar() {
     });
     const data = await res.json();
     btn.disabled = false; btn.textContent = 'Guardar fechas';
-    mostrarMsg(data.ok ? '✓ Fechas actualizadas.' : (data.mensaje || 'Error'), data.ok ? 'ok' : 'error');
+    mostrarMsg(data.ok ? '✓ Fechas guardadas.' : (data.mensaje || 'No se pudo guardar'), data.ok ? 'ok' : 'error');
     if (data.ok) actualizarBadge();
   });
 
@@ -339,7 +459,7 @@ async function cargar() {
       if (data.ok) {
         window.location.href = '/admin/alumnos';
       } else {
-        window.mostrarToast(data.mensaje || 'Error al eliminar', 'error');
+        window.mostrarToast(data.mensaje || 'No se pudo eliminar el alumno', 'error');
       }
     });
   });
@@ -373,7 +493,7 @@ async function cargar() {
     const data = await res.json();
     btnGuardar.disabled    = false;
     btnGuardar.textContent = 'Guardar cambios';
-    mostrarMsg(data.ok ? '✓ Cursos actualizados correctamente.' : (data.mensaje || 'Error al guardar'), data.ok ? 'ok' : 'error');
+    mostrarMsg(data.ok ? '✓ Cursos guardados.' : (data.mensaje || 'No se pudieron guardar los cambios'), data.ok ? 'ok' : 'error');
   });
 }
 

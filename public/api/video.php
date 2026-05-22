@@ -32,8 +32,10 @@ if ($token === '' || !preg_match('/^[a-f0-9]{64}$/', $token)) {
 }
 
 $authStmt = $pdo->prepare(
-    'SELECT rol FROM usuarios
-     WHERE id = :id AND token_sesion = :t AND token_expira > NOW()'
+    'SELECT u.rol FROM usuarios u
+     INNER JOIN sesiones s ON s.usuario_id = u.id
+     WHERE u.id = :id AND s.token = :t AND s.expira_en > NOW()
+     LIMIT 1'
 );
 $authStmt->execute([':id' => $usuarioId, ':t' => $token]);
 $rol = $authStmt->fetchColumn();

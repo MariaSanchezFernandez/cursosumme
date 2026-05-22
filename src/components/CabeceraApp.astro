@@ -127,14 +127,23 @@ import '../styles/CabeceraApp.css';
       }
     } catch (err: any) {
       window.logAppError?.('foto_perfil', 'Error de red subiendo foto (cabecera)', { detalle: err?.message, stack: err?.stack });
-      window.mostrarToast('Error de conexión al subir la foto.', 'error');
+      window.mostrarToast('Sin conexión. No se pudo subir la foto.', 'error');
     }
 
     fileInput.value = '';
   });
 
-  // Cerrar sesión (limpia también la sesión persistente "Recordarme")
-  document.getElementById('btnSalir')!.addEventListener('click', () => {
+  // Cerrar sesión: invalida el token en BD y limpia el storage local
+  document.getElementById('btnSalir')!.addEventListener('click', async () => {
+    try {
+      const _s2 = JSON.parse(sessionStorage.getItem('umme_session') || '{}');
+      if (_s2.token) {
+        await fetch('/api/logout.php', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + _s2.token },
+        });
+      }
+    } catch (e) {}
     sessionStorage.removeItem('umme_session');
     sessionStorage.removeItem('umme_foto');
     sessionStorage.removeItem('umme_badge');

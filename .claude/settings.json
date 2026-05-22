@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(curl -s \"http://cursosumme.es/api/leer-html.php?key=umme_s3tup_k3y_2025\" > /tmp/descripciones.json && echo \"OK $\\(wc -c < /tmp/descripciones.json\\) bytes\")",
+      "Bash(python3 -c \"import secrets; print\\(secrets.token_urlsafe\\(32\\)\\)\")",
+      "Bash(php -l /Users/mariasanchez/Desktop/cursosumme/public/api/restaurar-html.php)",
+      "Bash(curl -s \"http://cursosumme.es/api/restaurar-html.php?key=umme_s3tup_k3y_2025\")"
+    ],
+    "additionalDirectories": [
+      "/tmp"
+    ]
+  }
+}

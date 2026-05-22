@@ -77,9 +77,15 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
       <tbody id="tbody-alumnos"></tbody>
     </table>
 
-    <div id="estado-vacio" style="display:none; padding:2rem 1.5rem; color:#aaa; font-size:0.85rem;">
-      No hay alumnos todavía.
-      <a href="/admin/alumnos/crear-alumno" style="color:inherit; font-weight:600;">Crear el primero →</a>
+    <div id="estado-vacio" class="estado-vacio" style="display:none;">
+      <svg viewBox="0 0 48 48" fill="none" width="48" height="48" aria-hidden="true">
+        <circle cx="24" cy="24" r="20" stroke="#c8dcd3" stroke-width="2"/>
+        <circle cx="24" cy="20" r="5" stroke="#c8dcd3" stroke-width="1.8"/>
+        <path d="M13 37c0-6.1 4.9-10 11-10s11 3.9 11 10" stroke="#c8dcd3" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <p class="estado-vacio-titulo">Aún no hay alumnos</p>
+      <p class="estado-vacio-sub">Crea el primero para que puedan acceder a los cursos</p>
+      <a href="/admin/alumnos/crear-alumno" class="estado-vacio-cta">Crear primer alumno</a>
     </div>
   </div>
 

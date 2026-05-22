@@ -1,0 +1,48 @@
+/*
+ * COMPONENTE: EstadoVacio
+ * -----------------------
+ * Estado vacío reutilizable: icono SVG + título + subtexto + CTA opcional.
+ * Usado en todas las listas que pueden no tener datos.
+ */
+
+.estado-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 3.5rem var(--space-2);
+  text-align: center;
+}
+
+.estado-vacio-titulo {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.estado-vacio-sub {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+  max-width: 280px;
+  line-height: 1.55;
+}
+
+.estado-vacio-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: var(--space-1);
+  padding: 0.55rem 1.25rem;
+  background: var(--color-primary);
+  border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: #1a2e28;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.estado-vacio-cta:hover { opacity: 0.85; }

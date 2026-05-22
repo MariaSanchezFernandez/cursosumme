@@ -73,11 +73,15 @@
 #avatar-file-input { display: none; }
 
 .avatar-nombre {
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   color: var(--color-text);
   text-decoration: none;
   transition: color 0.12s;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .avatar-nombre:hover { color: var(--color-primary); }
 
@@ -118,6 +122,19 @@
 
   .avatar-nombre {
     display: none;
+  }
+
+  /* Touch targets mínimo 44×44 */
+  .avatar-circulo {
+    width: 44px;
+    height: 44px;
+  }
+
+  .btn-salir {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 0.75rem;
+    justify-content: center;
   }
 
   .btn-salir span {

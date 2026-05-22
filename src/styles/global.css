@@ -1,7 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;400;600;800&display=swap');
 @import './Skeleton.css';
+@import './EstadoVacio.css';
 
 :root {
+  /* ── Colores ── */
   --color-primary: #b3e8da;
   --color-secondary: #fff8b7;
   --color-accent: #f9c30e;
@@ -9,6 +11,25 @@
   --color-light: #def1ec;
   --color-text: #000;
   --color-text-muted: #555;
+
+  /* ── Espaciado ── */
+  --space-1: 0.5rem;   /*  8px */
+  --space-2: 1rem;     /* 16px */
+  --space-3: 1.5rem;   /* 24px */
+  --space-4: 2.5rem;   /* 40px */
+
+  /* ── Tipografía ── */
+  --text-sm:   0.82rem;
+  --text-base: 0.9rem;
+  --text-lg:   1rem;
+
+  /* ── Bordes ── */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+
+  /* ── Sombras ── */
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
 }
 
 html {

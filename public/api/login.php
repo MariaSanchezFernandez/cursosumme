@@ -93,21 +93,65 @@ if (!empty($usuario['fecha_baja']) && $usuario['fecha_baja'] < date('Y-m-d')) {
     exit;
 }
 
-// ── Login correcto: limpiar intentos y generar token ──────────
+// ── Login correcto: limpiar intentos ─────────────────────────
 $pdo->prepare('DELETE FROM login_intentos WHERE ip = :ip')->execute([':ip' => $ip]);
 
-$token   = bin2hex(random_bytes(32)); // 64 chars
-// 15 días: cubre tanto la sesión efímera de 8 h como la persistente
-// del checkbox "Recordarme" (15 días en localStorage).
-$expira  = date('Y-m-d H:i:s', strtotime('+15 days'));
-$pdo->prepare('UPDATE usuarios SET token_sesion = :t, token_expira = :e WHERE id = :id')
-    ->execute([':t' => $token, ':e' => $expira, ':id' => $usuario['id']]);
+// Limpiar sesiones expiradas de este usuario (mantenimiento preventivo)
+$pdo->prepare('DELETE FROM sesiones WHERE usuario_id = :id AND expira_en < NOW()')
+    ->execute([':id' => $usuario['id']]);
+
+// Comprobar límite de sesiones activas
+$stCount = $pdo->prepare('SELECT COUNT(*) FROM sesiones WHERE usuario_id = :id AND expira_en > NOW()');
+$stCount->execute([':id' => $usuario['id']]);
+$activasCuenta = (int)$stCount->fetchColumn();
+
+if ($usuario['rol'] !== 'admin') {
+    $stMax = $pdo->prepare('SELECT max_sesiones FROM usuarios WHERE id = :id LIMIT 1');
+    $stMax->execute([':id' => $usuario['id']]);
+    $maxSesiones = (int)$stMax->fetchColumn() ?: 2;
+
+    if ($activasCuenta >= $maxSesiones) {
+        $msg = $maxSesiones === 1
+            ? 'Ya hay una sesión activa con esta cuenta. Cierra sesión en ese dispositivo para continuar.'
+            : "Ya hay {$activasCuenta} sesiones activas (límite: {$maxSesiones}). Cierra sesión en otro dispositivo para continuar.";
+        echo json_encode(['ok' => false, 'mensaje' => $msg]);
+        exit;
+    }
+}
+
+// Generar e insertar nueva sesión
+$token = bin2hex(random_bytes(32));
+$expira = date('Y-m-d H:i:s', strtotime('+15 days'));
+$ua = substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 300);
+// Etiqueta legible: "Chrome · Windows", "Safari · iPhone", etc.
+function parsearDispositivo(string $ua): string {
+    $os = 'Desconocido';
+    if (preg_match('/iPhone|iPad/i', $ua))         $os = str_contains($ua, 'iPad') ? 'iPad' : 'iPhone';
+    elseif (preg_match('/Android/i', $ua))          $os = 'Android';
+    elseif (preg_match('/Windows/i', $ua))          $os = 'Windows';
+    elseif (preg_match('/Macintosh|Mac OS X/i', $ua)) $os = 'Mac';
+    elseif (preg_match('/Linux/i', $ua))            $os = 'Linux';
+
+    $nav = 'Navegador';
+    if (preg_match('/Edg\//i', $ua))                $nav = 'Edge';
+    elseif (preg_match('/OPR\//i', $ua))            $nav = 'Opera';
+    elseif (preg_match('/Chrome\//i', $ua))         $nav = 'Chrome';
+    elseif (preg_match('/Firefox\//i', $ua))        $nav = 'Firefox';
+    elseif (preg_match('/Safari\//i', $ua))         $nav = 'Safari';
+
+    return $nav . ' · ' . $os;
+}
+$dispositivo = $ua ? parsearDispositivo($ua) : 'Dispositivo desconocido';
+$pdo->prepare(
+    'INSERT INTO sesiones (usuario_id, token, ip, dispositivo, expira_en) VALUES (:uid, :t, :ip, :d, :e)'
+)->execute([':uid' => $usuario['id'], ':t' => $token, ':ip' => $ip, ':d' => $dispositivo, ':e' => $expira]);
 
 echo json_encode([
-    'ok'     => true,
-    'rol'    => $usuario['rol'],
-    'id'     => (string) $usuario['id'],
-    'email'  => $email,
-    'nombre' => $usuario['nombre'],
-    'token'  => $token,
+    'ok'        => true,
+    'rol'       => $usuario['rol'],
+    'id'        => (string) $usuario['id'],
+    'email'     => $email,
+    'nombre'    => $usuario['nombre'],
+    'token'     => $token,
+    'fecha_baja'=> $usuario['fecha_baja'] ?? null,
 ]);

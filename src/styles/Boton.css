@@ -3,13 +3,13 @@
   padding: 0.85rem;
   background-color: var(--color-coral);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-family: 'DM Sans', sans-serif;
   font-weight: 800;
-  font-size: 1rem;
+  font-size: var(--text-lg);
   color: var(--color-text);
   cursor: pointer;
-  margin-top: 0.5rem;
+  margin-top: var(--space-1);
   transition: opacity 0.2s;
 }
 
