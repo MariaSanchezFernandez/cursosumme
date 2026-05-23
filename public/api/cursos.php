@@ -15,6 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
 require_once __DIR__ . '/db-connect.php';
 require_once __DIR__ . '/log-helper.php';
+require_once __DIR__ . '/html-helper.php';
 $pdo = obtenerPDO();
 
 $metodo = $_SERVER['REQUEST_METHOD'];
@@ -181,7 +182,7 @@ if ($metodo === 'POST') {
     );
     $stmt->execute([
         ':titulo'      => trim($body['titulo']),
-        ':descripcion' => !empty($body['descripcion']) ? trim($body['descripcion']) : null,
+        ':descripcion' => !empty($body['descripcion']) ? limpiarHtml($body['descripcion']) : null,
         ':etiqueta'    => trim($body['etiqueta']),
         ':nivel'       => trim($body['nivel']),
         ':duracion'    => trim($body['duracion'] ?? ''),
@@ -204,6 +205,12 @@ if ($metodo === 'PUT') {
         echo json_encode(['ok' => false, 'mensaje' => 'Falta el id del curso']);
         exit;
     }
+    if (!empty($body['color_only'])) {
+        $stmt = $pdo->prepare('UPDATE cursos SET color=:color WHERE id=:id');
+        $stmt->execute([':color' => !empty($body['color']) ? trim($body['color']) : null, ':id' => (int)$body['id']]);
+        echo json_encode(['ok' => true]);
+        exit;
+    }
     $stmt = $pdo->prepare(
         'UPDATE cursos SET titulo=:titulo, descripcion=:descripcion, etiqueta=:etiqueta, nivel=:nivel,
          duracion=:duracion, pack=:pack, pack_color=:pack_color, color=:color, imagen=:imagen, activo=:activo,
@@ -211,7 +218,7 @@ if ($metodo === 'PUT') {
     );
     $stmt->execute([
         ':titulo'      => trim($body['titulo'] ?? ''),
-        ':descripcion' => isset($body['descripcion']) ? trim($body['descripcion']) : null,
+        ':descripcion' => isset($body['descripcion']) ? limpiarHtml($body['descripcion']) : null,
         ':etiqueta'    => trim($body['etiqueta'] ?? ''),
         ':nivel'       => trim($body['nivel'] ?? ''),
         ':duracion'    => trim($body['duracion'] ?? ''),

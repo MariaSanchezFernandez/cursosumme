@@ -526,13 +526,11 @@ function renderizarCursos(filtro: string) {
           dot.addEventListener('click', async () => {
             c.color = color;
             btnColorCurso.style.background = color;
-            acentoEl.style.background = color;
+            if (acentoEl) acentoEl.style.background = color;
             paleta.remove();
             await fetch('/api/cursos.php', {
               method: 'PUT', headers: {'Content-Type':'application/json'},
-              body: JSON.stringify({ id: c.id, titulo: c.titulo, etiqueta: c.etiqueta,
-                nivel: c.nivel, duracion: c.duracion, activo: c.activo,
-                pack: c.pack || null, pack_color: c.pack_color || null, color }),
+              body: JSON.stringify({ id: c.id, color_only: true, color }),
             });
           });
           paleta.appendChild(dot);
