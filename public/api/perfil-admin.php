@@ -2,18 +2,29 @@
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, PUT, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Token');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
 require_once __DIR__ . '/db-connect.php';
 require_once __DIR__ . '/log-helper.php';
-$pdo = obtenerPDO();
+$pdo  = obtenerPDO();
+$user = requireAdmin($pdo);
+
+// Un admin solo puede consultar/editar su propio perfil
+function puedeEditarPerfilAdmin(array $user, int $id): bool {
+    return $id === (int)$user['id'];
+}
 
 // ── GET: datos del admin ──────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $id = isset($_GET['usuario_id']) ? (int)$_GET['usuario_id'] : 0;
     if (!$id) { http_response_code(400); echo json_encode(['ok' => false, 'error' => 'Falta usuario_id']); exit; }
+    if (!puedeEditarPerfilAdmin($user, $id)) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'error' => 'Acceso denegado']);
+        exit;
+    }
 
     $stmt = $pdo->prepare('SELECT id, nombre, apellidos, email FROM usuarios WHERE id = ? AND rol = "admin"');
     $stmt->execute([$id]);
@@ -29,6 +40,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     $body = json_decode(file_get_contents('php://input'), true);
     $id   = isset($body['usuario_id']) ? (int)$body['usuario_id'] : 0;
     if (!$id) { http_response_code(400); echo json_encode(['ok' => false, 'error' => 'Falta usuario_id']); exit; }
+    if (!puedeEditarPerfilAdmin($user, $id)) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'error' => 'Acceso denegado']);
+        exit;
+    }
 
     $nombre    = isset($body['nombre'])    ? trim($body['nombre'])    : null;
     $apellidos = isset($body['apellidos']) ? trim($body['apellidos']) : null;

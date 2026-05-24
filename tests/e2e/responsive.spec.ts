@@ -12,23 +12,26 @@
 // ─────────────────────────────────────────────────────────────
 
 import { test, expect } from '@playwright/test';
+import { getAdmin } from './helpers/auth';
 
 const VP_MOBILE  = { width: 375,  height: 667 };
 const VP_TABLET  = { width: 768,  height: 1024 };
 const VP_DESKTOP = { width: 1280, height: 800 };
 
 async function inyectarSesionAdmin(page: import('@playwright/test').Page) {
-  await page.addInitScript(() => {
-    sessionStorage.setItem(
-      'umme_session',
-      JSON.stringify({
-        userId: 0,
-        email: 'test@test.test',
-        nombre: 'Test',
-        rol: 'admin',
-        exp: Date.now() + 60_000,
-      }),
-    );
+  // Usamos el token real cacheado por global-setup. Antes inyectábamos una
+  // sesión sintética sin token y funcionaba porque las APIs no validaban
+  // auth — ahora sí, y el interceptor redirige al login al detectar 401.
+  const admin = getAdmin();
+  await page.addInitScript((s) => {
+    sessionStorage.setItem('umme_session', JSON.stringify(s));
+  }, {
+    userId: admin.userId,
+    email:  admin.email,
+    nombre: 'Test',
+    rol:    'admin',
+    token:  admin.token,
+    exp:    Date.now() + 60_000,
   });
 }
 

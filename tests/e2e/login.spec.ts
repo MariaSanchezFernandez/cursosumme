@@ -22,7 +22,7 @@ test.describe('Login', () => {
     await page.locator('#password').fill(ALUMNO_PASS!);
     await page.locator('button[type="submit"]').click();
 
-    await page.waitForURL('**/inicio');
+    await page.waitForURL((url) => url.pathname.startsWith('/inicio'));
     expect(page.url()).toContain('/inicio');
   });
 
@@ -33,7 +33,7 @@ test.describe('Login', () => {
     await page.locator('#password').fill(ADMIN_PASS!);
     await page.locator('button[type="submit"]').click();
 
-    await page.waitForURL('**/admin');
+    await page.waitForURL((url) => url.pathname.startsWith('/admin'));
     expect(page.url()).toContain('/admin');
   });
 });

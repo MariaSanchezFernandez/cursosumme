@@ -2,8 +2,9 @@
  * backup-db.mjs — Descarga un backup SQL completo de la BD del servidor
  * Uso: npm run backup-db
  *
- * Llama a http://cursosumme.es/api/backup-db.php?key=BACKUP_SECRET,
- * descarga el archivo y lo guarda en backups/ con timestamp.
+ * Llama por POST a http://cursosumme.es/api/backup-db.php con la clave
+ * en el body (no en query string, para que no quede en logs del servidor).
+ * Descarga el archivo y lo guarda en backups/ con timestamp.
  * Mantiene solo los últimos 10 backups.
  */
 
@@ -33,10 +34,12 @@ if (!secret) {
 mkdirSync(BACKUPS_DIR, { recursive: true });
 
 // ── Llamar al endpoint ─────────────────────────────────────────────────────
-const url = `${BASE_URL}/api/backup-db.php?key=${encodeURIComponent(secret)}`;
-
 console.log('Solicitando backup al servidor…');
-const res = await fetch(url);
+const res = await fetch(`${BASE_URL}/api/backup-db.php`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ key: secret }),
+});
 
 if (!res.ok) {
   const cuerpo = await res.text();

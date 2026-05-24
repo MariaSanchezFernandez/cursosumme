@@ -32,6 +32,22 @@ import '../styles/index.css';
   })();
   </script>
 
+  <!-- Si venimos redirigidos por sesión expirada (?expirada=1), avisamos al usuario -->
+  <script is:inline>
+  (function () {
+    if (new URLSearchParams(window.location.search).get('expirada') !== '1') return;
+    // Esperamos a que el DOM tenga el #login-error (lo pinta TarjetaLogin)
+    document.addEventListener('DOMContentLoaded', function () {
+      var el = document.getElementById('login-error');
+      if (!el) return;
+      el.textContent  = 'Tu sesión ha caducado. Vuelve a iniciar sesión.';
+      el.style.display = 'block';
+      // Limpiar el querystring de la URL sin recargar
+      history.replaceState(null, '', '/');
+    });
+  })();
+  </script>
+
   <FondoLogin />
   <main class="login-page">
     <TarjetaLogin />

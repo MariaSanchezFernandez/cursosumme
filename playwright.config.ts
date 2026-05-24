@@ -1,9 +1,13 @@
 import { defineConfig, devices } from '@playwright/test';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
 
 const BASE_URL = process.env.BASE_URL || 'http://cursosumme.es';
 
 export default defineConfig({
   testDir: './tests/e2e',
+  globalSetup: './tests/global-setup.ts',
   timeout: 30_000,
   expect: { timeout: 5_000 },
   fullyParallel: true,

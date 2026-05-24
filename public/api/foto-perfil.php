@@ -8,19 +8,30 @@
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Token');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
 require_once __DIR__ . '/db-connect.php';
 $pdo = obtenerPDO();
+$user = requireAuth($pdo);
 
 $metodo = $_SERVER['REQUEST_METHOD'];
+
+// Solo puedes ver/cambiar tu propia foto, salvo que seas admin
+function puedeAccederFoto(array $user, int $uid): bool {
+    return $uid === (int)$user['id'] || $user['rol'] === 'admin';
+}
 
 // ── GET ───────────────────────────────────────────────────────
 if ($metodo === 'GET') {
     $uid = (int)($_GET['usuario_id'] ?? 0);
     if (!$uid) { http_response_code(400); echo json_encode(['ok' => false, 'mensaje' => 'Falta usuario_id']); exit; }
+    if (!puedeAccederFoto($user, $uid)) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'mensaje' => 'Acceso denegado']);
+        exit;
+    }
     $stmt = $pdo->prepare('SELECT foto_perfil FROM usuarios WHERE id = :id');
     $stmt->execute([':id' => $uid]);
     $row = $stmt->fetch();
@@ -32,6 +43,11 @@ if ($metodo === 'GET') {
 if ($metodo === 'POST') {
     $uid = (int)($_POST['usuario_id'] ?? 0);
     if (!$uid) { http_response_code(400); echo json_encode(['ok' => false, 'mensaje' => 'Falta usuario_id']); exit; }
+    if (!puedeAccederFoto($user, $uid)) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'mensaje' => 'Acceso denegado']);
+        exit;
+    }
 
     if (!isset($_FILES['archivo']) || $_FILES['archivo']['error'] !== UPLOAD_ERR_OK) {
         echo json_encode(['ok' => false, 'mensaje' => 'No se recibió ningún archivo']);

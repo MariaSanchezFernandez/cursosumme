@@ -30,9 +30,13 @@ if ($method === 'GET') {
     $fila = $st->fetch();
     if (!$fila) { echo json_encode(['ok' => false, 'mensaje' => 'Usuario no encontrado']); exit; }
 
+    // Una fila por dispositivo (etiqueta + IP) — varios tokens del mismo
+    // dispositivo cuentan como 1 sesión. Esto refleja el modelo de límite
+    // por dispositivo que aplica login.php.
     $st2 = $pdo->prepare(
-        'SELECT ip, dispositivo, creado_en, expira_en
+        'SELECT ip, dispositivo, MAX(creado_en) AS creado_en, MAX(expira_en) AS expira_en
          FROM sesiones WHERE usuario_id = :id AND expira_en > NOW()
+         GROUP BY dispositivo, ip
          ORDER BY creado_en DESC'
     );
     $st2->execute([':id' => $uid]);

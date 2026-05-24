@@ -9,7 +9,7 @@ header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Pragma: no-cache');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Token');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
@@ -19,6 +19,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     exit;
 }
 
+require_once __DIR__ . '/db-connect.php';
+$pdo  = obtenerPDO();
+$user = requireAuth($pdo);
+
 $usuarioId = isset($_GET['usuario_id']) ? (int)$_GET['usuario_id'] : 0;
 if (!$usuarioId) {
     http_response_code(400);
@@ -26,8 +30,12 @@ if (!$usuarioId) {
     exit;
 }
 
-require_once __DIR__ . '/db-connect.php';
-$pdo = obtenerPDO();
+// Solo puedes ver tus propios cursos, salvo que seas admin
+if ($usuarioId !== (int)$user['id'] && $user['rol'] !== 'admin') {
+    http_response_code(403);
+    echo json_encode(['ok' => false, 'mensaje' => 'Acceso denegado']);
+    exit;
+}
 
 
 // Cursos asignados al alumno (activos)

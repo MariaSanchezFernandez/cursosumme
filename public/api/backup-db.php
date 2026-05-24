@@ -1,12 +1,20 @@
 <?php
 // ─────────────────────────────────────────────────────────────
 // backup-db.php  —  Exporta la BD completa en formato SQL
-// Protegido con clave en query string: ?key=BACKUP_SECRET
+// Protegido con clave en POST body (NO query string para que la clave
+// no quede registrada en los logs de Apache/nginx).
+//   POST /api/backup-db.php
+//   body: { "key": "<BACKUP_SECRET>" }
 // Solo para uso interno; NO es un endpoint de alumno/admin.
 // ─────────────────────────────────────────────────────────────
 
 require_once __DIR__ . '/db-config.php';
 require_once __DIR__ . '/db-connect.php';
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    exit('Método no permitido');
+}
 
 // ── Autenticación ──────────────────────────────────────────────
 if (!defined('BACKUP_SECRET') || BACKUP_SECRET === '') {
@@ -14,7 +22,8 @@ if (!defined('BACKUP_SECRET') || BACKUP_SECRET === '') {
     exit('BACKUP_SECRET no configurado en db-config.php');
 }
 
-$clave = $_GET['key'] ?? '';
+$body  = json_decode(file_get_contents('php://input'), true) ?? [];
+$clave = $body['key'] ?? '';
 if (!hash_equals(BACKUP_SECRET, $clave)) {
     http_response_code(403);
     exit('Clave incorrecta');

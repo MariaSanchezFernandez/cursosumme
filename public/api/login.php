@@ -100,30 +100,10 @@ $pdo->prepare('DELETE FROM login_intentos WHERE ip = :ip')->execute([':ip' => $i
 $pdo->prepare('DELETE FROM sesiones WHERE usuario_id = :id AND expira_en < NOW()')
     ->execute([':id' => $usuario['id']]);
 
-// Comprobar límite de sesiones activas
-$stCount = $pdo->prepare('SELECT COUNT(*) FROM sesiones WHERE usuario_id = :id AND expira_en > NOW()');
-$stCount->execute([':id' => $usuario['id']]);
-$activasCuenta = (int)$stCount->fetchColumn();
-
-if ($usuario['rol'] !== 'admin') {
-    $stMax = $pdo->prepare('SELECT max_sesiones FROM usuarios WHERE id = :id LIMIT 1');
-    $stMax->execute([':id' => $usuario['id']]);
-    $maxSesiones = (int)$stMax->fetchColumn() ?: 2;
-
-    if ($activasCuenta >= $maxSesiones) {
-        $msg = $maxSesiones === 1
-            ? 'Ya hay una sesión activa con esta cuenta. Cierra sesión en ese dispositivo para continuar.'
-            : "Ya hay {$activasCuenta} sesiones activas (límite: {$maxSesiones}). Cierra sesión en otro dispositivo para continuar.";
-        echo json_encode(['ok' => false, 'mensaje' => $msg]);
-        exit;
-    }
-}
-
-// Generar e insertar nueva sesión
-$token = bin2hex(random_bytes(32));
-$expira = date('Y-m-d H:i:s', strtotime('+15 days'));
+// Parsear el dispositivo ANTES del control de límite — necesitamos saber
+// si este login es desde un dispositivo que ya tenía sesión (en cuyo caso
+// no cuenta como sesión nueva, simplemente se reemplaza).
 $ua = substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 300);
-// Etiqueta legible: "Chrome · Windows", "Safari · iPhone", etc.
 function parsearDispositivo(string $ua): string {
     $os = 'Desconocido';
     if (preg_match('/iPhone|iPad/i', $ua))         $os = str_contains($ua, 'iPad') ? 'iPad' : 'iPhone';
@@ -142,6 +122,41 @@ function parsearDispositivo(string $ua): string {
     return $nav . ' · ' . $os;
 }
 $dispositivo = $ua ? parsearDispositivo($ua) : 'Dispositivo desconocido';
+
+// El límite se cuenta por DISPOSITIVO ÚNICO (etiqueta + IP), no por token.
+// Si este login es desde un dispositivo+IP que ya tenía sesión activa, la
+// borramos primero — el nuevo token reemplaza al anterior y no suma al
+// contador.
+$pdo->prepare(
+    'DELETE FROM sesiones
+     WHERE usuario_id = :id AND dispositivo = :d AND ip = :ip'
+)->execute([':id' => $usuario['id'], ':d' => $dispositivo, ':ip' => $ip]);
+
+// Ahora sí, contar dispositivos activos distintos
+$stCount = $pdo->prepare(
+    'SELECT COUNT(DISTINCT CONCAT(dispositivo, "|", ip))
+     FROM sesiones WHERE usuario_id = :id AND expira_en > NOW()'
+);
+$stCount->execute([':id' => $usuario['id']]);
+$activasCuenta = (int)$stCount->fetchColumn();
+
+if ($usuario['rol'] !== 'admin') {
+    $stMax = $pdo->prepare('SELECT max_sesiones FROM usuarios WHERE id = :id LIMIT 1');
+    $stMax->execute([':id' => $usuario['id']]);
+    $maxSesiones = (int)$stMax->fetchColumn() ?: 2;
+
+    if ($activasCuenta >= $maxSesiones) {
+        $msg = $maxSesiones === 1
+            ? 'Ya hay una sesión activa con esta cuenta en otro dispositivo. Cierra sesión allí para continuar.'
+            : "Ya hay {$activasCuenta} dispositivos con sesión activa (límite: {$maxSesiones}). Cierra sesión en otro para continuar.";
+        echo json_encode(['ok' => false, 'mensaje' => $msg]);
+        exit;
+    }
+}
+
+// Generar e insertar nueva sesión
+$token  = bin2hex(random_bytes(32));
+$expira = date('Y-m-d H:i:s', strtotime('+15 days'));
 $pdo->prepare(
     'INSERT INTO sesiones (usuario_id, token, ip, dispositivo, expira_en) VALUES (:uid, :t, :ip, :d, :e)'
 )->execute([':uid' => $usuario['id'], ':t' => $token, ':ip' => $ip, ':d' => $dispositivo, ':e' => $expira]);

@@ -55,5 +55,5 @@ const hash = createHash('sha256').update(pass).digest('hex');
 
 console.log('\n── Hash generado ────────────────────────────────────');
 console.log(hash);
-console.log('\nPega este valor en el campo hashAcceso del usuario');
-console.log('en src/data/usuarios.ts y vuelve a hacer deploy.\n');
+console.log('\nPega este valor en el campo `contrasena` del usuario');
+console.log('en la BD (tabla usuarios).\n');

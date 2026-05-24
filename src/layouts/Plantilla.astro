@@ -14,10 +14,48 @@ import Modal from '../components/Modal.astro';
     <script data-cfasync="false" data-no-defer="1" src="https://player.vdocipher.com/v2/player.js"></script>
   </head>
   <body>
-    <!-- Interceptor global: añade X-Token a todas las llamadas /api/ automáticamente -->
+    <!-- 1) Hidratar sesión "Recordarme" PRIMERO: copiar localStorage → sessionStorage si vigente.
+         Tiene que ir antes del interceptor para que el primer fetch ya lleve el X-Token. -->
+    <script is:inline>
+    (function () {
+      try {
+        if (sessionStorage.getItem('umme_session')) return;
+        var raw = localStorage.getItem('umme_session');
+        if (!raw) return;
+        var s = JSON.parse(raw);
+        if (!s || !s.exp || Date.now() > s.exp) {
+          localStorage.removeItem('umme_session');
+          return;
+        }
+        sessionStorage.setItem('umme_session', raw);
+      } catch (e) {
+        try { localStorage.removeItem('umme_session'); } catch (e2) {}
+      }
+    })();
+    </script>
+
+    <!-- 2) Interceptor global: añade X-Token a todas las llamadas /api/ y, si la respuesta
+         es 401 con una sesión guardada, limpia storage y redirige al login (evita que el
+         usuario quede atrapado con un token caducado/invalidado mostrando "no se pudieron
+         cargar los cursos"). -->
     <script is:inline>
     (function () {
       var _fetch = window.fetch;
+      var PUBLICAS = ['/', '/precios', '/precios/', '/recuperar-contrasena', '/recuperar-contrasena/',
+                      '/pago-ok', '/pago-ok/', '/pago-ko', '/pago-ko/', '/preview', '/preview/',
+                      '/soporte', '/soporte/'];
+
+      function sesionExpirada() {
+        if (window._sesionExpiradaHandled) return;
+        window._sesionExpiradaHandled = true;
+        try {
+          sessionStorage.removeItem('umme_session');
+          localStorage.removeItem('umme_session');
+        } catch (e) {}
+        if (PUBLICAS.indexOf(window.location.pathname) !== -1) return;
+        window.location.replace('/?expirada=1');
+      }
+
       window.fetch = function (url, opts) {
         if (typeof url === 'string' && url.startsWith('/api/')) {
           try {
@@ -35,27 +73,17 @@ import Modal from '../components/Modal.astro';
             }
           } catch (e) {}
         }
-        return _fetch.call(this, url, opts);
+        return _fetch.call(this, url, opts).then(function (res) {
+          if (res.status === 401 && typeof url === 'string' && url.startsWith('/api/')) {
+            // Solo redirigimos si HABÍA sesión (token rancio / caducado / invalidado).
+            // Un 401 sin sesión guardada es flujo normal de no-logueado.
+            try {
+              if (sessionStorage.getItem('umme_session')) sesionExpirada();
+            } catch (e) {}
+          }
+          return res;
+        });
       };
-    })();
-    </script>
-
-    <!-- Hidratar sesión "Recordarme": copiar localStorage → sessionStorage si la sesión sigue vigente -->
-    <script is:inline>
-    (function () {
-      try {
-        if (sessionStorage.getItem('umme_session')) return;
-        var raw = localStorage.getItem('umme_session');
-        if (!raw) return;
-        var s = JSON.parse(raw);
-        if (!s || !s.exp || Date.now() > s.exp) {
-          localStorage.removeItem('umme_session');
-          return;
-        }
-        sessionStorage.setItem('umme_session', raw);
-      } catch (e) {
-        try { localStorage.removeItem('umme_session'); } catch (e2) {}
-      }
     })();
     </script>
 
