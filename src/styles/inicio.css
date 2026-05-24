@@ -1,13 +1,21 @@
 .main {
-  height: calc(100vh - 56px - 56px);
-  overflow: hidden;
+  min-height: calc(100vh - 56px - 56px);
   background: #f4f7f6;
 }
 
 /* ── Layout de dos columnas ── */
 .vista {
   display: flex;
+}
+
+body.detalle-abierto .main {
+  height: calc(100vh - 56px - 56px);
+  overflow: hidden;
+}
+
+body.detalle-abierto .vista {
   height: 100%;
+  overflow: hidden;
 }
 
 /* Columna lista */
@@ -15,9 +23,8 @@
   flex: 1;
   min-width: 0;
   padding: 2.75rem 2.75rem 4rem;
-  max-width: 820px;
+  max-width: 1100px;
   margin: 0 auto;
-  overflow-y: auto;
   background: #f4f7f6;
   transition: none;
 }
@@ -28,7 +35,6 @@
   padding: 1.25rem 1rem;
   margin: 0;
   border-right: 1px solid #ebebeb;
-  overflow-y: auto;
   background: #f8f8f8;
   transition: max-width 0.22s ease, padding 0.22s ease, opacity 0.18s ease;
 }
@@ -200,6 +206,17 @@
 /* En la columna compacta (cuando hay detalle abierto), ocultar imagen del curso */
 .vista.con-detalle .col-lista .curso-fila-img {
   display: none;
+}
+
+/* ════════════════════════════════════════════
+   RESPONSIVE PANTALLA GRANDE (≥ 1600 px)
+   ════════════════════════════════════════════ */
+@media (min-width: 1600px) {
+  .vista:not(.con-detalle) .pack-cursos.expandido {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
+    gap: 0.4rem;
+  }
 }
 
 /* ════════════════════════════════════════════

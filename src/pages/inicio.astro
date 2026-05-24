@@ -214,7 +214,9 @@ function normalizarRte(html: string): string {
     ul: [], ol: [], li: [],
     h2: [], h3: [], h4: [],
     blockquote: [],
-    a: ['href'],
+    a:    ['href'],
+    div:  ['class'],
+    span: ['class'],
   };
 
   function limpiar(el: Element): void {
@@ -226,10 +228,16 @@ function normalizarRte(html: string): string {
     if (BORRAR.has(tag)) { el.remove(); return; }
 
     if (tag in SAFE) {
-      // Quitar todos los atributos no permitidos (style, class, onclick, data-*, etc.)
+      // Quitar todos los atributos no permitidos (style, onclick, data-*, etc.)
       Array.from(el.attributes).forEach(attr => {
         if (!SAFE[tag].includes(attr.name)) el.removeAttribute(attr.name);
       });
+      // Solo clases desc-* — ninguna clase global puede entrar en una descripción
+      if (el.hasAttribute('class')) {
+        const safe = el.getAttribute('class')!.split(/\s+/).filter(c => /^desc-[a-z0-9-]+$/.test(c));
+        if (safe.length) el.setAttribute('class', safe.join(' '));
+        else el.removeAttribute('class');
+      }
       // Evitar href javascript: o data:
       if (tag === 'a') {
         const href = (el.getAttribute('href') || '').trim();
@@ -784,6 +792,7 @@ function abrirCurso(curso: any, articleEl: HTMLElement) {
   document.querySelectorAll('.curso').forEach(c => c.classList.remove('activo'));
   articleEl.classList.add('activo');
   vista.classList.add('con-detalle');
+  document.body.classList.add('detalle-abierto');
 }
 
 // ── Ocultar todos los reproductores ──────────────────────────
@@ -922,6 +931,7 @@ btnToggleLista.addEventListener('click', () => {
 // ── Cerrar panel ──────────────────────────────────────────────
 btnVolver.addEventListener('click', () => {
   vista.classList.remove('con-detalle', 'lista-oculta');
+  document.body.classList.remove('detalle-abierto');
   document.querySelectorAll('.curso').forEach(c => c.classList.remove('activo'));
   ocultarReproductores();
   videoPlaceholder.style.display = 'flex';
