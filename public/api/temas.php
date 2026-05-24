@@ -16,6 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
 require_once __DIR__ . '/db-connect.php';
 require_once __DIR__ . '/log-helper.php';
+require_once __DIR__ . '/html-helper.php';
 $pdo  = obtenerPDO();
 $user = requireAuth($pdo);
 
@@ -72,7 +73,7 @@ if ($metodo === 'POST') {
     $stmt->execute([
         ':curso_id'    => (int)$body['curso_id'],
         ':titulo'      => trim($body['titulo']),
-        ':descripcion' => !empty($body['descripcion']) ? trim($body['descripcion']) : null,
+        ':descripcion' => !empty($body['descripcion']) ? limpiarHtml($body['descripcion']) : null,
         ':duracion'    => trim($body['duracion'] ?? ''),
         ':orden'       => $orden,
         ':color'       => null,
@@ -98,7 +99,7 @@ if ($metodo === 'PUT') {
     );
     $stmt->execute([
         ':titulo'      => trim($body['titulo'] ?? ''),
-        ':descripcion' => isset($body['descripcion']) ? trim($body['descripcion']) : null,
+        ':descripcion' => isset($body['descripcion']) ? limpiarHtml($body['descripcion']) : null,
         ':duracion'    => trim($body['duracion'] ?? ''),
         ':orden'       => (int)($body['orden'] ?? 0),
         ':color'       => !empty($body['color']) ? trim($body['color']) : null,

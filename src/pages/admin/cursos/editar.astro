@@ -1383,6 +1383,29 @@ function crearFilaMat(mat: any): HTMLElement {
 
   const esVdo = !!(mat.vdocipher_video_id);
 
+  function fmtDuracion(seg: number | null | undefined): string {
+    if (seg === null || seg === undefined || Number.isNaN(seg) || seg <= 0) return '—';
+    const s = Math.round(Number(seg));
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    return h > 0
+      ? `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
+      : `${m}:${String(sec).padStart(2, '0')}`;
+  }
+  function parseDuracion(txt: string): number | null {
+    const t = txt.trim();
+    if (!t) return null;
+    const partes = t.split(':').map(p => p.trim());
+    if (partes.some(p => !/^\d+$/.test(p))) return NaN as any;
+    let total = 0;
+    if (partes.length === 1)      total = parseInt(partes[0], 10) * 60;
+    else if (partes.length === 2) total = parseInt(partes[0], 10) * 60 + parseInt(partes[1], 10);
+    else if (partes.length === 3) total = parseInt(partes[0], 10) * 3600 + parseInt(partes[1], 10) * 60 + parseInt(partes[2], 10);
+    else return NaN as any;
+    return total > 0 ? total : null;
+  }
+
   function renderNormal() {
     const btnDescargaHTML = (mat.tipo === 'video' && !esVdo)
       ? `<a class="mat-descarga" href="${urlDescargaVideo(mat)}" download="${mat.nombre}" title="Descargar" style="width:22px;height:22px;border-radius:5px;border:1px solid #e8eeec;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;color:#555;text-decoration:none;">
@@ -1410,11 +1433,16 @@ function crearFilaMat(mat: any): HTMLElement {
          </span>`
       : '';
 
+    const duracionPillHTML = mat.tipo === 'video'
+      ? `<button class="mat-duracion" title="Click para editar la duración" style="font-size:0.7rem;padding:0.15rem 0.45rem;border-radius:4px;border:1px dashed #cfd6d3;background:#fafafa;color:${mat.duracion_seg ? '#5a8a72' : '#a08070'};cursor:pointer;flex-shrink:0;white-space:nowrap;font-family:inherit;">${fmtDuracion(mat.duracion_seg)}</button>`
+      : '';
+
     div.innerHTML = `
       ${dragHandle}
       <span class="mat-icono">${icono}</span>
       ${nombreHTML}
       ${esVdo ? cfBadge : `<span class="mat-tam">${kb}</span>`}
+      ${duracionPillHTML}
       ${btnDescargaHTML}
       <button class="mat-rename" title="Renombrar" style="width:22px;height:22px;border-radius:5px;border:1px solid #e8eeec;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;">
         <svg viewBox="0 0 14 14" fill="none" width="12" height="12">
@@ -1424,6 +1452,9 @@ function crearFilaMat(mat: any): HTMLElement {
       <button class="mat-del" title="Eliminar">✕</button>
     `;
     div.querySelector('.mat-rename')!.addEventListener('click', renderEditar);
+    if (mat.tipo === 'video') {
+      div.querySelector('.mat-duracion')!.addEventListener('click', renderEditarDuracion);
+    }
     div.querySelector('.mat-del')!.addEventListener('click', async (e) => {
       const okConfirmar = await window.confirmar({
         titulo: 'Eliminar material',
@@ -1463,6 +1494,52 @@ function crearFilaMat(mat: any): HTMLElement {
     });
   }
 
+  function renderEditarDuracion() {
+    const valorActual = mat.duracion_seg ? fmtDuracion(mat.duracion_seg) : '';
+    div.innerHTML = `
+      <span class="mat-icono">${icono}</span>
+      <span class="mat-nombre" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${mat.nombre}</span>
+      <span style="font-size:0.7rem;color:#888;flex-shrink:0;">Duración</span>
+      <input type="text" class="mat-dur-input form-input" value="${valorActual}" placeholder="mm:ss" style="width:80px;padding:0.25rem 0.5rem;font-size:0.78rem;text-align:center;flex-shrink:0;" />
+      <button class="mat-save-dur" title="Guardar" style="width:28px;height:28px;border-radius:5px;border:1px solid #b6e0cc;background:#f0faf5;cursor:pointer;color:#2e7d55;font-size:0.9rem;flex-shrink:0;">✓</button>
+      <button class="mat-cancelar-dur" title="Cancelar" style="width:28px;height:28px;border-radius:5px;border:1px solid #e8eeec;background:#fff;cursor:pointer;color:#888;flex-shrink:0;">✕</button>
+    `;
+    const input = div.querySelector('.mat-dur-input') as HTMLInputElement;
+    input.focus(); input.select();
+
+    async function guardarDuracion() {
+      const seg = parseDuracion(input.value);
+      if (Number.isNaN(seg)) {
+        mostrarMsg('Formato inválido. Usa mm:ss (ej. 5:23) o h:mm:ss', 'error');
+        input.focus(); input.select();
+        return;
+      }
+      const segPrevios = Number(mat.duracion_seg) || 0;
+      const res  = await fetch('/api/materiales.php', {
+        method: 'PUT', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ id: mat.id, duracion_seg: seg }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        mostrarMsg(data.mensaje || 'Error al guardar la duración', 'error');
+        return;
+      }
+      mat.duracion_seg = seg;
+      const delta = (seg || 0) - segPrevios;
+      if (delta !== 0) {
+        const card = div.closest('.tema-card') as HTMLElement | null;
+        if (card) actualizarDuracionTrasSubida(card, null, delta, mat.id);
+      }
+      renderNormal();
+    }
+    div.querySelector('.mat-save-dur')!.addEventListener('click', guardarDuracion);
+    div.querySelector('.mat-cancelar-dur')!.addEventListener('click', renderNormal);
+    input.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Enter') guardarDuracion();
+      if (e.key === 'Escape') renderNormal();
+    });
+  }
+
   function renderEditar() {
     div.innerHTML = `
       <span class="mat-icono">${icono}</span>
@@ -1497,23 +1574,52 @@ function crearFilaMat(mat: any): HTMLElement {
 }
 
 // ── Subir archivo ─────────────────────────────────────────────
+// MP4 grabados desde móvil exponen v.duration = Infinity hasta que se
+// hace seek al final → forzamos ese seek. Timeout amplio para HD ~200 MB.
 function leerDuracionVideo(archivo: File): Promise<number> {
   return new Promise(resolve => {
     const url     = URL.createObjectURL(archivo);
     const v       = document.createElement('video');
     let resuelto  = false;
-    const terminar = (dur: number) => {
+    const terminar = (dur: number, motivo: string) => {
       if (resuelto) return;
       resuelto = true;
       URL.revokeObjectURL(url);
+      if (dur <= 0) {
+        (window as any).logAppError?.('upload_dur', `No se pudo calcular duración de ${archivo.name}: ${motivo}`, {
+          detalle: `archivo=${archivo.name} · ${(archivo.size/1024/1024).toFixed(1)} MB · type=${archivo.type}`,
+        });
+      }
       resolve(dur);
     };
-    v.preload          = 'metadata';
-    v.onloadedmetadata = () => terminar(Math.round(v.duration) || 0);
-    v.onerror          = () => terminar(0);
-    v.src              = url;
-    // Si el navegador no puede leer el metadata en 8s, continuar sin duración
-    setTimeout(() => terminar(0), 8000);
+
+    v.preload = 'metadata';
+    v.muted   = true;
+
+    v.onloadedmetadata = () => {
+      const d = v.duration;
+      if (Number.isFinite(d) && d > 0) {
+        terminar(Math.round(d), 'ok');
+        return;
+      }
+      if (d === Infinity) {
+        const onUpdate = () => {
+          const real = v.duration;
+          v.removeEventListener('timeupdate', onUpdate);
+          v.currentTime = 0;
+          if (Number.isFinite(real) && real > 0) terminar(Math.round(real), 'ok-seek');
+          else terminar(0, 'duration sigue siendo Infinity tras seek');
+        };
+        v.addEventListener('timeupdate', onUpdate);
+        try { v.currentTime = 1e9; } catch { terminar(0, 'seek a 1e9 lanzó excepción'); }
+        return;
+      }
+      terminar(0, `duration inválida: ${d}`);
+    };
+    v.onerror = () => terminar(0, `video.onerror code=${(v.error && v.error.code) || '?'}`);
+    v.src     = url;
+
+    setTimeout(() => terminar(0, 'timeout 45s'), 45_000);
   });
 }
 
@@ -1776,6 +1882,9 @@ function subirArchivo(
       try {
         durSeg = await leerDuracionVideo(archivo);
       } catch { durSeg = 0; }
+      if (durSeg <= 0) {
+        mostrarMsg('No se pudo leer la duración del vídeo automáticamente. Podrás editarla manualmente cuando termine de subirse.', 'error');
+      }
     }
 
     // Vídeos → Cloudflare Stream (directo desde navegador, sin tocar IONOS)

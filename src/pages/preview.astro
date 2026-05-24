@@ -14,6 +14,7 @@
 import Plantilla from '../layouts/Plantilla.astro';
 import CampoFormulario from '../components/CampoFormulario.astro';
 import Boton from '../components/Boton.astro';
+import '../styles/PanelDetalle.css';
 ---
 
 <Plantilla>
@@ -438,6 +439,207 @@ import Boton from '../components/Boton.astro';
         </form>
       </div>
     </section>
+
+    <!-- ─── Bloques de descripción enriquecida ──────────────── -->
+    <section class="prev-section">
+      <h2>8. Bloques de descripción de cursos y temas</h2>
+      <p class="prev-section-desc">
+        10 componentes disponibles, todos usan <code>--curso-color</code> automáticamente.
+        Clases permitidas: <code>desc-card</code>, <code>desc-stats</code>/<code>desc-stat</code>,
+        <code>desc-chips</code>, <code>desc-vistazo</code>, <code>desc-highlight</code>/<code>desc-highlight-num</code>/<code>desc-highlight-txt</code>,
+        <code>desc-pasos</code>, <code>desc-nota</code>, <code>desc-banner</code>,
+        <code>desc-bienvenida</code>/<code>desc-bienvenida-tag</code>/<code>desc-bienvenida-inner</code>,
+        <code>desc-para-quien</code>/<code>desc-si</code>/<code>desc-no</code>.
+      </p>
+
+      <!-- Patrón A: Card + Stats + Blockquote -->
+      <h3 class="prev-subtitulo">A · Card + stats + blockquote — verde</h3>
+      <div class="prev-desc-wrap" style="--curso-color:#b3e8da">
+        <div class="intro-desc">
+          <p>Estudias meses. Llegas preparada. Y cuando recibes la nota… <strong>un 6. Un 7. Nunca ese 10 que sabes que mereces.</strong></p>
+          <p>El problema casi nunca es el conocimiento — es no saber transformar lo que sabes en un tema que el tribunal recuerde.</p>
+          <div class="desc-card"><h3>Qué aprenderás</h3><ul>
+            <li>Diseñar un <strong>índice estratégico</strong> que convence desde la primera línea</li>
+            <li>Escribir introducciones que enganchan y conclusiones que dejan huella</li>
+            <li>Gestionar el tiempo real del examen sin bloquearte</li>
+            <li>Los <strong>25 temas del temario PT</strong> con visión global y actualizada</li>
+          </ul></div>
+          <div class="desc-stats">
+            <div class="desc-stat"><strong>27 vídeos</strong><span>en 6 bloques temáticos</span></div>
+            <div class="desc-stat"><strong>25 temas PT</strong><span>trabajados con criterio</span></div>
+            <div class="desc-stat"><strong>Checklists</strong><span>plantillas descargables</span></div>
+            <div class="desc-stat"><strong>Estrategia</strong><span>de examen incluida</span></div>
+          </div>
+          <blockquote>Tu esfuerzo merece un 10 — este curso te enseñará exactamente cómo conseguirlo.</blockquote>
+        </div>
+      </div>
+
+      <!-- Patrón B: Banner + Pasos + Vistazo -->
+      <h3 class="prev-subtitulo" style="margin-top:2rem">B · Banner + pasos + vistazo — coral</h3>
+      <div class="prev-desc-wrap" style="--curso-color:#ffb5a7">
+        <div class="intro-desc">
+          <div class="desc-banner"><h3>🌸 Curso Situaciones de Aprendizaje · PT</h3></div>
+          <p>Hay opositoras que saben qué es una Situación de Aprendizaje. Y hay opositoras que saben <strong>diseñarla, justificarla y defenderla</strong> ante un tribunal.</p>
+          <p>Este curso existe para que seas de las segundas. <em>No importa el punto de partida — importa el método.</em></p>
+          <div class="desc-pasos"><ol>
+            <li>Entiendes qué es una SA y su lugar real en el currículo actual</li>
+            <li>Diseñas tu SA desde cero con criterio didáctico real</li>
+            <li>Integras la evaluación desde el primer momento, no como añadido final</li>
+            <li>La defiendes oralmente con seguridad y convicción</li>
+          </ol></div>
+          <div class="desc-vistazo"><h3>Qué incluye</h3><ul>
+            <li>32 vídeos en 9 bloques temáticos</li>
+            <li>Plantillas descargables y editables</li>
+            <li>Guía NEAE incluida</li>
+            <li>Bloque de defensa oral</li>
+          </ul></div>
+        </div>
+      </div>
+
+      <!-- Patrón C: Highlights + Para quién -->
+      <h3 class="prev-subtitulo" style="margin-top:2rem">C · Highlights + para quién — amarillo</h3>
+      <div class="prev-desc-wrap" style="--curso-color:#f9c30e">
+        <div class="intro-desc">
+          <p>Preparar unas oposiciones es un maratón. Y como todo maratón, <strong>la diferencia la hace el método</strong>, no la cantidad de horas.</p>
+          <div class="desc-highlight">
+            <span class="desc-highlight-num">85%</span>
+            <span class="desc-highlight-txt">de las opositoras estudian más de 6 horas al día — sin método, el tiempo no basta</span>
+          </div>
+          <div class="desc-highlight">
+            <span class="desc-highlight-num">16</span>
+            <span class="desc-highlight-txt">vídeos en 5 bloques para transformar <strong>cómo</strong> estudias, no cuánto</span>
+          </div>
+          <div class="desc-para-quien">
+            <div class="desc-si"><h3>✓ Es para ti si…</h3><ul>
+              <li>Estudias mucho pero avanzas poco</li>
+              <li>El examen te bloquea aunque sepas el temario</li>
+              <li>Buscas un método que aguante la distancia</li>
+            </ul></div>
+            <div class="desc-no"><h3>✕ No es para ti si…</h3><ul>
+              <li>Ya tienes un método sólido que funciona</li>
+              <li>Buscas temario PT o vídeos de SA</li>
+            </ul></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Patrón D: Bienvenida + Nota -->
+      <h3 class="prev-subtitulo" style="margin-top:2rem">D · Bienvenida + nota — verde</h3>
+      <div class="prev-desc-wrap" style="--curso-color:#b3e8da">
+        <div class="intro-desc">
+          <p>Este no es un curso de memorización. Es un entrenamiento para construir temas con <strong>estructura, identidad docente y criterio pedagógico real</strong>.</p>
+          <div class="desc-bienvenida">
+            <span class="desc-bienvenida-tag">🌿 Bienvenida al curso</span>
+            <div class="desc-bienvenida-inner">
+              <p>¡Hola! Me alegra muchísimo que estés aquí.</p>
+              <p>Si has llegado es porque sientes que <em>algo falla</em>: estudias, subrayas, repasas — y tus temas no suenan como los de alguien que merece una plaza.</p>
+              <p><strong>Eso tiene solución. Y está aquí.</strong> Vamos a trabajar juntas con vídeos cortos, ejemplos reales y una visión del temario que lo conecta todo.</p>
+            </div>
+          </div>
+          <div class="desc-nota"><p>💡 <strong>Antes de empezar —</strong> no te saltes el Bloque 1 aunque tengas prisa. La arquitectura invisible de un tema excelente se construye antes de escribir la primera palabra.</p></div>
+          <div class="desc-chips"><ul>
+            <li>27 vídeos · 6 bloques</li><li>25 temas PT</li><li>Checklists</li><li>Plantillas</li><li>Estrategia de examen</li>
+          </ul></div>
+        </div>
+      </div>
+
+      <!-- Patrón E: Card + Blockquote + Chips (ligero) -->
+      <h3 class="prev-subtitulo" style="margin-top:2rem">E · Card + blockquote + chips — coral (tema suelto)</h3>
+      <div class="prev-desc-wrap" style="--curso-color:#ffb5a7">
+        <div class="intro-desc">
+          <p>En este bloque trabajamos la <strong>secuencia didáctica</strong> como eje vertebrador de tu SA: cómo distribuir las actividades, qué poner en cada fase y por qué ese orden no es arbitrario.</p>
+          <div class="desc-card"><h3>Lo que trabajamos aquí</h3><ul>
+            <li>Fases de la secuencia: inicio, desarrollo y cierre con coherencia interna</li>
+            <li>Actividades de apertura que activan conocimientos previos</li>
+            <li>Cómo garantizar la <strong>progresión de la complejidad</strong></li>
+            <li>Errores frecuentes que hacen que una secuencia no convenza</li>
+          </ul></div>
+          <blockquote>Una buena secuencia didáctica no se improvisa — se diseña. Y este bloque te enseña exactamente cómo.</blockquote>
+          <div class="desc-chips"><ul>
+            <li>4 vídeos</li><li>Plantilla descargable</li><li>Ejemplo resuelto</li>
+          </ul></div>
+        </div>
+      </div>
+
+      <!-- Grid de componentes individuales -->
+      <h3 class="prev-subtitulo" style="margin-top:2rem">Componentes individuales</h3>
+      <div class="prev-comp-grid" style="--curso-color:#b3e8da">
+        <div>
+          <p class="prev-comp-label">blockquote</p>
+          <div class="intro-desc"><blockquote>Resolver un supuesto de 10 no es cuestión de suerte. Es cuestión de método.</blockquote></div>
+        </div>
+        <div>
+          <p class="prev-comp-label">desc-vistazo</p>
+          <div class="intro-desc"><div class="desc-vistazo"><h3>Qué incluye</h3><ul>
+            <li>23 vídeos en 6 bloques</li>
+            <li>Supuestos resueltos por NEE</li>
+            <li>3 bonus descargables</li>
+          </ul></div></div>
+        </div>
+        <div>
+          <p class="prev-comp-label">desc-highlight</p>
+          <div class="intro-desc"><div class="desc-highlight">
+            <span class="desc-highlight-num">27</span>
+            <span class="desc-highlight-txt">vídeos a tu ritmo, sin fecha de caducidad</span>
+          </div></div>
+        </div>
+        <div>
+          <p class="prev-comp-label">desc-pasos (3 pasos)</p>
+          <div class="intro-desc"><div class="desc-pasos"><ol>
+            <li>Comprendes el marco curricular actual</li>
+            <li>Diseñas tu SA con criterio</li>
+            <li>La defiendes con seguridad</li>
+          </ol></div></div>
+        </div>
+        <div>
+          <p class="prev-comp-label">desc-nota</p>
+          <div class="intro-desc"><div class="desc-nota"><p>💡 <strong>Consejo:</strong> no te saltes el Bloque 1 aunque tengas prisa — es la base de todo lo demás.</p></div></div>
+        </div>
+        <div>
+          <p class="prev-comp-label">desc-banner</p>
+          <div class="intro-desc"><div class="desc-banner"><h3>📚 Temario PT · 6 bloques · 27 vídeos</h3></div></div>
+        </div>
+        <div>
+          <p class="prev-comp-label">desc-chips</p>
+          <div class="intro-desc"><div class="desc-chips"><ul>
+            <li>27 vídeos</li><li>6 bloques</li><li>Checklists</li><li>Descargables</li>
+          </ul></div></div>
+        </div>
+        <div>
+          <p class="prev-comp-label">desc-card</p>
+          <div class="intro-desc"><div class="desc-card"><h3>Aprenderás</h3><ul>
+            <li>Índice estratégico</li>
+            <li>Introducciones con impacto</li>
+            <li>Gestión del tiempo</li>
+          </ul></div></div>
+        </div>
+        <div style="grid-column:1/-1">
+          <p class="prev-comp-label">desc-para-quien</p>
+          <div class="intro-desc"><div class="desc-para-quien">
+            <div class="desc-si"><h3>✓ Es para ti si…</h3><ul>
+              <li>Estudias mucho pero avanzas poco</li>
+              <li>Quieres un método real, no más temario</li>
+            </ul></div>
+            <div class="desc-no"><h3>✕ No es para ti si…</h3><ul>
+              <li>Ya tienes un método que funciona</li>
+              <li>Buscas vídeos de temario PT</li>
+            </ul></div>
+          </div></div>
+        </div>
+        <div style="grid-column:1/-1">
+          <p class="prev-comp-label">desc-bienvenida</p>
+          <div class="intro-desc"><div class="desc-bienvenida">
+            <span class="desc-bienvenida-tag">🌿 Bienvenida al curso</span>
+            <div class="desc-bienvenida-inner">
+              <p>¡Hola! Me alegra que estés aquí. Si has llegado es porque sientes que <em>algo falla</em> — y tiene solución.</p>
+              <p><strong>Vamos a demostrarlo juntas.</strong></p>
+            </div>
+          </div></div>
+        </div>
+      </div>
+
+    </section>
+
   </main>
 </Plantilla>
 
@@ -826,5 +1028,33 @@ import Boton from '../components/Boton.astro';
   .prev-btn-icono:focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
+  }
+
+  /* ── Descripciones enriquecidas ─────────────────────────────── */
+  .prev-desc-wrap {
+    max-width: 520px;
+    margin-bottom: 1.5rem;
+  }
+  .prev-desc-wrap + .prev-desc-wrap {
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-light);
+  }
+  .prev-comp-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  .prev-comp-grid > div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+  .prev-comp-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-muted);
+    margin: 0;
   }
 </style>

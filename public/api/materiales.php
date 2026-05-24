@@ -57,14 +57,37 @@ if ($metodo === 'PUT') {
         exit;
     }
 
-    // Renombrar: recibe { id, nombre }
+    // Actualizar: recibe { id, nombre?, duracion_seg? }
+    //   - nombre: string (renombrar)
+    //   - duracion_seg: int|null (override manual; null = vaciar, 0 ignora)
     if (empty($body['id'])) {
         http_response_code(400);
         echo json_encode(['ok' => false, 'mensaje' => 'Falta el id']);
         exit;
     }
-    $stmt = $pdo->prepare('UPDATE materiales SET nombre=:nombre WHERE id=:id');
-    $stmt->execute([':nombre' => trim($body['nombre'] ?? ''), ':id' => (int)$body['id']]);
+
+    $sets   = [];
+    $params = [':id' => (int)$body['id']];
+    if (array_key_exists('nombre', $body)) {
+        $sets[] = 'nombre = :nombre';
+        $params[':nombre'] = trim($body['nombre']);
+    }
+    if (array_key_exists('duracion_seg', $body)) {
+        $sets[] = 'duracion_seg = :dur';
+        // null permitido para borrar la duración. Un int <= 0 también limpia.
+        $dur = $body['duracion_seg'];
+        if ($dur === null || (is_numeric($dur) && (int)$dur <= 0)) {
+            $params[':dur'] = null;
+        } else {
+            $params[':dur'] = (int)$dur;
+        }
+    }
+    if (empty($sets)) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'mensaje' => 'No hay campos que actualizar']);
+        exit;
+    }
+    $pdo->prepare('UPDATE materiales SET ' . implode(', ', $sets) . ' WHERE id = :id')->execute($params);
     echo json_encode(['ok' => true]);
     exit;
 }

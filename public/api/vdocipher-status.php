@@ -23,6 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 
 $materialId = isset($_GET['material_id']) ? (int)$_GET['material_id'] : 0;
 $token      = $_GET['token'] ?? '';
+$dryRun     = isset($_GET['dry_run']) && $_GET['dry_run'] === '1';
 
 if (!$materialId || !$token) {
     http_response_code(400);
@@ -53,7 +54,7 @@ if (!$stmt->fetchColumn()) {
 
 // ── Obtener material ──────────────────────────────────────────
 $stmt = $pdo->prepare(
-    "SELECT vdocipher_video_id, vdo_status FROM materiales WHERE id = :id AND tipo = 'video'"
+    "SELECT vdocipher_video_id, vdo_status, duracion_seg FROM materiales WHERE id = :id AND tipo = 'video'"
 );
 $stmt->execute([':id' => $materialId]);
 $mat = $stmt->fetch();
@@ -107,24 +108,36 @@ $nuestroStatus = match(true) {
     default                                             => 'processing',
 };
 
-$duracionSeg = null;
-$actualizado = false;
-if ($nuestroStatus !== $mat['vdo_status']) {
-    $params = [':status' => $nuestroStatus, ':id' => $materialId];
-    $sql    = 'UPDATE materiales SET vdo_status = :status';
-    if ($nuestroStatus === 'ready' && !empty($info['length']) && (int)$info['length'] > 0) {
-        $duracionSeg    = (int)$info['length'];
-        $sql           .= ', duracion_seg = :dur';
-        $params[':dur'] = $duracionSeg;
+// Decidir qué hay que actualizar.
+//   - Si cambia el estado → actualizar status.
+//   - Si VdoCipher devuelve duración y en BD está NULL → rellenar la duración
+//     (cubre los casos en que vdo_status='ready' quedó persistido pero la
+//     duración nunca llegó a guardarse).
+$cambiaStatus      = $nuestroStatus !== $mat['vdo_status'];
+$duraciónVdo       = (!empty($info['length']) && (int)$info['length'] > 0) ? (int)$info['length'] : null;
+$rellenarDuracion  = $nuestroStatus === 'ready' && $duraciónVdo !== null && $mat['duracion_seg'] === null;
+$duracionSeg       = $rellenarDuracion ? $duraciónVdo : null;
+$actualizado       = false;
+
+if (($cambiaStatus || $rellenarDuracion) && !$dryRun) {
+    $sets   = [];
+    $params = [':id' => $materialId];
+    if ($cambiaStatus) {
+        $sets[] = 'vdo_status = :status';
+        $params[':status'] = $nuestroStatus;
     }
-    $sql .= ' WHERE id = :id';
-    $pdo->prepare($sql)->execute($params);
+    if ($rellenarDuracion) {
+        $sets[] = 'duracion_seg = :dur';
+        $params[':dur'] = $duraciónVdo;
+    }
+    $pdo->prepare('UPDATE materiales SET ' . implode(', ', $sets) . ' WHERE id = :id')->execute($params);
     $actualizado = true;
 }
 
 echo json_encode([
-    'ok'          => true,
-    'status'      => $nuestroStatus,
-    'duracion_seg'=> $duracionSeg,
-    'actualizado' => $actualizado,
+    'ok'           => true,
+    'status'       => $nuestroStatus,
+    'duracion_seg' => $duracionSeg,
+    'dry_run'      => $dryRun,
+    'actualizado'  => $actualizado,
 ]);
