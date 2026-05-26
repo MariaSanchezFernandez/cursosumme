@@ -9,22 +9,16 @@ require_once __DIR__ . '/db-config.php';
 require_once __DIR__ . '/log-helper.php';
 require_once __DIR__ . '/email-helper.php';
 
-// Siempre responder 200 — si no, Stripe reintenta indefinidamente
-http_response_code(200);
 header('Content-Type: application/json; charset=utf-8');
-
-try {
-
-$payload   = file_get_contents('php://input');
-$sigHeader = $_SERVER['HTTP_STRIPE_SIGNATURE'] ?? '';
 
 // ── Verificar firma ───────────────────────────────────────────
 function verificarFirmaStripe(string $payload, string $sigHeader, string $secret): bool {
     if (!$sigHeader || !$secret) return false;
     $parts = [];
     foreach (explode(',', $sigHeader) as $part) {
-        [$k, $v] = explode('=', $part, 2);
-        $parts[$k][] = $v;
+        $kv = explode('=', $part, 2);
+        if (count($kv) !== 2) continue;
+        $parts[$kv[0]][] = $kv[1];
     }
     $timestamp = $parts['t'][0] ?? '';
     $sigs      = $parts['v1'] ?? [];
@@ -36,13 +30,29 @@ function verificarFirmaStripe(string $payload, string $sigHeader, string $secret
     return false;
 }
 
-if (STRIPE_WEBHOOK_SECRET && !verificarFirmaStripe($payload, $sigHeader, STRIPE_WEBHOOK_SECRET)) {
+$payload   = file_get_contents('php://input');
+$sigHeader = $_SERVER['HTTP_STRIPE_SIGNATURE'] ?? '';
+
+// Sin secreto configurado → rechazar SIEMPRE. No procesar eventos sin firma verificada.
+if (!defined('STRIPE_WEBHOOK_SECRET') || !STRIPE_WEBHOOK_SECRET) {
+    error_log('stripe-webhook: STRIPE_WEBHOOK_SECRET no configurado — rechazando evento');
+    http_response_code(500);
+    echo json_encode(['ok' => false, 'error' => 'Webhook no configurado']);
+    exit;
+}
+
+if (!verificarFirmaStripe($payload, $sigHeader, STRIPE_WEBHOOK_SECRET)) {
+    http_response_code(400);
     echo json_encode(['ok' => false, 'error' => 'Firma inválida']);
     exit;
 }
 
+try {
+
 $evento = json_decode($payload, true);
-if (!$evento || $evento['type'] !== 'checkout.session.completed') {
+if (!$evento || ($evento['type'] ?? '') !== 'checkout.session.completed') {
+    // Evento válido pero no nos interesa: 200 para que Stripe no reintente
+    http_response_code(200);
     echo json_encode(['ok' => true, 'msg' => 'evento ignorado']);
     exit;
 }
@@ -55,17 +65,21 @@ $metadata  = $sesion['metadata'] ?? [];
 $cursosIds = json_decode($metadata['cursos_ids'] ?? '[]', true);
 
 if (!$email || empty($cursosIds)) {
+    // Payload incompleto: 400 — no es recuperable por reintento
+    error_log("stripe-webhook: payload incompleto session={$sessionId}");
+    http_response_code(400);
     echo json_encode(['ok' => false, 'error' => 'email o cursos_ids vacíos']);
     exit;
 }
 
 $pdo = obtenerPDO();
 
-// Evitar doble procesado
+// Evitar doble procesado (idempotencia)
 $pagoRow = $pdo->prepare('SELECT id, estado, alumno_id FROM pagos WHERE stripe_session_id=:sid LIMIT 1');
 $pagoRow->execute([':sid' => $sessionId]);
 $pagoRow = $pagoRow->fetch();
 if ($pagoRow && $pagoRow['estado'] === 'completado') {
+    http_response_code(200);
     echo json_encode(['ok' => true, 'msg' => 'ya procesado']);
     exit;
 }
@@ -132,9 +146,12 @@ if ($esNuevo && $passwordPlano) {
 }
 
 registrar_log($pdo, 'pago_completado', "Stripe {$sessionId} — {$email} — {$importe}€", 0);
+http_response_code(200);
 echo json_encode(['ok' => true]);
 
 } catch (Throwable $e) {
+    // Error de servidor: 500 para que Stripe reintente (hasta ~3 días)
     error_log('stripe-webhook FATAL: ' . $e->getMessage() . ' en ' . $e->getFile() . ':' . $e->getLine());
-    echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+    http_response_code(500);
+    echo json_encode(['ok' => false, 'error' => 'Error interno']);
 }

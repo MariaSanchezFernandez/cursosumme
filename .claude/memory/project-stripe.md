@@ -1,75 +1,58 @@
-# Plan integración Stripe
+# Integración Stripe
 
-## Objetivo
+Cuando un alumno completa un pago en Stripe Checkout, el webhook crea su cuenta automáticamente, le asigna los cursos comprados y le envía las credenciales por email (SMTP de IONOS).
 
-Cuando un usuario completa un pago en Stripe, se crea automáticamente su cuenta de alumno en la BD con acceso a los cursos comprados. Las credenciales se envían por email (SMTP de IONOS).
+## Estado: implementado (2026-05-04, refinado 2026-05-26)
 
-## Estado actual
+Está activo en **modo test** (`sk_test_*`). Las claves están en `public/api/db-config.php` como `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY` y `STRIPE_WEBHOOK_SECRET`. **Antes de producción** hay que cambiarlas a `sk_live_*` y regenerar el webhook secret en el dashboard de Stripe.
 
-- **Pendiente de implementar** — la integración aún no existe en el código
-- Los cursos YA existen en la BD (`cursos` table), solo hay que añadirles precio y el ID de producto/precio de Stripe
-- El email de IONOS ya está creado por la usuaria (falta confirmar dirección y credenciales SMTP)
-
-## Preguntas pendientes (necesarias antes de implementar)
-
-1. **Stripe keys** — necesita pasar:
-   - `STRIPE_SECRET_KEY` (sk_live_... o sk_test_...)
-   - `STRIPE_WEBHOOK_SECRET` (whsec_..., se obtiene al crear el webhook en el panel de Stripe)
-2. **Email IONOS** — dirección y contraseña del email creado específicamente para esto
-   - SMTP host probable: `smtp.ionos.es`, puerto `587`
-3. **Modelo de venta** — ¿cursos individuales, packs, o ambos?
-4. **Contraseña inicial** — ¿aleatoria por email (más seguro) o fija como `Umme@2024`?
-
-## Flujo técnico acordado
+## Flujo
 
 ```
-Usuario selecciona curso(s) → pulsa "Comprar"
-→ stripe-checkout.php crea sesión Stripe Checkout
-→ Stripe redirige a su página de pago segura
-→ Usuario paga
-→ Stripe llama al webhook (stripe-webhook.php)
-→ webhook crea alumno en BD + asigna cursos + envía email con credenciales
-→ Usuario llega a /pago-ok con mensaje de confirmación
+Comprar (precios.astro) → POST /api/stripe-checkout.php {tipo, id}
+→ inserta `pagos` con estado=pendiente
+→ devuelve URL de Stripe Checkout
+→ usuario paga en Stripe
+→ Stripe llama POST /api/stripe-webhook.php (checkout.session.completed)
+→ verifica firma, crea/recupera usuario, asigna cursos, marca pago=completado, envía email
+→ usuario llega a /pago-ok?session_id=cs_xxx
+→ pago-ok sondea /api/pago-status.php hasta ver estado=completado (máx 10 intentos × 1.5s)
 ```
 
-## Archivos a crear
+## Archivos
 
-| Archivo | Descripción |
+| Archivo | Propósito |
 |---|---|
-| `public/api/stripe-checkout.php` | Crea sesión Stripe Checkout (recibe cursos seleccionados) |
-| `public/api/stripe-webhook.php` | Recibe evento `checkout.session.completed` de Stripe, crea alumno |
-| `src/pages/precios.astro` | Página pública con cursos/packs y botón de compra |
-| `src/pages/pago-ok.astro` | Página de confirmación tras pago exitoso |
-| `src/pages/pago-ko.astro` | Página de error si el pago falla o se cancela |
+| `public/api/stripe-checkout.php` | Crea sesión Stripe (curso o pack) |
+| `public/api/stripe-webhook.php` | Procesa `checkout.session.completed` |
+| `public/api/pago-status.php` | Estado del pago para `/pago-ok` |
+| `public/api/packs.php` | CRUD de packs (GET público, resto admin) |
+| `public/api/email-helper.php` | Email bienvenida vía SMTP cURL |
+| `src/pages/precios.astro` | Página pública de venta |
+| `src/pages/pago-ok.astro` / `pago-ko.astro` | Retorno tras pago |
+| `src/pages/admin/cursos.astro` | Editar precio + `stripe_price_id` por curso y por pack |
 
-## Cambios en BD necesarios
+## Tablas BD (ya en `base-de-datos/estructura.sql`)
 
-```sql
--- Añadir precio y stripe_price_id a cursos
-ALTER TABLE cursos ADD COLUMN precio DECIMAL(8,2) DEFAULT NULL;
-ALTER TABLE cursos ADD COLUMN stripe_price_id VARCHAR(100) DEFAULT NULL;
+- `cursos.precio DECIMAL(8,2)`, `cursos.stripe_price_id VARCHAR(100)`
+- `cursos.pack VARCHAR(120)` — vínculo curso → pack por **nombre del pack**
+- `packs` (id, nombre, descripcion, precio, stripe_price_id, etiqueta, activo)
+- `pagos` (id, stripe_session_id UNIQUE, email, cursos_ids JSON, alumno_id, estado, importe)
 
--- Nueva tabla para registrar pagos
-CREATE TABLE pagos (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  stripe_session_id VARCHAR(200) NOT NULL UNIQUE,
-  email VARCHAR(200) NOT NULL,
-  cursos_ids TEXT NOT NULL,       -- JSON array de IDs
-  alumno_id INT DEFAULT NULL,     -- NULL hasta que se crea el alumno
-  estado ENUM('pendiente','completado','fallido') NOT NULL DEFAULT 'pendiente',
-  importe DECIMAL(8,2),
-  creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-```
+## Puntos críticos aprendidos
 
-## Dependencias PHP necesarias
+1. **Los cursos de un pack se identifican por `cursos.pack = packs.nombre`, NO por `etiqueta`.** Un bug previo buscaba por etiqueta (que es la categoría de la materia, no la pertenencia al pack) y entregaba los cursos equivocados o ninguno.
+2. **El webhook RECHAZA eventos si `STRIPE_WEBHOOK_SECRET` está vacío** (devuelve 500). Antes saltaba la verificación si el secret estaba vacío — era un bypass de seguridad que permitía a cualquiera crearse una cuenta con acceso a cualquier curso fabricando un payload.
+3. **Códigos HTTP del webhook**: 200 solo en éxito o "ya procesado", 400 si payload incompleto (no recuperable), 500 si excepción interna (Stripe reintenta hasta ~3 días).
+4. **Contraseña inicial**: 12 chars aleatorios con `random_int`, hasheada con `bcrypt` cost 12. Se envía en plano en el email — la usuaria conoce el trade-off.
+5. **Idempotencia**: el webhook chequea si `pagos.estado` ya es `completado` y sale temprano. La columna `stripe_session_id` tiene UNIQUE.
+6. **Si el email ya existe**: no se crea alumno duplicado, se le añaden los cursos al existente y NO se envía email (el alumno ya tiene credenciales).
+7. **CORS de checkout**: limitado a `http(s)://cursosumme.es` mediante header dinámico + `Vary: Origin`.
+8. **`pago-ok` no muestra éxito sin confirmación del servidor** — sondea `pago-status.php` para evitar que el usuario crea que ha pagado si llegó a la URL manualmente.
 
-- `stripe/stripe-php` vía Composer (o incluir el SDK manualmente si el hosting no tiene Composer)
-- PHP `mail()` o SMTP con PHPMailer para enviar credenciales
+## Pendientes antes de producción
 
-## Notas de arquitectura
-
-- El webhook debe verificar la firma de Stripe con `STRIPE_WEBHOOK_SECRET` para evitar fraudes
-- La contraseña generada aleatoriamente se hashea con **bcrypt** (`password_hash` + `PASSWORD_BCRYPT`, cost 12), igual que el resto del sistema. Ver `public/api/login.php` y `public/api/cambiar-password.php`.
-- Si el email ya existe en BD, no crear alumno duplicado — añadir los cursos nuevos al alumno existente
-- El hosting es IONOS shared hosting — verificar si permite `exec()` o Composer; si no, incluir stripe-php manualmente
+- Cambiar claves Stripe a `sk_live_*` + regenerar `STRIPE_WEBHOOK_SECRET`
+- Crear productos y precios en el dashboard de Stripe; copiar `price_id` a cada curso/pack (ya hay UI admin para esto)
+- Actualizar URLs `success_url`/`cancel_url` en `stripe-checkout.php` a `https://` cuando se active SSL (ahora mismo `http://cursosumme.es`)
+- E2E con Playwright del happy path (ver [[feedback-tests]])

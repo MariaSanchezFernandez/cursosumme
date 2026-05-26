@@ -6,7 +6,14 @@
 // ─────────────────────────────────────────────────────────────
 
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
+
+// CORS limitado a cursosumme.es (http + https). Mismo origen no requiere CORS.
+$ORIGENES_PERMITIDOS = ['http://cursosumme.es', 'https://cursosumme.es'];
+$origen = $_SERVER['HTTP_ORIGIN'] ?? '';
+if (in_array($origen, $ORIGENES_PERMITIDOS, true)) {
+    header('Access-Control-Allow-Origin: ' . $origen);
+    header('Vary: Origin');
+}
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
@@ -39,7 +46,7 @@ if ($tipo === 'curso') {
     $cursosIds     = json_encode([$id]);
     $descripcion   = $item['titulo'];
 } else {
-    $stmt = $pdo->prepare('SELECT id, nombre, descripcion, precio, stripe_price_id, etiqueta FROM packs WHERE id=:id AND activo=1 LIMIT 1');
+    $stmt = $pdo->prepare('SELECT id, nombre, descripcion, precio, stripe_price_id FROM packs WHERE id=:id AND activo=1 LIMIT 1');
     $stmt->execute([':id' => $id]);
     $item = $stmt->fetch();
     if (!$item || !$item['stripe_price_id'] || !$item['precio']) {
@@ -47,10 +54,16 @@ if ($tipo === 'curso') {
         echo json_encode(['ok' => false, 'mensaje' => 'Pack no disponible para la venta']);
         exit;
     }
-    // Obtener todos los cursos de este pack por etiqueta
-    $cStmt = $pdo->prepare('SELECT id FROM cursos WHERE etiqueta=:etiqueta AND activo=1');
-    $cStmt->execute([':etiqueta' => $item['etiqueta']]);
-    $cursosIds     = json_encode(array_column($cStmt->fetchAll(), 'id'));
+    // Obtener cursos del pack mediante la columna cursos.pack (igual que la gestión en admin)
+    $cStmt = $pdo->prepare('SELECT id FROM cursos WHERE pack=:pack AND activo=1');
+    $cStmt->execute([':pack' => $item['nombre']]);
+    $idsPack       = array_map('intval', array_column($cStmt->fetchAll(), 'id'));
+    if (empty($idsPack)) {
+        http_response_code(409);
+        echo json_encode(['ok' => false, 'mensaje' => 'El pack no contiene cursos activos']);
+        exit;
+    }
+    $cursosIds     = json_encode($idsPack);
     $stripePriceId = $item['stripe_price_id'];
     $descripcion   = $item['nombre'];
 }

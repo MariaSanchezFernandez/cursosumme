@@ -30,7 +30,17 @@
       "Bash(npx playwright *)",
       "Bash(cp /tmp/screenshot.mjs /Users/mariasanchez/Desktop/cursosumme/screenshot.mjs)",
       "Bash(node screenshot.mjs)",
-      "Bash(rm -f screenshot.mjs)"
+      "Bash(rm -f screenshot.mjs)",
+      "WebFetch(domain:www.talsec.app)",
+      "Bash(php -l /Users/mariasanchez/Desktop/cursosumme/public/api/vdocipher-otp.php)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code} · %{size_download} bytes\\\\n\" \"http://cursosumme.es/api/vdocipher-otp.php\")",
+      "Bash(curl -s \"http://cursosumme.es/inicio/\")",
+      "Bash(npm --prefix /Users/mariasanchez/Desktop/cursosumme/Prueba_repro_astro run dev)",
+      "Bash(grep -A 2 \"CREATE TABLE \\\\`cursos\\\\`\" backups/2026-05-24_15-35-43.sql)",
+      "Bash(awk '/CREATE TABLE `cursos`/,/ENGINE=InnoDB/' backups/2026-05-24_15-35-43.sql)",
+      "Bash(php -l public/api/stripe-checkout.php public/api/stripe-webhook.php public/api/pago-status.php public/api/email-helper.php)",
+      "Bash(npx --no-install astro check)",
+      "Bash(npx --no-install tsc --noEmit --skipLibCheck --jsx preserve --target es2020 --module esnext --moduleResolution bundler src/pages/pago-ok.astro)"
     ],
     "additionalDirectories": [
       "/tmp"

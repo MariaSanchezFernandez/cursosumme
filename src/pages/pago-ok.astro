@@ -1,11 +1,20 @@
 ---
+// Página de retorno tras Stripe Checkout. Verifica el estado real del pago
+// contra el servidor antes de mostrar "completado" — el éxito visible solo
+// aparece cuando el webhook ha procesado la sesión.
 import Plantilla from '../layouts/Plantilla.astro';
 import '../styles/global.css';
 ---
 
 <Plantilla>
   <main style="min-height:80vh;display:flex;align-items:center;justify-content:center;padding:2rem;">
-    <div style="max-width:480px;width:100%;text-align:center;">
+    <div id="estado-cargando" style="max-width:480px;width:100%;text-align:center;">
+      <div style="width:48px;height:48px;border:3px solid #e8eeec;border-top-color:#2e7d55;border-radius:50%;margin:0 auto 1.5rem;animation:spin 0.9s linear infinite;"></div>
+      <h1 style="font-size:1.25rem;font-weight:700;color:#1a3a28;margin:0 0 0.5rem;">Procesando tu pago…</h1>
+      <p style="color:#888;font-size:0.9rem;margin:0;">Esto suele tardar unos segundos.</p>
+    </div>
+
+    <div id="estado-ok" style="max-width:480px;width:100%;text-align:center;display:none;">
       <div style="width:72px;height:72px;background:#e8f4ee;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;">
         <svg viewBox="0 0 24 24" fill="none" width="36" height="36">
           <circle cx="12" cy="12" r="10" fill="#2e7d55"/>
@@ -21,5 +30,71 @@ import '../styles/global.css';
         Ir a la plataforma →
       </a>
     </div>
+
+    <div id="estado-error" style="max-width:480px;width:100%;text-align:center;display:none;">
+      <div style="width:72px;height:72px;background:#fef7e6;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;">
+        <svg viewBox="0 0 24 24" fill="none" width="36" height="36">
+          <circle cx="12" cy="12" r="10" fill="#e8a73f"/>
+          <path d="M12 8v5M12 16h.01" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <h1 style="font-size:1.5rem;font-weight:800;color:#1a3a28;margin:0 0 0.75rem;">Aún no hemos podido confirmar tu pago</h1>
+      <p style="color:#555;font-size:0.95rem;line-height:1.7;margin:0 0 2rem;">
+        Si has completado el pago, recibirás el email con tus accesos en unos minutos.<br/>
+        Si crees que ha habido un problema, contacta con <a href="mailto:facturacion@cursosumme.es" style="color:#2e7d55;">facturacion@cursosumme.es</a>.
+      </p>
+      <a href="/" style="display:inline-block;background:#2e7d55;color:#fff;text-decoration:none;padding:0.75rem 2rem;border-radius:8px;font-weight:700;font-size:0.9rem;">
+        Ir a la plataforma →
+      </a>
+    </div>
   </main>
 </Plantilla>
+
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
+<script>
+const params    = new URLSearchParams(location.search);
+const sessionId = params.get('session_id') || '';
+
+const elCargando = document.getElementById('estado-cargando')!;
+const elOk       = document.getElementById('estado-ok')!;
+const elError    = document.getElementById('estado-error')!;
+
+function mostrar(estado: 'cargando' | 'ok' | 'error') {
+  elCargando.style.display = estado === 'cargando' ? 'block' : 'none';
+  elOk.style.display       = estado === 'ok'       ? 'block' : 'none';
+  elError.style.display    = estado === 'error'    ? 'block' : 'none';
+}
+
+if (!sessionId || !/^cs_[A-Za-z0-9_]{20,}$/.test(sessionId)) {
+  // Sin session_id válido: el usuario llegó a esta página por la cara
+  mostrar('error');
+} else {
+  // Sondear hasta 10 veces cada 1.5s (= 15s) esperando al webhook
+  const MAX_INTENTOS  = 10;
+  const INTERVALO_MS  = 1500;
+  let intentos = 0;
+
+  async function comprobar(): Promise<void> {
+    intentos++;
+    try {
+      const res  = await fetch(`/api/pago-status.php?session_id=${encodeURIComponent(sessionId)}`);
+      const data = await res.json();
+      if (data.ok && data.estado === 'completado') {
+        mostrar('ok');
+        return;
+      }
+    } catch { /* reintentar */ }
+
+    if (intentos >= MAX_INTENTOS) {
+      mostrar('error');
+    } else {
+      setTimeout(comprobar, INTERVALO_MS);
+    }
+  }
+
+  comprobar();
+}
+</script>

@@ -9,6 +9,7 @@ function enviarEmailBienvenida(string $para, string $nombreAlumno, string $passw
         $listaCursos .= "<li style='margin-bottom:4px;'>📚 " . htmlspecialchars($c) . "</li>";
     }
 
+    $anio = date('Y');
     $html = "<!DOCTYPE html>
 <html lang='es'>
 <head><meta charset='UTF-8'></head>
@@ -42,7 +43,7 @@ function enviarEmailBienvenida(string $para, string $nombreAlumno, string $passw
       </p>
     </div>
     <div style='background:#f9fbfa;padding:16px 40px;text-align:center;border-top:1px solid #e8eeec;'>
-      <p style='margin:0;font-size:0.75rem;color:#bbb;'>© 2025 Cursos Umme · facturacion@cursosumme.es</p>
+      <p style='margin:0;font-size:0.75rem;color:#bbb;'>© {$anio} Cursos Umme · facturacion@cursosumme.es</p>
     </div>
   </div>
 </body>
