@@ -357,7 +357,13 @@
   aspect-ratio: 16 / 9;
   background: #111;
   border-radius: 10px;
-  overflow: hidden;
+  /* No `overflow: hidden` aquí — rompía la salida DRM protegida de
+     VdoCipher (la captura de pantalla mostraba el frame en vez de
+     quedarse en negro). Tener overflow:hidden en una capa antepasada
+     del <vdocipher-player> fuerza al navegador a componer el vídeo
+     por una ruta no protegida y Widevine pierde el secure path.
+     Cada hijo se ocupa de su propio recorte redondeado (vdoWrapper,
+     videoPlayer, videoMarcaAgua tienen su propio border-radius). */
   flex-shrink: 0;
   box-shadow: 0 2px 16px rgba(0,0,0,0.12);
 }
@@ -365,6 +371,7 @@
 .video-marca-agua {
   position: absolute;
   inset: 0;
+  border-radius: 10px;
   pointer-events: none;
   user-select: none;
   z-index: 10;

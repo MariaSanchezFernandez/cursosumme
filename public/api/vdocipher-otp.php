@@ -91,7 +91,29 @@ if (!$apiKey) {
     exit;
 }
 
+// Watermark dinámico con el email del alumno + bloqueo de captura.
+//
+// El Custom Player Theme (VDOCIPHER_PLAYER_ID) DESACTIVA la protección
+// anti-captura en Chrome desktop — comprobado empíricamente el 2026-05-25
+// contrastando default vs custom con el mismo OTP/Mac/Chrome. Por eso
+// dejamos de pasar el player ID al frontend.
+//
+// Como el watermark estaba atado al Custom Player Theme, lo reinyectamos
+// vía el parámetro `annotate` del OTP (ver doc 3.2.2).
+$annotate = $email !== ''
+    ? json_encode([[
+        'type'     => 'rtext',
+        'text'     => $email,
+        'alpha'    => '0.60',
+        'color'    => '0xFFFFFF',
+        'size'     => '15',
+        'interval' => '5000',
+        'skip'     => '5000',
+    ]])
+    : null;
+
 $otpBody = ['ttl' => 300];
+if ($annotate) $otpBody['annotate'] = $annotate;
 
 $ch = curl_init("https://dev.vdocipher.com/api/videos/{$videoId}/otp");
 curl_setopt_array($ch, [
@@ -125,5 +147,4 @@ if (empty($otp['otp']) || empty($otp['playbackInfo'])) {
     exit;
 }
 
-$playerId = defined('VDOCIPHER_PLAYER_ID') ? VDOCIPHER_PLAYER_ID : '';
-echo json_encode(['ok' => true, 'otp' => $otp['otp'], 'playbackInfo' => $otp['playbackInfo'], 'player' => $playerId]);
+echo json_encode(['ok' => true, 'otp' => $otp['otp'], 'playbackInfo' => $otp['playbackInfo']]);

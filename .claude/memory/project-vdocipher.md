@@ -50,6 +50,13 @@ key, policy, success_action_status=201, success_action_redirect='', file (siempr
 3. **`success_action_redirect=''` obligatorio**: la policy S3 lo exige aunque sea vacío — sin él → AccessDenied
 4. **Sesión stale → 403**: si la admin hace login en otro dispositivo, el token del navegador queda obsoleto → solución: cerrar sesión y volver a entrar
 5. **db-config.php**: está en `.gitignore` pero sí se despliega con `npm run deploy` (va en `dist/`). Si se modifica hay que desplegar.
+6. **`overflow: hidden` en un antepasado del `<vdocipher-player>` ROMPE la protección DRM contra capturas** (Chrome desktop, hallazgo 2026-05-26). El contenedor `.video-box` tenía `overflow: hidden` para clip-pear las esquinas redondeadas → forzaba al navegador a una ruta de compositing no protegida → Widevine perdía el secure path → captura mostraba el frame en vez de quedarse en negro. **Solución:** cada hijo (`vdoWrapper`, `videoPlayer`, `videoMarcaAgua`) lleva su propio `border-radius`; `.video-box` NO usa `overflow: hidden`. Aplicable a cualquier reproductor DRM en Chromium — Widevine es sensible a la cadena de compositing del navegador.
+7. **El watermark dinámico se inyecta vía `annotate` en el body del OTP**, no vía Custom Player Theme. El Custom Player ID `gMYKMNbATpzHnUZM` DESACTIVA la protección anti-captura del default — por eso ya **no** se pasa player ID al frontend desde `vdocipher-otp.php`. Ver doc 3.2.2 de VdoCipher; ejemplo de annotate (texto rotatorio con email del alumno):
+   ```php
+   ['type'=>'rtext','text'=>$email,'alpha'=>'0.60','color'=>'0xFFFFFF',
+    'size'=>'15','interval'=>'5000','skip'=>'5000']
+   ```
+8. **El overlay HTML `#videoMarcaAgua` SOLO se muestra en vídeos locales sin DRM**. Para vídeos VdoCipher se oculta porque (a) duplicaría el watermark, (b) un overlay HTML aparece en screenshots aunque el vídeo no — destruye la sensación de "captura bloqueada".
 
 **Why:** Cloudflare Stream no ofrecía DRM en el plan contratado; VdoCipher incluye Widevine L1 + FairPlay.
 

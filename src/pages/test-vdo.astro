@@ -1,0 +1,93 @@
+---
+// Diagnóstico paso 4: aislar qué propiedad CSS de .video-box rompe
+// la protección de captura. .video-box envuelve al player y combina
+// 4 propiedades que pueden forzar compositing no protegido.
+import Plantilla from '../layouts/Plantilla.astro';
+---
+<Plantilla>
+  <main style="max-width:900px;margin:2rem auto;padding:0 1rem;font-family:system-ui,sans-serif;">
+    <h1 style="font-size:1.3rem;">Test VdoCipher · Aislar propiedad CSS de <code>.video-box</code></h1>
+
+    <fieldset style="border:1px solid #ddd;padding:0.75rem 1rem;border-radius:6px;margin:1rem 0;">
+      <legend style="font-weight:600;font-size:0.85rem;padding:0 0.4rem;">
+        Propiedades CSS del wrapper externo (activa/desactiva y prueba captura):
+      </legend>
+      <label style="display:block;font-size:0.85rem;margin:0.25rem 0;">
+        <input type="checkbox" id="p-borderRadius" checked /> <code>border-radius: 10px</code>
+      </label>
+      <label style="display:block;font-size:0.85rem;margin:0.25rem 0;">
+        <input type="checkbox" id="p-overflow" checked /> <code>overflow: hidden</code>
+      </label>
+      <label style="display:block;font-size:0.85rem;margin:0.25rem 0;">
+        <input type="checkbox" id="p-aspectRatio" checked /> <code>aspect-ratio: 16 / 9</code>
+      </label>
+      <label style="display:block;font-size:0.85rem;margin:0.25rem 0;">
+        <input type="checkbox" id="p-boxShadow" checked /> <code>box-shadow: 0 2px 16px rgba(0,0,0,0.12)</code>
+      </label>
+      <label style="display:block;font-size:0.85rem;margin:0.25rem 0;">
+        <input type="checkbox" id="p-background" checked /> <code>background: #111</code>
+      </label>
+      <label style="display:block;font-size:0.85rem;margin:0.25rem 0;">
+        <input type="checkbox" id="p-position" checked /> <code>position: relative</code>
+      </label>
+      <button id="recargar" style="margin-top:0.75rem;padding:0.4rem 0.9rem;font-size:0.8rem;background:#445;color:#fff;border:none;border-radius:5px;cursor:pointer;">
+        Aplicar y recargar player
+      </button>
+    </fieldset>
+
+    <label style="display:block;margin:0.75rem 0 0.25rem;font-size:0.85rem;font-weight:600;">OTP</label>
+    <input type="text" id="otp" style="width:100%;padding:0.5rem;font-family:ui-monospace,monospace;font-size:0.85rem;border:1px solid #ccc;border-radius:6px;box-sizing:border-box;" />
+
+    <label style="display:block;margin:0.75rem 0 0.25rem;font-size:0.85rem;font-weight:600;">playbackInfo</label>
+    <textarea id="playbackInfo" style="width:100%;min-height:60px;padding:0.5rem;font-family:ui-monospace,monospace;font-size:0.85rem;border:1px solid #ccc;border-radius:6px;box-sizing:border-box;"></textarea>
+
+    <button id="cargar" style="margin-top:1rem;padding:0.6rem 1.2rem;font-size:0.9rem;font-weight:600;background:#2d7d63;color:#fff;border:none;border-radius:6px;cursor:pointer;">
+      Cargar reproductor
+    </button>
+
+    <div id="testRoot" style="margin-top:2rem;"></div>
+  </main>
+
+  <script is:inline>
+    function styleVideoBox() {
+      const props = [];
+      if (document.getElementById('p-position').checked)     props.push('position:relative');
+      if (document.getElementById('p-aspectRatio').checked)  props.push('aspect-ratio:16/9');
+      if (document.getElementById('p-background').checked)   props.push('background:#111');
+      if (document.getElementById('p-borderRadius').checked) props.push('border-radius:10px');
+      if (document.getElementById('p-overflow').checked)     props.push('overflow:hidden');
+      if (document.getElementById('p-boxShadow').checked)    props.push('box-shadow:0 2px 16px rgba(0,0,0,0.12)');
+      props.push('width:100%');
+      return props.join(';');
+    }
+
+    function construirDOM() {
+      const root = document.getElementById('testRoot');
+      root.innerHTML = `
+        <div style="${styleVideoBox()}">
+          <div id="vdoWrapper" style="display:block;position:relative;width:100%;padding-top:56.25%;border-radius:10px;overflow:hidden;background:#000;">
+            <div id="vdoPlayerContainer" style="position:absolute;top:0;left:0;width:100%;height:100%;"></div>
+          </div>
+        </div>
+      `;
+    }
+
+    function cargarPlayer() {
+      const otp          = document.getElementById('otp').value.trim();
+      const playbackInfo = document.getElementById('playbackInfo').value.trim();
+      if (!otp || !playbackInfo) { alert('Faltan OTP o playbackInfo'); return; }
+
+      construirDOM();
+      const vdoContainer = document.getElementById('vdoPlayerContainer');
+      const el = document.createElement('vdocipher-player');
+      el.setAttribute('otp',          otp);
+      el.setAttribute('playbackInfo', playbackInfo);
+      el.style.cssText = 'width:100%;height:100%;display:block;';
+      vdoContainer.appendChild(el);
+    }
+
+    document.getElementById('cargar').addEventListener('click', cargarPlayer);
+    document.getElementById('recargar').addEventListener('click', cargarPlayer);
+    construirDOM();
+  </script>
+</Plantilla>

@@ -287,20 +287,25 @@ function fadeInPanel(el: HTMLElement) {
 // ── Cargar cursos desde la BD ─────────────────────────────────
 const sesion = JSON.parse(sessionStorage.getItem('umme_session') || '{}');
 
-// Marca de agua repetida con email del alumno (patrón sobre todo el video)
+// Marca de agua HTML repetida con el email — SOLO se muestra al reproducir
+// un vídeo local sin DRM (los VdoCipher llevan su propio watermark vía
+// `annotate` en el OTP, dentro del stream cifrado).
 const marcaAgua = document.getElementById('videoMarcaAgua') as HTMLElement;
-if (marcaAgua && sesion.email) {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="280" height="120">
-    <text x="50%" y="55%" font-size="13" fill="rgba(255,255,255,0.13)"
-      text-anchor="middle" dominant-baseline="middle"
-      transform="rotate(-22, 140, 60)" font-family="sans-serif" font-weight="600">
-      ${sesion.email}
-    </text>
-  </svg>`;
-  const url = 'data:image/svg+xml,' + encodeURIComponent(svg);
-  marcaAgua.style.backgroundImage = `url("${url}")`;
-  marcaAgua.style.backgroundRepeat = 'repeat';
-  marcaAgua.style.backgroundSize = '280px 120px';
+if (marcaAgua) {
+  marcaAgua.style.display = 'none';
+  if (sesion.email) {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="280" height="120">
+      <text x="50%" y="55%" font-size="13" fill="rgba(255,255,255,0.13)"
+        text-anchor="middle" dominant-baseline="middle"
+        transform="rotate(-22, 140, 60)" font-family="sans-serif" font-weight="600">
+        ${sesion.email}
+      </text>
+    </svg>`;
+    const url = 'data:image/svg+xml,' + encodeURIComponent(svg);
+    marcaAgua.style.backgroundImage = `url("${url}")`;
+    marcaAgua.style.backgroundRepeat = 'repeat';
+    marcaAgua.style.backgroundSize = '280px 120px';
+  }
 }
 
 // Bloquear clic derecho y arrastre en el video
@@ -803,6 +808,7 @@ function ocultarReproductores() {
   vdoWrapper.style.display    = 'none';
   vdoContainer.innerHTML      = '';
   vdoProcesando.style.display = 'none';
+  if (marcaAgua) marcaAgua.style.display = 'none';
 }
 
 // ── Reproducir un material de vídeo concreto ─────────────────
@@ -811,6 +817,10 @@ async function reproducirVideo(videoMat: any) {
   ocultarReproductores();
   if (videoMat.vdocipher_video_id) {
     // Vídeo VdoCipher DRM (Widevine + FairPlay)
+    // El watermark lo aplica VdoCipher dentro del stream cifrado (annotate
+    // en el OTP), así que NO mostramos el overlay HTML — duplicaría el
+    // watermark Y rompería la sensación de "captura bloqueada" porque el
+    // overlay es HTML normal que sí aparece en screenshots.
     if (videoMat.vdo_status === 'ready') {
       const res = await fetch(
         `/api/vdocipher-otp.php?material_id=${videoMat.id}&usuario_id=${sesion.userId}&token=${encodeURIComponent(sesion.token || '')}`
@@ -830,7 +840,8 @@ async function reproducirVideo(videoMat: any) {
       vdoProcesando.style.display = 'block';
     }
   } else {
-    // Vídeo local
+    // Vídeo local sin DRM — el overlay HTML es la única protección visible
+    if (marcaAgua) marcaAgua.style.display = 'block';
     videoPlayer.src           = `/api/video.php?material_id=${videoMat.id}&usuario_id=${sesion.userId}&token=${encodeURIComponent(sesion.token || '')}`;
     videoPlayer.style.display = 'block';
   }
