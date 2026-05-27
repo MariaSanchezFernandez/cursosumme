@@ -120,14 +120,14 @@ import '../styles/global.css';
   (function () {
     try {
       const raw = sessionStorage.getItem('umme_session');
-      if (!raw) { window.location.replace('/'); return; }
+      if (!raw) { window.location.replace('/login'); return; }
       const s = JSON.parse(raw);
       if (!s || Date.now() > s.exp) {
         sessionStorage.removeItem('umme_session');
         localStorage.removeItem('umme_session');
-        window.location.replace('/');
+        window.location.replace('/login');
       }
-    } catch { window.location.replace('/'); }
+    } catch { window.location.replace('/login'); }
   })();
 </script>
 
@@ -172,7 +172,7 @@ document.getElementById('pfEmail')!.textContent  = s.email  || '—';
 document.getElementById('btnSalirPerfil')!.addEventListener('click', () => {
   sessionStorage.removeItem('umme_session');
   localStorage.removeItem('umme_session');
-  window.location.replace('/');
+  window.location.replace('/login');
 });
 
 // ── Avatar ─────────────────────────────────────────

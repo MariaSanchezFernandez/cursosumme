@@ -3,6 +3,11 @@ import '../styles/global.css';
 import Toast from '../components/Toast.astro';
 import BotonCargando from '../components/BotonCargando.astro';
 import Modal from '../components/Modal.astro';
+
+interface Props {
+  titulo?: string;
+}
+const { titulo = 'Cursos Umme' } = Astro.props;
 ---
 
 <html lang="es">
@@ -10,7 +15,7 @@ import Modal from '../components/Modal.astro';
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
-    <title>Cursos Umme</title>
+    <title>{titulo}</title>
     <script data-cfasync="false" data-no-defer="1" src="https://player.vdocipher.com/v2/player.js"></script>
   </head>
   <body>
@@ -41,7 +46,8 @@ import Modal from '../components/Modal.astro';
     <script is:inline>
     (function () {
       var _fetch = window.fetch;
-      var PUBLICAS = ['/', '/precios', '/precios/', '/recuperar-contrasena', '/recuperar-contrasena/',
+      var PUBLICAS = ['/', '/login', '/login/', '/precios', '/precios/',
+                      '/recuperar-contrasena', '/recuperar-contrasena/',
                       '/pago-ok', '/pago-ok/', '/pago-ko', '/pago-ko/', '/preview', '/preview/',
                       '/soporte', '/soporte/'];
 
@@ -53,7 +59,7 @@ import Modal from '../components/Modal.astro';
           localStorage.removeItem('umme_session');
         } catch (e) {}
         if (PUBLICAS.indexOf(window.location.pathname) !== -1) return;
-        window.location.replace('/?expirada=1');
+        window.location.replace('/login?expirada=1');
       }
 
       window.fetch = function (url, opts) {
@@ -173,23 +179,5 @@ import Modal from '../components/Modal.astro';
         if (primer) primer.focus();
       };
     </script>
-
-    <!-- Firma de marca: aparece en todas las páginas, esquina inferior izquierda -->
-    <span class="firma">cursos umme</span>
   </body>
 </html>
-
-<style>
-  /* Texto fijo en esquina inferior izquierda */
-  .firma {
-    position: fixed;
-    bottom: 1rem;
-    left: 1.25rem;
-    font-size: 0.7rem;
-    font-weight: 200;
-    color: var(--color-text-muted);
-    letter-spacing: 0.08em;
-    z-index: 10;
-    pointer-events: none;
-  }
-</style>

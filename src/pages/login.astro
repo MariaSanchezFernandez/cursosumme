@@ -1,0 +1,63 @@
+---
+/**
+ * PÁGINA: Login (/login)
+ * ----------------------
+ * Formulario de acceso para alumnas y administración. Antes vivía en `/`,
+ * pero `/` se convirtió en la landing comercial pública, así que el login
+ * tiene su propia URL dedicada.
+ *
+ * Flujo:
+ *  1. Si ya hay una sesión vigente en sessionStorage, redirige al área
+ *     privada que corresponda (/admin o /inicio) — el usuario no ve el
+ *     formulario en absoluto.
+ *  2. Si llegamos con `?expirada=1` (porque el interceptor global detectó
+ *     un 401 con sesión guardada), mostramos un aviso explícito antes
+ *     de que la alumna vuelva a teclear las credenciales.
+ *  3. La pintura visual y la lógica del POST viven en `TarjetaLogin`.
+ */
+import Plantilla from '../layouts/Plantilla.astro';
+import TarjetaLogin from '../components/TarjetaLogin.astro';
+import FondoLogin from '../components/FondoLogin.astro';
+import '../styles/index.css';
+---
+
+<Plantilla>
+  <!-- Si ya hay sesión vigente (efímera o "Recordarme"), saltar el formulario
+       y llevar al usuario directamente a su área privada. La hidratación de
+       Plantilla ya copió localStorage→sessionStorage si correspondía, así que
+       basta con leer sessionStorage. -->
+  <script is:inline>
+  (function () {
+    try {
+      var raw = sessionStorage.getItem('umme_session');
+      if (!raw) return;
+      var s = JSON.parse(raw);
+      if (!s || !s.exp || Date.now() > s.exp) {
+        sessionStorage.removeItem('umme_session');
+        localStorage.removeItem('umme_session');
+        return;
+      }
+      window.location.replace(s.rol === 'admin' ? '/admin' : '/inicio');
+    } catch (e) {}
+  })();
+  </script>
+
+  <!-- Si venimos redirigidos por sesión expirada (?expirada=1), avisamos al usuario -->
+  <script is:inline>
+  (function () {
+    if (new URLSearchParams(window.location.search).get('expirada') !== '1') return;
+    document.addEventListener('DOMContentLoaded', function () {
+      var el = document.getElementById('login-error');
+      if (!el) return;
+      el.textContent  = 'Tu sesión ha caducado. Vuelve a iniciar sesión.';
+      el.style.display = 'block';
+      history.replaceState(null, '', '/login');
+    });
+  })();
+  </script>
+
+  <FondoLogin />
+  <main class="login-page">
+    <TarjetaLogin />
+  </main>
+</Plantilla>

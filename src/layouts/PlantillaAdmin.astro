@@ -47,7 +47,8 @@ const { titulo, paginaActual } = Astro.props;
     <script is:inline>
     (function () {
       var _fetch = window.fetch;
-      var PUBLICAS = ['/', '/precios', '/precios/', '/recuperar-contrasena', '/recuperar-contrasena/',
+      var PUBLICAS = ['/', '/login', '/login/', '/precios', '/precios/',
+                      '/recuperar-contrasena', '/recuperar-contrasena/',
                       '/pago-ok', '/pago-ok/', '/pago-ko', '/pago-ko/', '/preview', '/preview/',
                       '/soporte', '/soporte/'];
 
@@ -59,7 +60,7 @@ const { titulo, paginaActual } = Astro.props;
           localStorage.removeItem('umme_session');
         } catch (e) {}
         if (PUBLICAS.indexOf(window.location.pathname) !== -1) return;
-        window.location.replace('/?expirada=1');
+        window.location.replace('/login?expirada=1');
       }
 
       window.fetch = function (url, opts) {
@@ -229,18 +230,18 @@ const { titulo, paginaActual } = Astro.props;
     var _s = {};
     try {
       var _raw = sessionStorage.getItem('umme_session');
-      if (!_raw) { window.location.replace('/'); }
+      if (!_raw) { window.location.replace('/login'); }
       else {
         _s = JSON.parse(_raw);
         if (!_s || Date.now() > _s.exp) {
           sessionStorage.removeItem('umme_session');
           localStorage.removeItem('umme_session');
-          window.location.replace('/');
+          window.location.replace('/login');
         } else if (_s.rol !== 'admin') {
           window.location.replace('/inicio');
         }
       }
-    } catch (e) { window.location.replace('/'); }
+    } catch (e) { window.location.replace('/login'); }
 
     // Nombre del admin en el sidebar
     var _nombreEl = document.getElementById('sidebarNombreAdmin');
@@ -289,7 +290,7 @@ const { titulo, paginaActual } = Astro.props;
       sessionStorage.removeItem('umme_session');
       sessionStorage.removeItem('umme_admin_badge');
       localStorage.removeItem('umme_session');
-      window.location.replace('/');
+      window.location.replace('/login');
     });
 
     // Badge tickets abiertos (tiempo real)

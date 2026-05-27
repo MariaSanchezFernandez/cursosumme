@@ -37,7 +37,7 @@ async function inyectarSesionAdmin(page: import('@playwright/test').Page) {
 
 test.describe('Responsive: viewport meta', () => {
   test('login incluye initial-scale=1 en el viewport', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/login');
     const viewport = await page.locator('meta[name="viewport"]').getAttribute('content');
     expect(viewport ?? '').toContain('initial-scale=1');
   });
@@ -46,7 +46,7 @@ test.describe('Responsive: viewport meta', () => {
 test.describe('Responsive: login en móvil', () => {
   test('login no genera scroll horizontal en 375x667', async ({ page }) => {
     await page.setViewportSize(VP_MOBILE);
-    await page.goto('/');
+    await page.goto('/login');
     await expect(page.locator('#login-form')).toBeVisible();
 
     const overflow = await page.evaluate(() => ({
@@ -60,7 +60,7 @@ test.describe('Responsive: login en móvil', () => {
 
   test('login: el input email tiene tamaño usable en móvil', async ({ page }) => {
     await page.setViewportSize(VP_MOBILE);
-    await page.goto('/');
+    await page.goto('/login');
     const email = page.locator('input#email');
     const box = await email.boundingBox();
     expect(box, 'el input email debe ser visible').not.toBeNull();
@@ -74,7 +74,7 @@ test.describe('Responsive: login en móvil', () => {
 test.describe('Responsive: login en tablet', () => {
   test('login se centra y no desborda en 768x1024', async ({ page }) => {
     await page.setViewportSize(VP_TABLET);
-    await page.goto('/');
+    await page.goto('/login');
     await expect(page.locator('.login-card')).toBeVisible();
     const overflow = await page.evaluate(() => ({
       docW: document.documentElement.scrollWidth,

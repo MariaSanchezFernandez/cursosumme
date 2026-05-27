@@ -24,7 +24,14 @@ Lee credenciales de `cursosumme/.env`. Si `SFTP_PASS` no está definida, la pide
    SFTP_HOST, SFTP_PORT, SFTP_USER, SFTP_PASS, SFTP_REMOTE_PATH
    ```
 
-2. **`public/api/db-config.php` debe existir localmente** — está en `.gitignore` pero el build lo incluye en `dist/` y lo sube al servidor. Sin él, toda la BD falla en producción. Si no existe, crearlo desde cero (ver estructura en el archivo).
+2. **`public/api/db-config.php` debe existir localmente Y ESTAR COMPLETO** — está en `.gitignore` pero el build lo incluye en `dist/` y lo sube al servidor PISANDO el del server. Si tu copia local está incompleta (faltan claves de VdoCipher, Stripe, SMTP, BACKUP_SECRET…), el deploy ROMPE la web aunque la BD siga funcionando. Lista mínima de constantes:
+   - `DB_HOST/PORT/NOMBRE/USUARIO/PASSWORD`
+   - `BACKUP_SECRET`
+   - `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_TAX_RATE_IVA`
+   - `SMTP_HOST/PORT/USER/PASS/FROM_NAME`
+   - `VDOCIPHER_API_KEY`, `VDOCIPHER_PLAYER_ID`
+   - helpers: `sanitizeText`, `rateLimit`, `requireAuth`, `requireAdmin`
+   Antes de cualquier deploy, hacer un `grep -E "define\(" public/api/db-config.php` y confirmar que están todas. Si falta alguna, **NO desplegar** hasta restaurar el archivo completo.
 
 3. **`SFTP_REMOTE_PATH` debe ser `/`** — la raíz del SFTP es la raíz web del hosting. Si se pone `/cursosumme` u otro subdirectorio, los archivos van al sitio equivocado y la web sigue sirviendo los ficheros viejos.
 
@@ -55,3 +62,12 @@ Al configurar el proyecto desde cero hubo tres problemas encadenados:
 **Why:** El `.env` y el `db-config.php` nunca se habían configurado en este equipo — solo existían en el servidor de forma manual.
 
 **How to apply:** Si en un equipo nuevo el deploy falla o la API no responde, verificar estos tres puntos antes de cualquier otra cosa.
+
+## Lección aprendida (2026-05-27)
+
+El `db-config.php` local quedó desactualizado respecto al del servidor: faltaban Stripe, SMTP, VdoCipher, BACKUP_SECRET y rateLimit/sanitizeText. Al desplegar tras editar `requireAuth`, el archivo local pisó el del servidor y rompió todo (subida de vídeos, pagos, emails). Los "bugs" diagnosticados antes (X-Token, tabla `sesiones`) no eran bugs reales — el server YA tenía esas correcciones; el problema vino del local incompleto.
+
+**How to apply:**
+- Antes de tocar `db-config.php`, hacer `grep -c "define(" public/api/db-config.php` — la versión correcta tiene 16 defines. Si tu copia tiene menos, descárgate la del server por SFTP o pide a María la versión actual antes de tocar nada.
+- NUNCA hacer `Write` (sobreescribir) sobre `db-config.php` sin confirmar primero que tu copia incluye todas las constantes listadas arriba. Usar `Edit` localizado.
+- Si el server queda sin claves: pedir a María la copia completa y volver a desplegar.

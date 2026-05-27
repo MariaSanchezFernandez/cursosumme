@@ -10,7 +10,7 @@
  *   - Dos clics seguidos sobre el mismo botón solo disparan UNA acción
  *     (protección anti-doble-click).
  *
- * No requiere credenciales: la página pública / (login) ya monta el
+ * No requiere credenciales: la página pública /login ya monta el
  * helper en su layout, así que podemos invocarlo directamente vía
  * page.evaluate() sobre un botón sintético creado en runtime.
  */
@@ -19,7 +19,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('botonCargando (helper global)', () => {
   test('inyecta spinner + texto y luego restaura el contenido original', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/login');
 
     // Inyectamos un botón sintético y disparamos botonCargando con una promesa
     // que mantenemos abierta vía window.__resolver para poder inspeccionar
@@ -54,7 +54,7 @@ test.describe('botonCargando (helper global)', () => {
   });
 
   test('ignora clics adicionales mientras está cargando (anti-doble-click)', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/login');
 
     const llamadas = await page.evaluate(async () => {
       const btn = document.createElement('button');
@@ -79,7 +79,7 @@ test.describe('botonCargando (helper global)', () => {
   });
 
   test('restaura el botón aunque la acción lance una excepción', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/login');
 
     await page.evaluate(async () => {
       const btn = document.createElement('button');

@@ -29,7 +29,7 @@ const ALUMNO_PASS  = process.env.TEST_ALUMNO_PASS;
 
 test.describe('Recordarme: UI del login', () => {
   test('el checkbox "Recordarme" existe y está desmarcado por defecto', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/login');
     const cb = page.locator('#recordarme');
     await expect(cb).toBeVisible();
     await expect(cb).not.toBeChecked();
@@ -122,16 +122,17 @@ test.describe('Recordarme: flujo end-to-end con credenciales', () => {
     page: import('@playwright/test').Page,
     marcarRecordarme: boolean,
   ): Promise<string> {
-    await page.goto('/');
+    await page.goto('/login');
     await page.locator('#email').fill(ALUMNO_EMAIL!);
     await page.locator('#password').fill(ALUMNO_PASS!);
     if (marcarRecordarme) await page.locator('#recordarme').check();
     await page.locator('button[type="submit"]').click();
 
     // Esperamos hasta que la URL deje de ser la del login.
-    await page.waitForURL((url) => url.pathname !== '/' && url.pathname !== '', {
-      timeout: 15_000,
-    });
+    await page.waitForURL(
+      (url) => !url.pathname.startsWith('/login'),
+      { timeout: 15_000 },
+    );
     // Astro sirve index.html, así que las rutas vienen con barra final
     // (`/admin/`, `/inicio/`). Normalizamos para comparar y para reusar.
     const destino = new URL(page.url()).pathname.replace(/\/+$/, '') || '/';
@@ -212,10 +213,10 @@ test.describe('Recordarme: flujo end-to-end con credenciales', () => {
     const ctx2  = await browser.newContext({ storageState });
     const page2 = await ctx2.newPage();
 
-    // Sin sesión persistente, el área privada debe redirigir al login (/)
+    // Sin sesión persistente, el área privada debe redirigir al login (/login)
     await page2.goto(destino);
-    await page2.waitForURL((url) => url.pathname === '/', { timeout: 10_000 });
-    expect(new URL(page2.url()).pathname).toBe('/');
+    await page2.waitForURL((url) => url.pathname.replace(/\/+$/, '') === '/login', { timeout: 10_000 });
+    expect(new URL(page2.url()).pathname.replace(/\/+$/, '')).toBe('/login');
 
     await ctx2.close();
   });

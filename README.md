@@ -88,7 +88,8 @@ cursosumme/
 │   │   ├── Plantilla.astro          # Layout base (alumno)
 │   │   └── PlantillaAdmin.astro     # Layout con sidebar (admin)
 │   ├── pages/
-│   │   ├── index.astro              # Login (/)
+│   │   ├── index.astro              # Landing comercial pública (/)
+│   │   ├── login.astro              # Login (/login)
 │   │   ├── inicio.astro             # Panel del alumno (/inicio)
 │   │   ├── perfil.astro             # Perfil alumno (/perfil)
 │   │   ├── soporte.astro            # Soporte alumno (/soporte)
@@ -161,13 +162,17 @@ cursosumme/
 
 ## Roles y accesos
 
-| Ruta | Alumno | Admin |
-|------|--------|-------|
-| `/` (login) | ✓ | ✓ |
-| `/inicio` | ✓ | ✓ (modo vista) |
-| `/perfil` | ✓ | — |
-| `/soporte` | ✓ | — |
-| `/admin/**` | ✗ | ✓ |
+| Ruta | Pública | Alumno | Admin |
+|------|---------|--------|-------|
+| `/` (landing comercial) | ✓ | — | — |
+| `/login` | ✓ | ✓ | ✓ |
+| `/precios` | ✓ | — | — |
+| `/recuperar-contrasena` | ✓ | — | — |
+| `/pago-ok` / `/pago-ko` | ✓ | — | — |
+| `/inicio` | — | ✓ | ✓ (modo vista) |
+| `/perfil` | — | ✓ | — |
+| `/soporte` | — | ✓ | — |
+| `/admin/**` | — | ✗ | ✓ |
 
 ---
 

@@ -4,21 +4,21 @@
  *
  * Comprueba el componente Toast.astro montado globalmente en ambos
  * layouts (Plantilla y PlantillaAdmin):
- *   - El contenedor #toastContainer existe en /
+ *   - El contenedor #toastContainer existe en /login
  *   - mostrarToast() inyecta un toast con texto, icono y clase correcta
  *   - El toast se auto-cierra al cumplirse la duración
  *   - Varios toasts coexisten (no se sobreescriben)
  *   - El botón × cierra manualmente
  *
- * No requiere credenciales: usa la página pública / (login) y dispara
+ * No requiere credenciales: usa la página pública /login y dispara
  * los toasts vía page.evaluate() directamente.
  */
 
 import { test, expect } from '@playwright/test';
 
 test.describe('Toasts (sistema global)', () => {
-  test('el contenedor #toastContainer existe en la página de login', async ({ page }) => {
-    await page.goto('/');
+  test('el contenedor #toastContainer existe en /login', async ({ page }) => {
+    await page.goto('/login');
     const contenedor = page.locator('#toastContainer');
     await expect(contenedor).toBeAttached();
     await expect(contenedor).toHaveAttribute('role', 'region');
@@ -26,7 +26,7 @@ test.describe('Toasts (sistema global)', () => {
   });
 
   test('mostrarToast() inyecta un toast visible con el texto correcto', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/login');
     await page.evaluate(() => window.mostrarToast('Hola desde el test', 'success'));
 
     const toast = page.locator('#toastContainer .toast').first();
@@ -36,7 +36,7 @@ test.describe('Toasts (sistema global)', () => {
   });
 
   test('los 4 tipos aplican la clase correcta', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/login');
     await page.evaluate(() => {
       window.toast.success('Ok');
       window.toast.error('Mal');
@@ -50,7 +50,7 @@ test.describe('Toasts (sistema global)', () => {
   });
 
   test('un toast se auto-cierra al cumplirse la duración', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/login');
     // Duración corta (600 ms) para que el test no se eternice
     await page.evaluate(() => window.mostrarToast('Efímero', 'info', 600));
     const toast = page.locator('.toast', { hasText: 'Efímero' });
@@ -59,7 +59,7 @@ test.describe('Toasts (sistema global)', () => {
   });
 
   test('el botón × cierra el toast manualmente', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/login');
     // Duración 0 = no auto-cierra
     await page.evaluate(() => window.mostrarToast('Persistente', 'info', 0));
     const toast = page.locator('.toast', { hasText: 'Persistente' });
@@ -69,7 +69,7 @@ test.describe('Toasts (sistema global)', () => {
   });
 
   test('no se inyecta HTML — el mensaje se trata como texto plano', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/login');
     await page.evaluate(() => window.mostrarToast('<img src=x onerror=alert(1)>', 'error', 0));
     const toast = page.locator('.toast').first();
     // El texto se muestra literal, no se renderiza ningún <img> dentro de .toast-contenido

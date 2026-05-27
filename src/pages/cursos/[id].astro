@@ -1,0 +1,832 @@
+---
+/**
+ * PÁGINA: Detalle de curso (/cursos/[id])
+ * ---------------------------------------
+ * Página pública con el detalle completo de un curso. Estructura:
+ *  1. Hero a dos columnas: info (badge, título, descripción corta,
+ *     precio + CTA comprar) a la izquierda, imagen del curso a la
+ *     derecha (con fallback en bloque de color cuando no hay imagen).
+ *  2. Sección "Qué incluye" con la descripción HTML del curso ya
+ *     sanitizada en el server por limpiarHtml.
+ *  3. Sección "Índice de temas" — timeline numerado con título y duración.
+ *  4. Sección "Cómo es la experiencia" — bullets fijos que recuerdan los
+ *     beneficios de la plataforma (vídeo on-demand, materiales descargables,
+ *     acceso 1 año, hasta 3 dispositivos).
+ *  5. CTA final con precio y botón comprar.
+ *  6. Atribución: el contenido es de Una Maestra Muy Especial bajo licencia.
+ *
+ * Una página estática por curso (generada en build vía getStaticPaths
+ * leyendo de la API). Si el build no tiene conectividad, devolvemos []
+ * y no se generan páginas; el siguiente deploy con conectividad las regenera.
+ */
+import Plantilla from '../../layouts/Plantilla.astro';
+import CabeceraPublica from '../../components/CabeceraPublica.astro';
+import PiePagina from '../../components/PiePagina.astro';
+
+interface CursoBasico {
+  id: number;
+  titulo: string;
+  etiqueta?: string;
+  color?: string;
+  imagen?: string;
+  precio?: string | number;
+  num_temas?: number | string;
+}
+interface Tema { id: number; titulo: string; duracion?: string | null; }
+interface CursoDetalle extends CursoBasico {
+  descripcion?: string;
+  nivel?: string;
+  duracion?: string;
+  pack?: string;
+  pack_color?: string;
+  temas?: Tema[];
+}
+
+export async function getStaticPaths() {
+  const BASE = 'http://cursosumme.es';
+  let cursos: CursoBasico[] = [];
+  try {
+    const res = await fetch(`${BASE}/api/cursos.php?publicos=1`);
+    if (res.ok) {
+      const data = await res.json();
+      cursos = (data.cursos ?? []) as CursoBasico[];
+    }
+  } catch { /* build sin conectividad */ }
+
+  const paths = await Promise.all(
+    cursos.map(async (c) => {
+      let detalle: CursoDetalle = c;
+      try {
+        const r = await fetch(`${BASE}/api/cursos.php?publicos=1&id=${c.id}`);
+        if (r.ok) {
+          const j = await r.json();
+          if (j.curso) detalle = j.curso as CursoDetalle;
+        }
+      } catch { /* fallback al básico */ }
+      return { params: { id: String(c.id) }, props: { curso: detalle } };
+    }),
+  );
+  return paths;
+}
+
+const { curso } = Astro.props as { curso: CursoDetalle };
+const PALETA = ['#b3e8da','#b5c8e8','#d4c8e8','#fff8b7','#ffb5a7','#c8e8b5'];
+const color = curso.color || PALETA[curso.id % PALETA.length];
+const precioFmt = curso.precio
+  ? parseFloat(String(curso.precio)).toFixed(2).replace('.', ',')
+  : null;
+const numTemas = Number(curso.num_temas ?? curso.temas?.length ?? 0);
+const inicial  = curso.titulo.trim().charAt(0).toUpperCase();
+const tituloPag = `${curso.titulo} — Cursos Umme`;
+---
+
+<Plantilla titulo={tituloPag}>
+  <CabeceraPublica activa="cursos" />
+
+  <main class="curso-detalle" style={`--curso-color: ${color};`}>
+
+    <!-- HERO a dos columnas -->
+    <section class="cd-hero">
+      <div class="cd-hero-deco" aria-hidden="true"></div>
+
+      <div class="cd-hero-grid">
+        <div class="cd-hero-info">
+          <p class="cd-breadcrumb">
+            <a href="/precios">← Volver al catálogo</a>
+          </p>
+
+          <div class="cd-chips">
+            {curso.etiqueta && <span class="cd-chip">{curso.etiqueta}</span>}
+            {curso.pack && <span class="cd-chip cd-chip--pack">{curso.pack}</span>}
+          </div>
+
+          <h1 class="cd-titulo">{curso.titulo}</h1>
+
+          <ul class="cd-meta">
+            {numTemas > 0 && (
+              <li>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                <span><strong>{numTemas}</strong> {numTemas === 1 ? 'tema' : 'temas'}</span>
+              </li>
+            )}
+            {curso.duracion && (
+              <li>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span>{curso.duracion}</span>
+              </li>
+            )}
+            {curso.nivel && (
+              <li>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>
+                <span>{curso.nivel}</span>
+              </li>
+            )}
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              <span>Acceso hasta <strong>1 año</strong></span>
+            </li>
+          </ul>
+
+          <div class="cd-compra">
+            {precioFmt && (
+              <div class="cd-precio">
+                <span class="cd-precio-valor">{precioFmt}</span>
+                <span class="cd-precio-moneda">€</span>
+              </div>
+            )}
+            <button
+              type="button"
+              class="cd-cta"
+              data-tipo="curso"
+              data-id={curso.id}
+            >
+              Comprar acceso →
+            </button>
+          </div>
+
+          <p class="cd-confianza">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Pago seguro con Stripe · Credenciales por correo tras el pago
+          </p>
+        </div>
+
+        <div class="cd-hero-media">
+          {curso.imagen ? (
+            <div class="cd-media-img">
+              <img src={curso.imagen} alt={curso.titulo} loading="eager" />
+            </div>
+          ) : (
+            <div class="cd-media-placeholder">
+              <span class="cd-media-inicial">{inicial}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+
+    <!-- QUÉ INCLUYE -->
+    <section class="cd-seccion">
+      <div class="cd-seccion-inner">
+        <header class="cd-seccion-header animar-entrada">
+          <h2>Qué incluye este curso</h2>
+        </header>
+
+        {curso.descripcion ? (
+          <div class="cd-descripcion animar-entrada" set:html={curso.descripcion} />
+        ) : (
+          <p class="cd-vacia animar-entrada">
+            Pronto añadiremos más detalles. Mira el índice de temas para hacerte una idea
+            o pulsa "Comprar acceso" para empezar ya.
+          </p>
+        )}
+      </div>
+    </section>
+
+    <!-- CTA FINAL -->
+    <section class="cd-cierre">
+      <div class="cd-cierre-inner animar-entrada">
+        <h2>Empieza con este curso</h2>
+        {precioFmt && (
+          <p class="cd-cierre-precio">Acceso completo por <strong>{precioFmt} €</strong></p>
+        )}
+        <button
+          type="button"
+          class="cd-cta cd-cta--grande"
+          data-tipo="curso"
+          data-id={curso.id}
+        >
+          Comprar acceso →
+        </button>
+        <p class="cd-cierre-pie">Pago único · Sin suscripción · Acceso inmediato tras el pago</p>
+      </div>
+    </section>
+
+    <!-- ATRIBUCIÓN DE CONTENIDO -->
+    <aside class="cd-licencia">
+      <p>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        Contenido creado por <strong>Una Maestra Muy Especial</strong>, ofrecido en Cursos Umme bajo licencia.
+      </p>
+    </aside>
+  </main>
+
+  <PiePagina />
+</Plantilla>
+
+<style is:global>
+/* ───────────────────────────────────────────────────────────────
+   Detalle de curso (/cursos/[id])
+   Variables: --curso-color desde el .curso-detalle padre.
+   ─────────────────────────────────────────────────────────────── */
+.curso-detalle { background: #fff; }
+
+/* Animaciones de entrada al scroll (mismas que en la landing) */
+.animar-entrada {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+.animar-entrada.visible { opacity: 1; transform: translateY(0); }
+.animar-entrada-cascada > * {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.animar-entrada-cascada.visible > *           { opacity: 1; transform: none; }
+.animar-entrada-cascada.visible > *:nth-child(1) { transition-delay: 0.00s; }
+.animar-entrada-cascada.visible > *:nth-child(2) { transition-delay: 0.06s; }
+.animar-entrada-cascada.visible > *:nth-child(3) { transition-delay: 0.12s; }
+.animar-entrada-cascada.visible > *:nth-child(4) { transition-delay: 0.18s; }
+.animar-entrada-cascada.visible > *:nth-child(5) { transition-delay: 0.24s; }
+.animar-entrada-cascada.visible > *:nth-child(6) { transition-delay: 0.30s; }
+.animar-entrada-cascada.visible > *:nth-child(7) { transition-delay: 0.36s; }
+.animar-entrada-cascada.visible > *:nth-child(8) { transition-delay: 0.42s; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .animar-entrada, .animar-entrada-cascada > * { opacity: 1 !important; transform: none !important; }
+  .cd-hero-deco { display: none !important; }
+}
+
+/* Reutilizamos el keyframes del hero de la landing */
+@keyframes blobFlota1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(-22px, 18px) scale(1.06); }
+}
+
+/* ── HERO a dos columnas ───────────────────────────────────── */
+.cd-hero {
+  position: relative;
+  padding: 3.5rem 1.5rem 4rem;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 90% 10%, color-mix(in srgb, var(--curso-color) 30%, transparent), transparent 50%),
+    linear-gradient(135deg, #ffffff 0%, color-mix(in srgb, var(--curso-color) 14%, #ffffff) 100%);
+}
+.cd-hero-deco {
+  position: absolute;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  background: var(--curso-color);
+  filter: blur(70px);
+  opacity: 0.4;
+  top: -140px;
+  right: -120px;
+  pointer-events: none;
+  animation: blobFlota1 11s ease-in-out infinite;
+}
+.cd-hero-grid {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 3rem;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+.cd-hero-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+.cd-breadcrumb { font-size: 0.85rem; margin: 0 0 0.4rem; }
+.cd-breadcrumb a {
+  color: var(--color-text-muted);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.15s;
+}
+.cd-breadcrumb a:hover { color: var(--color-text); }
+
+.cd-chips { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.cd-chip {
+  background: #fff;
+  color: var(--color-text);
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.cd-chip--pack { background: var(--color-secondary); }
+
+.cd-titulo {
+  font-size: clamp(1.9rem, 4.5vw, 2.9rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0.3rem 0 0.4rem;
+  color: var(--color-text);
+}
+
+.cd-meta {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+}
+.cd-meta li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+.cd-meta li strong { color: var(--color-text); font-weight: 700; }
+.cd-meta svg { color: var(--curso-color); flex-shrink: 0; }
+
+.cd-compra {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+.cd-precio {
+  background: #fff;
+  padding: 0.85rem 1.25rem;
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.2rem;
+}
+.cd-precio-valor {
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+}
+.cd-precio-moneda {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+.cd-cta {
+  background: var(--color-coral);
+  color: var(--color-text);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.85rem;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 800;
+  font-size: 1rem;
+  cursor: pointer;
+  min-height: 52px;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.18s, opacity 0.15s;
+  will-change: transform;
+}
+.cd-cta:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.14);
+  opacity: 0.95;
+}
+.cd-cta:active { transform: translateY(0) scale(0.98); }
+.cd-cta:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+.cd-confianza {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+/* ── Media del hero ────────────────────────────────────────── */
+.cd-hero-media {
+  position: relative;
+}
+.cd-media-img,
+.cd-media-placeholder {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  box-shadow: 0 24px 48px -16px rgba(0,0,0,0.18);
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.cd-media-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.cd-media-placeholder {
+  background:
+    radial-gradient(circle at 30% 30%, color-mix(in srgb, var(--curso-color) 70%, transparent), transparent 55%),
+    linear-gradient(135deg,
+      color-mix(in srgb, var(--curso-color) 50%, #ffffff) 0%,
+      color-mix(in srgb, var(--curso-color) 90%, #ffffff) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cd-media-inicial {
+  font-size: 7rem;
+  font-weight: 800;
+  color: rgba(255,255,255,0.85);
+  letter-spacing: -0.04em;
+  text-shadow: 0 4px 18px rgba(0,0,0,0.12);
+}
+
+/* ── Secciones ─────────────────────────────────────────────── */
+.cd-seccion {
+  padding: 4rem 1.5rem;
+}
+.cd-seccion--clara { background: var(--color-light); }
+.cd-seccion-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.cd-seccion-header { margin-bottom: 1.75rem; }
+.cd-seccion-header h2 {
+  font-size: clamp(1.4rem, 2.5vw, 1.9rem);
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  margin: 0 0 0.5rem;
+}
+.cd-seccion-header p {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── Descripción HTML del curso ───────────────────────────────
+   El admin escribe la descripción con un editor enriquecido que
+   produce <p>, <blockquote>, <em>, <strong>, <ul>, <h3> y unas
+   clases custom: `.desc-card`, `.desc-stats`/`.desc-stat`,
+   `.desc-bienvenida`, `.desc-nota`. Aquí las estilamos todas.
+   ─────────────────────────────────────────────────────────── */
+.cd-descripcion {
+  font-size: 1.02rem;
+  line-height: 1.75;
+  color: var(--color-text);
+  margin: 0 auto;
+}
+.cd-descripcion > * + * { margin-top: 1rem; }
+
+.cd-descripcion p {
+  margin: 0;
+  color: #2a2a2a;
+}
+.cd-descripcion p span { display: inline; }
+
+.cd-descripcion em {
+  font-style: italic;
+  background: linear-gradient(180deg, transparent 70%,
+              color-mix(in srgb, var(--curso-color) 45%, transparent) 70%);
+  padding: 0 0.1em;
+}
+
+.cd-descripcion strong { font-weight: 800; color: var(--color-text); }
+
+.cd-descripcion h2,
+.cd-descripcion h3 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  color: var(--color-text);
+  margin-top: 2rem;
+}
+
+.cd-descripcion ul,
+.cd-descripcion ol {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.cd-descripcion li {
+  position: relative;
+  padding-left: 1.85rem;
+  line-height: 1.55;
+}
+.cd-descripcion li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--curso-color);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--curso-color) 25%, transparent);
+}
+
+.cd-descripcion blockquote {
+  margin: 1.5rem 0;
+  padding: 1.25rem 1.5rem;
+  background: color-mix(in srgb, var(--curso-color) 14%, #ffffff);
+  border-left: 4px solid var(--curso-color);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  font-size: 1.08rem;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--color-text);
+  font-style: normal;
+  letter-spacing: -0.005em;
+}
+.cd-descripcion blockquote p { margin: 0; }
+
+/* ── Bloques custom del editor ───────────────────────────── */
+.cd-descripcion .desc-card {
+  background: #fff;
+  border: 1px solid color-mix(in srgb, var(--curso-color) 40%, #eef0ef);
+  border-radius: var(--radius-md);
+  padding: 1.5rem 1.6rem 1.6rem;
+  box-shadow: 0 6px 18px -10px color-mix(in srgb, var(--curso-color) 50%, rgba(0,0,0,0.08));
+  margin: 1.75rem 0;
+}
+.cd-descripcion .desc-card h3 {
+  margin-top: 0;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-text-muted);
+  margin-bottom: 1rem;
+}
+
+.cd-descripcion .desc-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.85rem;
+  margin: 1.75rem 0;
+}
+.cd-descripcion .desc-stat {
+  background:
+    linear-gradient(135deg,
+      color-mix(in srgb, var(--curso-color) 18%, #ffffff),
+      color-mix(in srgb, var(--curso-color) 38%, #ffffff));
+  border-radius: var(--radius-md);
+  padding: 1.1rem 1.1rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.cd-descripcion .desc-stat:hover { transform: translateY(-3px); }
+.cd-descripcion .desc-stat strong {
+  font-size: 1.9rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+.cd-descripcion .desc-stat span {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--color-text-muted);
+}
+
+.cd-descripcion .desc-nota {
+  background: var(--color-secondary);
+  border-radius: var(--radius-md);
+  padding: 1.1rem 1.3rem;
+  margin: 1.5rem 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+.cd-descripcion .desc-nota p { margin: 0; }
+.cd-descripcion .desc-nota strong {
+  display: inline-block;
+  margin-right: 0.25rem;
+}
+
+.cd-descripcion .desc-bienvenida {
+  background: color-mix(in srgb, var(--curso-color) 10%, var(--color-light));
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  margin: 1.75rem 0;
+}
+.cd-descripcion .desc-bienvenida:empty,
+.cd-descripcion .desc-bienvenida .desc-bienvenida-inner:empty {
+  display: none;
+}
+.cd-descripcion .desc-bienvenida br:only-child { display: none; }
+
+.cd-vacia {
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+/* ── Índice de temas (timeline) ────────────────────────────── */
+.cd-temas {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.cd-tema {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  padding: 1rem 1.25rem;
+  background: #fff;
+  border: 1px solid #eef0ef;
+  border-radius: var(--radius-md);
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+.cd-tema:hover {
+  transform: translateX(4px);
+  border-color: color-mix(in srgb, var(--curso-color) 60%, #ffffff);
+  box-shadow: 0 8px 18px -6px color-mix(in srgb, var(--curso-color) 40%, rgba(0,0,0,0.08));
+}
+.cd-tema-num {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background:
+    linear-gradient(135deg,
+      color-mix(in srgb, var(--curso-color) 60%, #ffffff),
+      color-mix(in srgb, var(--curso-color) 90%, #ffffff));
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.9rem;
+  letter-spacing: -0.01em;
+}
+.cd-tema-body { flex: 1; min-width: 0; }
+.cd-tema-body h3 {
+  font-size: 0.98rem;
+  font-weight: 700;
+  margin: 0 0 0.2rem;
+  color: var(--color-text);
+}
+.cd-tema-duracion {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+/* ── Experiencia (4 bullets con icono) ─────────────────────── */
+.cd-experiencia {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+.cd-exp-item {
+  background: var(--color-light);
+  border-radius: var(--radius-md);
+  padding: 1.5rem 1.4rem;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s;
+}
+.cd-exp-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 22px rgba(0,0,0,0.06);
+}
+.cd-exp-icono {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--curso-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text);
+  margin-bottom: 0.9rem;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.cd-exp-icono svg { width: 22px; height: 22px; }
+.cd-exp-item:hover .cd-exp-icono { transform: scale(1.12) rotate(-6deg); }
+.cd-exp-item h3 {
+  font-size: 0.98rem;
+  font-weight: 800;
+  margin: 0 0 0.35rem;
+}
+.cd-exp-item p {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* ── Cierre / CTA final ──────────────────────────────────── */
+.cd-cierre {
+  padding: 4.5rem 1.5rem 5rem;
+  background:
+    radial-gradient(circle at 20% 80%, rgba(255,181,167,0.3), transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255,248,183,0.4), transparent 50%),
+    color-mix(in srgb, var(--curso-color) 60%, #ffffff);
+}
+.cd-cierre-inner {
+  max-width: 640px;
+  margin: 0 auto;
+  text-align: center;
+}
+.cd-cierre h2 {
+  font-size: clamp(1.6rem, 3vw, 2.1rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.6rem;
+}
+.cd-cierre-precio {
+  font-size: 1.05rem;
+  color: var(--color-text);
+  margin: 0 0 1.5rem;
+}
+.cd-cierre-precio strong { font-weight: 800; }
+.cd-cta--grande {
+  padding: 1.1rem 2.4rem;
+  font-size: 1.08rem;
+  min-height: 56px;
+}
+.cd-cierre-pie {
+  margin-top: 1.25rem;
+  font-size: 0.85rem;
+  color: var(--color-text);
+  opacity: 0.7;
+}
+
+/* ── Atribución ──────────────────────────────────────────── */
+.cd-licencia {
+  text-align: center;
+  padding: 1.75rem 1.5rem 2.5rem;
+  background: #fff;
+}
+.cd-licencia p {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.cd-licencia strong { color: var(--color-text); font-weight: 700; }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 880px) {
+  .cd-hero-grid { grid-template-columns: 1fr; gap: 2rem; }
+  .cd-hero-media { order: -1; max-width: 480px; }
+  .cd-media-img,
+  .cd-media-placeholder { aspect-ratio: 16 / 10; }
+}
+@media (max-width: 480px) {
+  .cd-hero { padding: 2.5rem 1.25rem 3rem; }
+  .cd-seccion { padding: 3rem 1.25rem; }
+  .cd-cierre { padding: 3.5rem 1.25rem 4rem; }
+  .cd-compra { width: 100%; }
+  .cd-cta, .cd-precio { width: 100%; justify-content: center; }
+  .cd-tema { padding: 0.85rem 1rem; gap: 0.85rem; }
+  .cd-tema-num { width: 38px; height: 38px; font-size: 0.85rem; }
+}
+</style>
+
+<script>
+// Comprar curso vía Stripe Checkout. Mismo patrón que /precios.
+document.querySelectorAll<HTMLButtonElement>('.cd-cta').forEach((btn) => {
+  btn.addEventListener('click', async () => {
+    await window.botonCargando(btn, 'Redirigiendo…', async () => {
+      try {
+        const res = await fetch('/api/stripe-checkout.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tipo: btn.dataset.tipo,
+            id: Number(btn.dataset.id),
+          }),
+        });
+        const data = await res.json();
+        if (data.ok && data.url) {
+          window.location.href = data.url;
+        } else {
+          window.mostrarToast(data.mensaje || 'No se pudo iniciar el pago.', 'error');
+        }
+      } catch {
+        window.mostrarToast('Error de conexión. Inténtalo de nuevo.', 'error');
+      }
+    });
+  });
+});
+
+// IntersectionObserver para .animar-entrada / .animar-entrada-cascada
+const obs = new IntersectionObserver(
+  (entries) => {
+    entries.forEach((e) => {
+      if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); }
+    });
+  },
+  { threshold: 0.15, rootMargin: '0px 0px -40px 0px' },
+);
+document.querySelectorAll('.animar-entrada, .animar-entrada-cascada').forEach((el) => obs.observe(el));
+</script>

@@ -1,21 +1,36 @@
 ---
 /**
- * PÁGINA: Home (Login)
- * --------------------
- * Primera página que ve el usuario. Muestra la pantalla de acceso.
- * Delega la estructura visual a LoginCard y el fondo a LoginBackground.
+ * PÁGINA: Landing pública (/)
+ * ---------------------------
+ * Página de entrada de cursosumme.es para visitantes (no alumnas).
+ * Su objetivo es presentar la academia, mostrar los cursos disponibles
+ * y dirigir el tráfico hacia dos destinos con la misma prioridad:
+ *   - /precios → catálogo + compra (alumnas nuevas)
+ *   - /login   → área privada (alumnas existentes)
+ *
+ * El login YA NO está aquí: vive en /login (src/pages/login.astro).
+ *
+ * Secciones de arriba a abajo:
+ *  1. Cabecera pública con logo + nav + botón "Acceder".
+ *  2. Hero con propuesta de valor + dos CTAs.
+ *  3. Beneficios (4 tarjetas).
+ *  4. Cursos y packs destacados — datos reales vía /api/packs.php y
+ *     /api/cursos.php?publicos=1 con esqueleto durante la carga.
+ *  5. Cómo funciona (3 pasos).
+ *  6. Testimonios (PLACEHOLDER — sustituir por reseñas reales de alumnas).
+ *  7. FAQ con <details> nativos.
+ *  8. CTA final.
+ *  9. Pie de página.
  */
 import Plantilla from '../layouts/Plantilla.astro';
-import TarjetaLogin from '../components/TarjetaLogin.astro';
-import FondoLogin from '../components/FondoLogin.astro';
-import '../styles/index.css';
+import CabeceraPublica from '../components/CabeceraPublica.astro';
+import PiePagina from '../components/PiePagina.astro';
 ---
 
 <Plantilla>
-  <!-- Si ya hay sesión vigente (efímera o "Recordarme"), saltar el formulario
-       y llevar al usuario directamente a su área privada. La hidratación de
-       Plantilla ya copió localStorage→sessionStorage si correspondía, así que
-       basta con leer sessionStorage. -->
+  <!-- Si la visitante ya tiene sesión vigente, la llevamos directa a su área.
+       Evita el "estoy logueada y aún veo la landing de promoción" tras
+       cerrar la pestaña y volver con "Recordarme". -->
   <script is:inline>
   (function () {
     try {
@@ -32,24 +47,1304 @@ import '../styles/index.css';
   })();
   </script>
 
-  <!-- Si venimos redirigidos por sesión expirada (?expirada=1), avisamos al usuario -->
-  <script is:inline>
-  (function () {
-    if (new URLSearchParams(window.location.search).get('expirada') !== '1') return;
-    // Esperamos a que el DOM tenga el #login-error (lo pinta TarjetaLogin)
-    document.addEventListener('DOMContentLoaded', function () {
-      var el = document.getElementById('login-error');
-      if (!el) return;
-      el.textContent  = 'Tu sesión ha caducado. Vuelve a iniciar sesión.';
-      el.style.display = 'block';
-      // Limpiar el querystring de la URL sin recargar
-      history.replaceState(null, '', '/');
-    });
-  })();
-  </script>
+  <CabeceraPublica activa="inicio" />
 
-  <FondoLogin />
-  <main class="login-page">
-    <TarjetaLogin />
+  <main>
+    <!-- ═══════════════════════════════════════════════════════════
+         1. HERO
+         ═══════════════════════════════════════════════════════════ -->
+    <section class="hero">
+      <div class="hero-deco hero-deco--coral" aria-hidden="true"></div>
+      <div class="hero-deco hero-deco--secondary" aria-hidden="true"></div>
+      <div class="hero-deco hero-deco--primary" aria-hidden="true"></div>
+      <div class="hero-grano" aria-hidden="true"></div>
+
+      <div class="hero-inner">
+        <p class="hero-eyebrow">Oposiciones de Pedagogía Terapéutica · Online</p>
+        <h1 class="hero-titulo">
+          Prepara tu plaza de PT <span class="hero-acento">a tu ritmo</span>
+        </h1>
+        <p class="hero-sub">
+          Vídeo on-demand, temario actualizado a cada convocatoria y materiales
+          descargables. Sin clases en directo, sin horarios y sin atajos:
+          tú decides cuándo y desde dónde estudias.
+        </p>
+        <div class="hero-ctas">
+          <a href="/precios" class="cta cta--primary">Ver cursos</a>
+          <a href="/login" class="cta cta--secondary">Acceder a mi cuenta</a>
+        </div>
+
+        <p class="hero-licencia">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+          Contenido creado por <strong>Una Maestra Muy Especial</strong>
+        </p>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         2. BENEFICIOS
+         ═══════════════════════════════════════════════════════════ -->
+    <section class="seccion seccion--clara">
+      <div class="seccion-inner">
+        <header class="seccion-header animar-entrada">
+          <p class="seccion-eyebrow">Por qué Cursos Umme</p>
+          <h2 class="seccion-titulo">Para preparar PT sin renunciar a tu vida</h2>
+        </header>
+
+        <div class="beneficios-grid animar-entrada-cascada">
+          <article class="beneficio">
+            <div class="beneficio-icono" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </div>
+            <h3>Vídeo on-demand 24/7</h3>
+            <p>Cada tema explicado en vídeo, disponible cuando puedas conectarte. Sin clases en directo, sin perderte nada.</p>
+          </article>
+
+          <article class="beneficio">
+            <div class="beneficio-icono" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </div>
+            <h3>Materiales descargables</h3>
+            <p>Apuntes, esquemas y audios que te llevas para repasar en el coche, en la cola o en el sofá. También sin conexión.</p>
+          </article>
+
+          <article class="beneficio">
+            <div class="beneficio-icono" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            </div>
+            <h3>Temario al día</h3>
+            <p>Revisado en cada convocatoria. Si la legislación cambia, lo que estudias también — sin tener que rebuscar entre PDFs viejos.</p>
+          </article>
+
+          <article class="beneficio">
+            <div class="beneficio-icono" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <h3>Tu ritmo, tu plan</h3>
+            <p>Hasta 1 año de acceso. Estudia cuando te venga bien y vuelve sobre cualquier tema todas las veces que necesites.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         3. CURSOS Y PACKS DESTACADOS (datos reales desde API)
+         ═══════════════════════════════════════════════════════════ -->
+    <section class="seccion">
+      <div class="seccion-inner">
+        <header class="seccion-header animar-entrada">
+          <p class="seccion-eyebrow">Catálogo</p>
+          <h2 class="seccion-titulo">Cursos y packs destacados</h2>
+          <p class="seccion-sub">Selecciona lo que mejor encaje con tu convocatoria. Cada compra te abre el acceso de inmediato.</p>
+        </header>
+
+        <div id="destacados-loading" class="destacados-skeleton" aria-hidden="true">
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+        </div>
+
+        <div id="destacados-error" class="destacados-error" style="display:none;">
+          No hemos podido cargar el catálogo en este momento.
+          <a href="/precios">Ver todos los cursos →</a>
+        </div>
+
+        <!-- Carrusel 1 — PACKS -->
+        <div id="carrusel-packs-wrap" class="carrusel animar-entrada" style="display:none;">
+          <div class="carrusel-cabecera">
+            <h3 class="subseccion-titulo">Packs</h3>
+            <div class="carrusel-controles">
+              <button class="carrusel-flecha" data-target="carrusel-packs" data-dir="-1" aria-label="Anterior">‹</button>
+              <button class="carrusel-flecha" data-target="carrusel-packs" data-dir="1" aria-label="Siguiente">›</button>
+            </div>
+          </div>
+          <div id="carrusel-packs" class="carrusel-pista" tabindex="0" aria-label="Packs"></div>
+          <div id="carrusel-packs-dots" class="carrusel-dots" aria-hidden="true"></div>
+        </div>
+
+        <!-- Carrusel 2 — CURSOS INDIVIDUALES -->
+        <div id="carrusel-cursos-wrap" class="carrusel animar-entrada" style="display:none;">
+          <div class="carrusel-cabecera">
+            <h3 class="subseccion-titulo">Cursos individuales</h3>
+            <div class="carrusel-controles">
+              <button class="carrusel-flecha" data-target="carrusel-cursos" data-dir="-1" aria-label="Anterior">‹</button>
+              <button class="carrusel-flecha" data-target="carrusel-cursos" data-dir="1" aria-label="Siguiente">›</button>
+            </div>
+          </div>
+          <div id="carrusel-cursos" class="carrusel-pista" tabindex="0" aria-label="Cursos individuales"></div>
+          <div id="carrusel-cursos-dots" class="carrusel-dots" aria-hidden="true"></div>
+        </div>
+
+        <div class="ver-todos">
+          <a href="/precios" class="cta cta--ghost">Ver todos los cursos →</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         4. CÓMO FUNCIONA
+         ═══════════════════════════════════════════════════════════ -->
+    <section class="seccion seccion--clara">
+      <div class="seccion-inner">
+        <header class="seccion-header animar-entrada">
+          <p class="seccion-eyebrow">Cómo funciona</p>
+          <h2 class="seccion-titulo">Empieza en tres pasos</h2>
+        </header>
+
+        <ol class="pasos animar-entrada-cascada">
+          <li class="paso">
+            <div class="paso-numero">1</div>
+            <h3>Elige tu curso o pack</h3>
+            <p>Mira el catálogo y selecciona la formación que necesitas. El pago es seguro vía Stripe.</p>
+          </li>
+          <li class="paso">
+            <div class="paso-numero">2</div>
+            <h3>Recibe tus credenciales</h3>
+            <p>En cuanto el pago se confirma, recibes por email tu usuario y contraseña para entrar al área privada.</p>
+          </li>
+          <li class="paso">
+            <div class="paso-numero">3</div>
+            <h3>Aprende a tu ritmo</h3>
+            <p>Accede desde cualquier dispositivo, marca tu progreso y consulta dudas siempre que las tengas.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         4b. CITA / LEMA DE MARCA
+         Refuerza el posicionamiento: claridad sobre lo que ofrecemos
+         y lo que no, en una sola frase grande.
+         ═══════════════════════════════════════════════════════════ -->
+    <section class="lema">
+      <div class="lema-inner animar-entrada">
+        <p class="lema-eyebrow">Nuestro enfoque</p>
+        <blockquote class="lema-frase">
+          Sin clases en directo, sin grupos, sin horarios.
+          <span class="lema-acento">Solo tú, el temario y tu rutina.</span>
+        </blockquote>
+        <p class="lema-pie">
+          Creemos que para sacarte la plaza de PT no necesitas más ruido,
+          sino el material adecuado a tu disposición todo el tiempo que tú decidas.
+        </p>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         5. FAQ
+         ═══════════════════════════════════════════════════════════ -->
+    <section class="seccion seccion--clara">
+      <div class="seccion-inner seccion-inner--estrecha">
+        <header class="seccion-header animar-entrada">
+          <p class="seccion-eyebrow">Preguntas frecuentes</p>
+          <h2 class="seccion-titulo">Antes de empezar</h2>
+        </header>
+
+        <div class="faq animar-entrada-cascada">
+          <details class="faq-item">
+            <summary>¿Cuánto dura mi acceso al curso?</summary>
+            <div class="faq-cuerpo"><p>El acceso es de hasta 1 año desde su activación. Tendrás tiempo de sobra para preparar la convocatoria y volver sobre cualquier tema todas las veces que necesites.</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>¿Puedo descargar los vídeos?</summary>
+            <div class="faq-cuerpo"><p>No. Los vídeos se reproducen en streaming seguro dentro de tu área privada, con marca de agua personal. Los apuntes, esquemas y audios sí son descargables.</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>¿En qué dispositivos puedo verlos?</summary>
+            <div class="faq-cuerpo"><p>En cualquiera con navegador moderno (ordenador, tablet o móvil), con un límite de hasta 3 dispositivos distintos por cuenta. No necesitas instalar nada.</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>¿Cómo recibo mis credenciales tras el pago?</summary>
+            <div class="faq-cuerpo"><p>En cuanto se confirma el pago, te llega un correo con tu usuario y contraseña. Si no lo ves, revisa la carpeta de spam o escríbenos desde el área de soporte.</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>¿Puedo añadir más cursos a mi cuenta más adelante?</summary>
+            <div class="faq-cuerpo"><p>Sí. Si más adelante compras otro curso o pack con el mismo correo, se asocia automáticamente a tu cuenta sin necesidad de crearla de nuevo.</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>¿Qué métodos de pago aceptáis?</summary>
+            <div class="faq-cuerpo"><p>Pago seguro con tarjeta a través de Stripe. La operación se procesa cifrada y no almacenamos los datos de tu tarjeta en ningún momento.</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>¿Los temarios están actualizados a la convocatoria vigente?</summary>
+            <div class="faq-cuerpo"><p>Sí. Mantenemos los temarios al día con los cambios normativos y las novedades de cada convocatoria.</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>¿Hay soporte si tengo dudas durante el curso?</summary>
+            <div class="faq-cuerpo"><p>Sí, desde el área de alumnas tienes un canal de soporte directo para resolver cualquier problema técnico con la plataforma. El soporte cubre incidencias con la web (acceso, vídeo, descargas, pagos), no consultas sobre el temario.</p></div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         6. CTA FINAL
+         ═══════════════════════════════════════════════════════════ -->
+    <section class="cta-final">
+      <div class="cta-final-inner animar-entrada">
+        <h2>¿Lista para empezar?</h2>
+        <p>Elige tu curso o entra a tu área si ya formas parte de Cursos Umme.</p>
+        <div class="hero-ctas">
+          <a href="/precios" class="cta cta--primary">Ver cursos</a>
+          <a href="/login" class="cta cta--secondary">Acceder a mi cuenta</a>
+        </div>
+      </div>
+    </section>
   </main>
+
+  <PiePagina />
 </Plantilla>
+
+<style is:global>
+/* ───────────────────────────────────────────────────────────────
+   Secciones genéricas
+   ─────────────────────────────────────────────────────────────── */
+.seccion {
+  padding: 4.5rem 1.5rem;
+}
+.seccion--clara {
+  background: #fff;
+}
+.seccion-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.seccion-inner--estrecha {
+  max-width: 760px;
+}
+.seccion-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+.seccion-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-text-muted);
+  margin-bottom: 0.6rem;
+}
+.seccion-titulo {
+  font-size: clamp(1.5rem, 3vw, 2.1rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+.seccion-sub {
+  margin-top: 0.75rem;
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+.subseccion-titulo {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  margin: 2.5rem 0 1rem;
+}
+
+/* ───────────────────────────────────────────────────────────────
+   Hero
+   - Degradado diagonal con varios tonos Umme + 3 blobs flotantes.
+   - Granulado SVG sutil para dar textura (sin imagen, todo CSS).
+   - Animaciones marcadas: blobs flotan, eyebrow desliza, título
+     entra con scale, CTAs con bounce-in escalonado.
+   ─────────────────────────────────────────────────────────────── */
+.hero {
+  position: relative;
+  overflow: hidden;
+  padding: 5.5rem 1.5rem 6rem;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(179,232,218,0.55), transparent 55%),
+    radial-gradient(circle at 85% 15%, rgba(255,181,167,0.45), transparent 50%),
+    radial-gradient(circle at 70% 90%, rgba(255,248,183,0.55), transparent 55%),
+    linear-gradient(135deg, #e6f4ee 0%, #def1ec 45%, #fef0e8 100%);
+}
+.hero-deco {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(50px);
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 0;
+  will-change: transform;
+}
+.hero-deco--coral {
+  width: 360px;
+  height: 360px;
+  background: var(--color-coral);
+  top: -120px;
+  right: -90px;
+  animation: blobFlota1 9s ease-in-out infinite;
+}
+.hero-deco--secondary {
+  width: 320px;
+  height: 320px;
+  background: var(--color-secondary);
+  bottom: -120px;
+  left: -70px;
+  animation: blobFlota2 11s ease-in-out infinite;
+}
+.hero-deco--primary {
+  width: 260px;
+  height: 260px;
+  background: var(--color-primary);
+  top: 35%;
+  left: 60%;
+  opacity: 0.42;
+  animation: blobFlota3 13s ease-in-out infinite;
+}
+@keyframes blobFlota1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(-22px, 18px) scale(1.06); }
+}
+@keyframes blobFlota2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(20px, -15px) scale(1.08); }
+}
+@keyframes blobFlota3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(-18px, -25px) scale(0.94); }
+}
+/* Granulado sutil — patrón SVG inline */
+.hero-grano {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.18;
+  z-index: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/></svg>");
+  mix-blend-mode: overlay;
+}
+.hero-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 820px;
+  margin: 0 auto;
+  text-align: center;
+}
+.hero-eyebrow {
+  display: inline-block;
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--color-text-muted);
+  margin-bottom: 1.5rem;
+  animation: heroEntra 0.7s 0.05s both;
+}
+.hero-titulo {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin-bottom: 1.25rem;
+  animation: heroEntra 0.7s 0.15s both;
+}
+.hero-acento {
+  position: relative;
+  display: inline-block;
+  background: linear-gradient(180deg, transparent 62%, var(--color-primary) 62%);
+  padding: 0 0.18em;
+  animation: heroAcento 0.9s 0.6s both;
+}
+@keyframes heroAcento {
+  0%   { background-size: 0% 100%; background-repeat: no-repeat; }
+  100% { background-size: 100% 100%; background-repeat: no-repeat; }
+}
+.hero-sub {
+  font-size: 1.05rem;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  max-width: 620px;
+  margin: 0 auto 2rem;
+  animation: heroEntra 0.7s 0.3s both;
+}
+.hero-ctas {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  animation: heroEntra 0.7s 0.45s both;
+}
+.hero-licencia {
+  margin: 1.5rem auto 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  background: rgba(255,255,255,0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  animation: heroEntra 0.7s 0.6s both;
+}
+.hero-licencia strong { color: var(--color-text); font-weight: 700; }
+@keyframes heroEntra {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ───────────────────────────────────────────────────────────────
+   Botones de llamada a la acción
+   ─────────────────────────────────────────────────────────────── */
+.cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.7rem 1.5rem;
+  border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 800;
+  font-size: 0.95rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.18s,
+              opacity 0.15s, background 0.15s, border-color 0.15s;
+  border: 1px solid transparent;
+  position: relative;
+  will-change: transform;
+}
+.cta:hover { transform: translateY(-2px) scale(1.04); box-shadow: 0 8px 22px rgba(0,0,0,0.10); }
+.cta:active { transform: translateY(0) scale(0.98); }
+.cta--primary {
+  background: var(--color-coral);
+  color: var(--color-text);
+}
+.cta--primary:hover { opacity: 0.94; }
+.cta--secondary {
+  background: var(--color-text);
+  color: #fff;
+}
+.cta--secondary:hover { background: #1a1a1a; }
+.cta--ghost {
+  background: transparent;
+  color: var(--color-text);
+  border-color: var(--color-text);
+}
+.cta--ghost:hover { background: var(--color-text); color: #fff; }
+
+/* ───────────────────────────────────────────────────────────────
+   Beneficios
+   ─────────────────────────────────────────────────────────────── */
+.beneficios-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+.beneficio {
+  background: var(--color-light);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s;
+  will-change: transform;
+}
+.beneficio:hover {
+  transform: translateY(-6px) rotate(-0.5deg);
+  box-shadow: 0 14px 28px rgba(0,0,0,0.08);
+}
+.beneficio:hover .beneficio-icono {
+  transform: scale(1.12) rotate(-6deg);
+}
+.beneficio-icono {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text);
+  margin-bottom: 1rem;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.beneficio-icono svg {
+  width: 22px;
+  height: 22px;
+}
+.beneficio h3 {
+  font-size: 1rem;
+  font-weight: 800;
+  margin-bottom: 0.4rem;
+}
+.beneficio p {
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+  line-height: 1.55;
+}
+
+/* ───────────────────────────────────────────────────────────────
+   Destacados (carruseles)
+   - Pista con scroll-snap horizontal: soporte táctil nativo + flechas.
+   - Cada tarjeta tiene ancho fijo para que scroll-snap funcione bien.
+   ─────────────────────────────────────────────────────────────── */
+.destacados-skeleton {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+.skeleton-card {
+  height: 180px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(90deg, #eef3f1 25%, #f7faf9 50%, #eef3f1 75%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.4s infinite;
+}
+@keyframes skeletonShimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.destacados-error {
+  text-align: center;
+  padding: 2rem;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+.destacados-error a {
+  display: inline-block;
+  margin-left: 0.5rem;
+  color: var(--color-text);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* ── Carrusel ─────────────────────────────────────────────── */
+.carrusel { margin-bottom: 2.25rem; }
+.carrusel-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 0 1rem;
+}
+.carrusel-cabecera .subseccion-titulo { margin: 0; }
+.carrusel-controles {
+  display: flex;
+  gap: 0.4rem;
+}
+.carrusel-flecha {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid #dde4e1;
+  background: #fff;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--color-text);
+  transition: background 0.15s, border-color 0.15s, transform 0.15s, opacity 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.carrusel-flecha:hover {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  transform: scale(1.06);
+}
+.carrusel-flecha:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+  background: #fff;
+  border-color: #dde4e1;
+}
+.carrusel-pista {
+  display: flex;
+  align-items: stretch;
+  gap: 1rem;
+  overflow-x: auto;
+  /* overflow-y debe ser visible para que la sombra del hover no se corte
+     por arriba ni abajo. Con overflow-x:auto, algunos navegadores
+     fuerzan overflow-y:hidden si no se declara explícitamente. */
+  overflow-y: visible;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  /* Padding generoso vertical para acoger la sombra del hover sin recorte */
+  padding: 1.25rem 0.5rem 1.5rem;
+  margin: -1.25rem -0.5rem -0.5rem;
+  scrollbar-width: thin;
+  scrollbar-color: #cfd9d4 transparent;
+}
+.carrusel-pista:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+.carrusel-pista::-webkit-scrollbar { height: 6px; }
+.carrusel-pista::-webkit-scrollbar-thumb {
+  background: #cfd9d4;
+  border-radius: 3px;
+}
+.carrusel-pista > * {
+  flex: 0 0 320px;
+  scroll-snap-align: start;
+}
+@media (min-width: 720px) {
+  .carrusel-pista > * { flex: 0 0 340px; }
+}
+.carrusel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.45rem;
+  margin-top: 0.85rem;
+}
+.carrusel-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #d3dcd7;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+.carrusel-dot.activo {
+  background: var(--color-text);
+  transform: scale(1.35);
+}
+
+/* ── Tarjeta de curso (versión sin imagen, altura uniforme) ──
+   Variables: --curso-color del curso/pack (pinta acento superior +
+   borde/sombra al hover + iconos del checklist).
+   ─────────────────────────────────────────────────────────── */
+.tarjeta-curso {
+  background: #fff;
+  border: 1px solid #ececec;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: inherit;
+  height: 100%;
+  min-height: 320px;
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.28s,
+              border-color 0.2s;
+  will-change: transform;
+}
+.tarjeta-curso:hover {
+  transform: translateY(-6px);
+  border-color: color-mix(in srgb, var(--curso-color, var(--color-primary)) 60%, #ffffff);
+  box-shadow: 0 18px 36px -10px color-mix(in srgb, var(--curso-color, var(--color-primary)) 50%, rgba(0,0,0,0.1));
+}
+
+/* Franja superior de color del curso */
+.tarjeta-curso-acento {
+  height: 6px;
+  background: var(--curso-color, var(--color-primary));
+  transition: height 0.2s;
+}
+.tarjeta-curso:hover .tarjeta-curso-acento { height: 8px; }
+
+.tarjeta-curso-chip {
+  display: inline-flex;
+  align-self: flex-start;
+  background: var(--color-light);
+  color: var(--color-text);
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.tarjeta-curso-chip--pack {
+  background: var(--color-secondary);
+}
+
+.tarjeta-curso-body {
+  padding: 1.4rem 1.4rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  flex: 1;
+}
+.tarjeta-curso-titulo {
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: var(--color-text);
+}
+
+/* Checklist visual con tick — sustituye la descripción aburrida */
+.tarjeta-curso-checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+}
+.tarjeta-curso-checklist li {
+  position: relative;
+  padding-left: 1.6rem;
+  font-size: 0.86rem;
+  color: var(--color-text);
+  line-height: 1.45;
+}
+.tarjeta-curso-checklist li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.15rem;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--curso-color, var(--color-primary)) 40%, #ffffff);
+}
+.tarjeta-curso-checklist li::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 0.45rem;
+  width: 9px;
+  height: 5px;
+  border-left: 2px solid var(--color-text);
+  border-bottom: 2px solid var(--color-text);
+  transform: rotate(-45deg);
+}
+
+.tarjeta-curso-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid #f1f4f3;
+}
+.tarjeta-curso-precio {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--color-text);
+  line-height: 1;
+}
+.tarjeta-curso-link {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--color-text);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: transform 0.2s;
+}
+.tarjeta-curso:hover .tarjeta-curso-link { transform: translateX(3px); }
+
+.tarjeta-curso--pack { min-height: 360px; }
+.tarjeta-curso--pack .tarjeta-curso-precio { font-size: 1.7rem; }
+
+.ver-todos {
+  text-align: center;
+  margin-top: 2.5rem;
+}
+
+/* ───────────────────────────────────────────────────────────────
+   Pasos
+   ─────────────────────────────────────────────────────────────── */
+.pasos {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  counter-reset: paso;
+}
+.paso {
+  background: #fff;
+  border-radius: var(--radius-md);
+  padding: 1.75rem 1.5rem;
+  border: 1px solid #eef0ef;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s, border-color 0.2s;
+}
+.paso:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.07);
+  border-color: var(--color-primary);
+}
+.paso:hover .paso-numero {
+  animation: badgeBounce 0.6s ease;
+}
+.paso-numero {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1rem;
+  margin-bottom: 0.9rem;
+  transition: transform 0.3s;
+}
+@keyframes badgeBounce {
+  0%   { transform: scale(1) translateY(0); }
+  30%  { transform: scale(1.25) translateY(-6px); }
+  60%  { transform: scale(0.92) translateY(2px); }
+  100% { transform: scale(1) translateY(0); }
+}
+.paso h3 { font-size: 1rem; font-weight: 800; margin-bottom: 0.4rem; }
+.paso p { font-size: 0.88rem; color: var(--color-text-muted); line-height: 1.55; }
+
+/* ───────────────────────────────────────────────────────────────
+   FAQ — con transición al abrir/cerrar
+   - Chrome 131+: anima la altura del ::details-content gracias a
+     interpolate-size: allow-keywords (de height 0 a height auto).
+   - Resto de navegadores: el contenido aparece con fade+slide al
+     abrir (no anima el cierre, pero da sensación de transición).
+   ─────────────────────────────────────────────────────────────── */
+.faq {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  interpolate-size: allow-keywords;
+}
+.faq-item {
+  background: #fff;
+  border: 1px solid #eef0ef;
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 1.25rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.faq-item:hover { border-color: #d8e0dd; }
+.faq-item[open] {
+  border-color: color-mix(in srgb, var(--color-primary) 60%, #ffffff);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.04);
+}
+.faq-item summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 0.9rem 0;
+  font-weight: 700;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  user-select: none;
+}
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary::after {
+  content: '';
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  background:
+    linear-gradient(var(--color-text-muted), var(--color-text-muted)) center/100% 2px no-repeat,
+    linear-gradient(var(--color-text-muted), var(--color-text-muted)) center/2px 100% no-repeat;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.faq-item[open] summary::after {
+  transform: rotate(45deg);
+}
+.faq-cuerpo {
+  overflow: hidden;
+}
+.faq-cuerpo p {
+  padding: 0 0 1rem;
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+/* Chrome 131+: anima la altura del details */
+.faq-item::details-content {
+  height: 0;
+  overflow: clip;
+  transition: height 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+              content-visibility 0.32s allow-discrete;
+}
+.faq-item[open]::details-content {
+  height: auto;
+}
+
+/* Fallback para navegadores sin ::details-content: fade+slide al abrir */
+@supports not selector(::details-content) {
+  .faq-item[open] .faq-cuerpo {
+    animation: faqAbrir 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @keyframes faqAbrir {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────
+   Lema / cita destacada de marca
+   - Sección amplia, fondo turquesa Umme, tipografía grande con
+     una palabra resaltada por subrayado-gradiente.
+   ─────────────────────────────────────────────────────────────── */
+.lema {
+  padding: 5rem 1.5rem;
+  background:
+    radial-gradient(circle at 80% 20%, rgba(255,181,167,0.25), transparent 45%),
+    radial-gradient(circle at 10% 90%, rgba(255,248,183,0.35), transparent 50%),
+    var(--color-primary);
+  position: relative;
+  overflow: hidden;
+}
+.lema-inner {
+  max-width: 840px;
+  margin: 0 auto;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+.lema-eyebrow {
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--color-text);
+  opacity: 0.65;
+  margin-bottom: 1.5rem;
+}
+.lema-frase {
+  font-size: clamp(1.6rem, 4vw, 2.6rem);
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  margin: 0 0 1.5rem;
+  color: var(--color-text);
+  quotes: none;
+}
+.lema-acento {
+  display: inline;
+  background: linear-gradient(180deg, transparent 65%, rgba(255,255,255,0.85) 65%);
+  padding: 0 0.15em;
+}
+.lema-pie {
+  font-size: 1rem;
+  color: var(--color-text);
+  opacity: 0.78;
+  line-height: 1.65;
+  max-width: 580px;
+  margin: 0 auto;
+}
+
+/* ───────────────────────────────────────────────────────────────
+   CTA final
+   ─────────────────────────────────────────────────────────────── */
+.cta-final {
+  padding: 4.5rem 1.5rem;
+  background: var(--color-primary);
+}
+.cta-final-inner {
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+}
+.cta-final h2 {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.75rem;
+}
+.cta-final p {
+  color: var(--color-text);
+  margin-bottom: 1.75rem;
+  font-size: 1rem;
+}
+
+/* ───────────────────────────────────────────────────────────────
+   Animaciones globales
+   - .animar-entrada: estado inicial (oculto + desplazado).
+   - .animar-entrada.visible: estado final (visible + en su sitio).
+   - El IntersectionObserver del script añade .visible al entrar.
+   - prefers-reduced-motion: si el sistema lo pide, anulamos TODO
+     el movimiento (blobs, fade-in, bounce, transforms).
+   ─────────────────────────────────────────────────────────────── */
+.animar-entrada {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+.animar-entrada.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+/* Escalonado: cada hijo entra 80 ms después del anterior */
+.animar-entrada-cascada > * {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.animar-entrada-cascada.visible > *           { opacity: 1; transform: none; }
+.animar-entrada-cascada.visible > *:nth-child(1) { transition-delay: 0.00s; }
+.animar-entrada-cascada.visible > *:nth-child(2) { transition-delay: 0.08s; }
+.animar-entrada-cascada.visible > *:nth-child(3) { transition-delay: 0.16s; }
+.animar-entrada-cascada.visible > *:nth-child(4) { transition-delay: 0.24s; }
+.animar-entrada-cascada.visible > *:nth-child(5) { transition-delay: 0.32s; }
+.animar-entrada-cascada.visible > *:nth-child(6) { transition-delay: 0.40s; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .animar-entrada,
+  .animar-entrada-cascada > * { opacity: 1 !important; transform: none !important; }
+  .hero-deco { display: none !important; }
+}
+
+/* ───────────────────────────────────────────────────────────────
+   Responsive
+   ─────────────────────────────────────────────────────────────── */
+@media (max-width: 720px) {
+  .hero { padding: 3.5rem 1.25rem 4rem; }
+  .seccion { padding: 3.5rem 1.25rem; }
+  .cta-final { padding: 3.5rem 1.25rem; }
+  .hero-ctas .cta { flex: 1 1 auto; min-width: 0; }
+}
+</style>
+
+<script>
+// ───────────────────────────────────────────────────────────────
+// Sección destacados: dos carruseles (packs y cursos individuales).
+// Datos reales desde /api/packs.php y /api/cursos.php?publicos=1.
+// Si falla la API, mostramos un fallback con link a /precios.
+//
+// Carrusel:
+//   - Pista con overflow-x:auto + scroll-snap-type:x mandatory.
+//   - Flechas: scroll por ancho de una tarjeta (con gap).
+//   - Dots dinámicos: una por cada "página" de tarjetas visible.
+//   - Las flechas se deshabilitan en los extremos.
+// ───────────────────────────────────────────────────────────────
+const PALETA = ['#b3e8da','#b5c8e8','#d4c8e8','#fff8b7','#ffb5a7','#c8e8b5'];
+
+interface PackApi  { id: number; nombre: string; descripcion?: string; precio?: string | number; }
+interface CursoApi { id: number; titulo: string; etiqueta?: string; color?: string; precio?: string | number; num_temas?: number | string; }
+
+function formateaPrecio(valor: string | number): string {
+  return parseFloat(String(valor)).toFixed(2).replace('.', ',');
+}
+
+function escapar(texto: string): string {
+  return texto
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function pintarPacks(packs: PackApi[]) {
+  const wrap = document.getElementById('carrusel-packs-wrap')!;
+  const pista = document.getElementById('carrusel-packs')!;
+  if (packs.length === 0) return;
+  wrap.style.display = 'block';
+  pista.innerHTML = '';
+  packs.forEach((pack, idx) => {
+    const color = PALETA[idx % PALETA.length];
+    const card  = document.createElement('article');
+    card.className = 'tarjeta-curso tarjeta-curso--pack';
+    card.style.setProperty('--curso-color', color);
+    card.innerHTML = `
+      <div class="tarjeta-curso-acento"></div>
+      <div class="tarjeta-curso-body">
+        <span class="tarjeta-curso-chip tarjeta-curso-chip--pack">Pack completo</span>
+        <h3 class="tarjeta-curso-titulo">${escapar(pack.nombre)}</h3>
+        <ul class="tarjeta-curso-checklist">
+          <li>Todos los cursos del pack incluidos</li>
+          <li>Apuntes y materiales descargables</li>
+          <li>Acceso hasta 1 año desde la compra</li>
+          <li>Ahorra frente a comprarlos por separado</li>
+        </ul>
+        <div class="tarjeta-curso-pie">
+          <span class="tarjeta-curso-precio">${formateaPrecio(pack.precio ?? 0)} €</span>
+          <a href="/precios#packs" class="tarjeta-curso-link">Ver detalles →</a>
+        </div>
+      </div>
+    `;
+    pista.appendChild(card);
+  });
+  configurarCarrusel('carrusel-packs');
+}
+
+function pintarCursos(cursos: (CursoApi & { imagen?: string })[]) {
+  const wrap = document.getElementById('carrusel-cursos-wrap')!;
+  const pista = document.getElementById('carrusel-cursos')!;
+  if (cursos.length === 0) return;
+  wrap.style.display = 'block';
+  pista.innerHTML = '';
+  cursos.forEach((curso, idx) => {
+    const color    = curso.color || PALETA[idx % PALETA.length];
+    const numTemas = Number(curso.num_temas ?? 0);
+    const card     = document.createElement('a');
+    card.className = 'tarjeta-curso';
+    card.style.setProperty('--curso-color', color);
+    card.setAttribute('href', `/cursos/${curso.id}`);
+    card.innerHTML = `
+      <div class="tarjeta-curso-acento"></div>
+      <div class="tarjeta-curso-body">
+        ${curso.etiqueta ? `<span class="tarjeta-curso-chip">${escapar(curso.etiqueta)}</span>` : ''}
+        <h3 class="tarjeta-curso-titulo">${escapar(curso.titulo)}</h3>
+        <ul class="tarjeta-curso-checklist">
+          ${numTemas > 0 ? `<li>${numTemas} tema${numTemas !== 1 ? 's' : ''} en vídeo</li>` : `<li>Vídeo on-demand</li>`}
+          <li>Apuntes y materiales descargables</li>
+          <li>Acceso hasta 1 año</li>
+        </ul>
+        <div class="tarjeta-curso-pie">
+          <span class="tarjeta-curso-precio">${formateaPrecio(curso.precio ?? 0)} €</span>
+          <span class="tarjeta-curso-link">Ver detalle →</span>
+        </div>
+      </div>
+    `;
+    pista.appendChild(card);
+  });
+  configurarCarrusel('carrusel-cursos');
+}
+
+// ── Carrusel: flechas, dots, observers ───────────────────────
+function configurarCarrusel(id: string) {
+  // El guard `if (!_p) return` no se preserva en funciones anidadas: TS asume
+  // que la variable puede haber cambiado. Reasignamos a `const pista: HTMLElement`
+  // (no-null) para que el narrowing sobreviva dentro de las callbacks.
+  const _p = document.getElementById(id);
+  if (!_p) return;
+  const pista: HTMLElement = _p;
+  if (!pista.querySelector(':scope > *')) return;
+
+  const dotsCont = document.getElementById(id + '-dots');
+  const flechas = document.querySelectorAll<HTMLButtonElement>(
+    `.carrusel-flecha[data-target="${id}"]`,
+  );
+
+  // Paso de scroll = ancho de una tarjeta + el gap visible.
+  function pasoScroll(): number {
+    const t = pista.querySelector(':scope > *') as HTMLElement | null;
+    if (!t) return 320;
+    const cs = window.getComputedStyle(pista);
+    const gap = parseFloat(cs.columnGap || cs.gap || '16') || 16;
+    return t.getBoundingClientRect().width + gap;
+  }
+
+  flechas.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const dir = Number(btn.dataset.dir || '1');
+      pista.scrollBy({ left: pasoScroll() * dir, behavior: 'smooth' });
+    });
+  });
+
+  // Dots: una por cada "página" (cuántas tarjetas caben de una vez).
+  function pintarDots() {
+    if (!dotsCont) return;
+    const cont: HTMLElement = dotsCont;
+    const ancho = pista.clientWidth;
+    const total = pista.scrollWidth;
+    const paginas = Math.max(1, Math.ceil(total / ancho));
+    cont.innerHTML = '';
+    if (paginas <= 1) { cont.style.display = 'none'; return; }
+    cont.style.display = '';
+    for (let i = 0; i < paginas; i++) {
+      const dot = document.createElement('button');
+      dot.className = 'carrusel-dot';
+      dot.type = 'button';
+      dot.setAttribute('aria-label', `Ir a página ${i + 1}`);
+      dot.addEventListener('click', () => {
+        pista.scrollTo({ left: ancho * i, behavior: 'smooth' });
+      });
+      cont.appendChild(dot);
+    }
+    actualizarEstado();
+  }
+
+  function actualizarEstado() {
+    const maxScroll = pista.scrollWidth - pista.clientWidth;
+    const x = pista.scrollLeft;
+    flechas.forEach((b) => {
+      const dir = Number(b.dataset.dir || '1');
+      if (dir < 0) b.disabled = x <= 2;
+      else         b.disabled = x >= maxScroll - 2;
+    });
+    if (dotsCont) {
+      const ancho = pista.clientWidth || 1;
+      const activa = Math.round(x / ancho);
+      dotsCont.querySelectorAll('.carrusel-dot').forEach((d, i) => {
+        d.classList.toggle('activo', i === activa);
+      });
+    }
+  }
+
+  pista.addEventListener('scroll', actualizarEstado, { passive: true });
+  window.addEventListener('resize', pintarDots);
+  pintarDots();
+}
+
+async function cargarDestacados() {
+  const loading = document.getElementById('destacados-loading')!;
+  const errorEl = document.getElementById('destacados-error')!;
+  try {
+    const [resPacks, resCursos] = await Promise.all([
+      fetch('/api/packs.php'),
+      fetch('/api/cursos.php?publicos=1'),
+    ]);
+    const dataPacks  = await resPacks.json();
+    const dataCursos = await resCursos.json();
+
+    const packs  = (dataPacks.packs   ?? []).filter((p: PackApi)  => p.precio);
+    const cursos = (dataCursos.cursos ?? []).filter((c: CursoApi) => c.precio);
+
+    loading.remove();
+
+    if (packs.length === 0 && cursos.length === 0) {
+      errorEl.textContent = 'Pronto añadiremos nuevos cursos. Mientras tanto, ';
+      const a = document.createElement('a');
+      a.href = '/precios';
+      a.textContent = 'visita el catálogo completo →';
+      errorEl.appendChild(a);
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    pintarPacks(packs);
+    pintarCursos(cursos);
+    activarObserverEnNuevos();
+  } catch {
+    loading.remove();
+    errorEl.style.display = 'block';
+  }
+}
+
+// ───────────────────────────────────────────────────────────────
+// IntersectionObserver: marca .animar-entrada como .visible al entrar
+// en viewport. Una sola vez por elemento (disconnect tras visible).
+// ───────────────────────────────────────────────────────────────
+const observer = new IntersectionObserver(
+  (entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  },
+  { threshold: 0.15, rootMargin: '0px 0px -40px 0px' }
+);
+
+function activarObserverEnNuevos() {
+  document.querySelectorAll('.animar-entrada, .animar-entrada-cascada').forEach((el) => {
+    if (!el.classList.contains('visible')) observer.observe(el);
+  });
+}
+activarObserverEnNuevos();
+
+cargarDestacados();
+</script>

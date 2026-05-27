@@ -1,0 +1,215 @@
+---
+/**
+ * COMPONENTE: CabeceraPublica
+ * ---------------------------
+ * Cabecera de las páginas públicas de cursosumme.es (landing `/` y
+ * catálogo `/precios`). Incluye:
+ *   - Logo "Cursos Umme" enlazado a la home.
+ *   - Items de navegación.
+ *   - Botón "Acceder" destacado en coral (paleta Umme).
+ *   - Menú hamburguesa en móvil (≤720px) con drawer vertical.
+ *
+ * Recibe `activa` para marcar visualmente el item actual.
+ * El CSS y el JS del toggle viven aquí mismo (con `is:global` en CSS
+ * porque la cabecera es sticky y el botón hamburguesa controla a su
+ * hermano `#cabecera-nav` vía selector adyacente).
+ */
+interface Props {
+  activa?: 'inicio' | 'cursos';
+}
+const { activa = 'inicio' } = Astro.props;
+---
+
+<header class="cabecera-publica">
+  <a href="/" class="logo" aria-label="Cursos Umme, inicio">
+    <span class="logo-marca">Cursos</span>
+    <span class="logo-umme">Umme</span>
+  </a>
+
+  <button
+    id="btn-menu-publico"
+    class="btn-menu-publico"
+    type="button"
+    aria-label="Abrir menú"
+    aria-expanded="false"
+    aria-controls="cabecera-nav"
+  >
+    <span></span><span></span><span></span>
+  </button>
+
+  <nav id="cabecera-nav" class="cabecera-nav" aria-label="Navegación principal">
+    <a href="/" class={activa === 'inicio' ? 'activo' : ''}>Inicio</a>
+    <a href="/precios" class={activa === 'cursos' ? 'activo' : ''}>Cursos</a>
+    <a href="/login" class="btn-acceder">Acceder</a>
+  </nav>
+</header>
+
+<style is:global>
+.cabecera-publica {
+  background: #fff;
+  border-bottom: 1px solid #e8eeec;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  padding: 0 2.25rem;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.logo {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  text-decoration: none;
+}
+.logo-marca {
+  font-size: 1.1rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+.logo-umme {
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--color-text);
+}
+.cabecera-nav {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+.cabecera-nav a {
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.4rem 0;
+  position: relative;
+  transition: color 0.15s;
+}
+.cabecera-nav a:hover { color: var(--color-text); }
+.cabecera-nav a.activo {
+  color: var(--color-text);
+  font-weight: 700;
+}
+.cabecera-nav a.activo::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 3px;
+  background: var(--color-primary);
+  border-radius: 2px;
+}
+.cabecera-nav .btn-acceder {
+  background: var(--color-coral);
+  color: var(--color-text);
+  padding: 0.6rem 1.4rem;
+  border-radius: var(--radius-sm);
+  font-weight: 800;
+  transition: opacity 0.15s;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.cabecera-nav .btn-acceder:hover { opacity: 0.88; }
+.cabecera-nav .btn-acceder::after { display: none; }
+
+/* ── Hamburguesa (oculta en desktop) ────────────────────────── */
+.btn-menu-publico {
+  display: none;
+  margin-left: auto;
+  width: 44px;
+  height: 44px;
+  background: transparent;
+  border: 1px solid #e8eeec;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0;
+}
+.btn-menu-publico span {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: var(--color-text);
+  border-radius: 2px;
+  transition: transform 0.2s, opacity 0.2s;
+}
+.btn-menu-publico[aria-expanded="true"] span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+.btn-menu-publico[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+.btn-menu-publico[aria-expanded="true"] span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+@media (max-width: 720px) {
+  .cabecera-publica {
+    padding: 0 1.25rem;
+    height: 64px;
+    gap: 0.75rem;
+  }
+  .btn-menu-publico { display: flex; }
+
+  .cabecera-nav {
+    position: fixed;
+    top: 64px;
+    left: 0;
+    right: 0;
+    margin-left: 0;
+    flex-direction: column;
+    align-items: stretch;
+    background: #fff;
+    border-bottom: 1px solid #e8eeec;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+    gap: 0.25rem;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.25s ease, padding 0.25s ease;
+    padding: 0 1.25rem;
+  }
+  .btn-menu-publico[aria-expanded="true"] + #cabecera-nav {
+    max-height: 320px;
+    padding: 0.75rem 1.25rem 1.25rem;
+  }
+  .cabecera-nav a {
+    padding: 0.85rem 0.4rem;
+    font-size: 1rem;
+    border-bottom: 1px solid #f1f4f3;
+  }
+  .cabecera-nav a:last-child { border-bottom: none; }
+  .cabecera-nav a.activo::after { display: none; }
+  .cabecera-nav .btn-acceder {
+    margin-top: 0.6rem;
+    justify-content: center;
+    width: 100%;
+    padding: 0.85rem 1rem;
+  }
+}
+</style>
+
+<script>
+// Toggle de la hamburguesa: solo alterna aria-expanded; el CSS hace
+// el resto vía selector adyacente. Se cierra al pulsar un enlace y
+// al pasar a desktop.
+const btnMenu = document.getElementById('btn-menu-publico');
+const navMenu = document.getElementById('cabecera-nav');
+if (btnMenu && navMenu) {
+  const cerrar = () => btnMenu.setAttribute('aria-expanded', 'false');
+  btnMenu.addEventListener('click', () => {
+    const abierto = btnMenu.getAttribute('aria-expanded') === 'true';
+    btnMenu.setAttribute('aria-expanded', abierto ? 'false' : 'true');
+  });
+  navMenu.querySelectorAll('a').forEach((a) => a.addEventListener('click', cerrar));
+  window.addEventListener('resize', () => { if (window.innerWidth > 720) cerrar(); });
+}
+</script>

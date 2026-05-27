@@ -1,35 +1,59 @@
 ---
+/**
+ * PÁGINA: Catálogo (/precios)
+ * ---------------------------
+ * Listado público de cursos y packs disponibles a la venta.
+ * Estructura:
+ *  1. Cabecera pública compartida.
+ *  2. Hero pequeño con propósito.
+ *  3. Sección "Packs" con tarjetas grandes (cuando hay packs).
+ *  4. Sección "Cursos individuales" con grid de tarjetas grandes con
+ *     imagen, badge etiqueta, precio y CTA "Ver detalle →".
+ *  5. Pie.
+ *
+ * Las tarjetas reutilizan la misma clase `.tarjeta-curso` que la home,
+ * pero los estilos viven aquí porque las dos páginas se sirven sueltas
+ * (Astro estático). El estilo se mantiene en sync editando ambas.
+ *
+ * El botón Comprar dispara Stripe Checkout; la tarjeta entera lleva al
+ * detalle (/cursos/[id]) salvo el botón Comprar, que tiene su propio click.
+ */
 import Plantilla from '../layouts/Plantilla.astro';
+import CabeceraPublica from '../components/CabeceraPublica.astro';
 import PiePagina from '../components/PiePagina.astro';
 import '../styles/global.css';
 ---
 
-<Plantilla>
-  <header class="cabecera-publica">
-    <a href="/" class="logo">
-      <span class="logo-marca">Cursos</span>
-      <span class="logo-umme">Umme</span>
-    </a>
-    <nav class="cabecera-nav">
-      <a href="/">Inicio</a>
-      <a href="/precios" class="activo">Cursos</a>
-    </nav>
-  </header>
+<Plantilla titulo="Catálogo de cursos — Cursos Umme">
+  <CabeceraPublica activa="cursos" />
 
   <main class="contenido">
-    <div class="pagina-titulo">
-      <h1>Prepara tu oposición</h1>
-      <p>Temarios actualizados, vídeo explicativo y acceso desde cualquier dispositivo.</p>
-    </div>
+    <header class="catalogo-hero">
+      <p class="catalogo-eyebrow">Oposiciones de Pedagogía Terapéutica</p>
+      <h1 class="catalogo-titulo">Elige el material que va con tu plaza</h1>
+      <p class="catalogo-sub">
+        Temarios actualizados a cada convocatoria, vídeo on-demand y
+        materiales descargables. Compra única, acceso hasta 1 año.
+      </p>
+    </header>
 
     <div id="loading" class="estado-carga">Cargando cursos…</div>
     <div id="error" class="estado-error" style="display:none;"></div>
 
-    <div id="packs-section"></div>
+    <section id="packs-section" class="catalogo-seccion" style="display:none;">
+      <header class="catalogo-seccion-header" id="packs">
+        <h2 class="catalogo-seccion-titulo">Packs completos</h2>
+        <p class="catalogo-seccion-sub">Más material por menos. Acceso a todos los cursos del pack en una sola compra.</p>
+      </header>
+      <div id="packs-grid" class="catalogo-grid catalogo-grid--packs"></div>
+    </section>
 
-    <section id="cursos-section-wrap" style="display:none;">
-      <h2 class="seccion-titulo">Cursos individuales</h2>
-      <div id="cursos-section" class="cursos-grid"></div>
+    <section id="cursos-section-wrap" class="catalogo-seccion" style="display:none;">
+      <header class="catalogo-seccion-header">
+        <h2 class="catalogo-seccion-titulo">Cursos individuales</h2>
+        <p class="catalogo-seccion-sub">Elige solo lo que necesitas. Acceso completo a cada curso por separado.</p>
+      </header>
+      <div id="cursos-section" class="catalogo-grid"></div>
     </section>
   </main>
 
@@ -37,276 +61,275 @@ import '../styles/global.css';
 </Plantilla>
 
 <style is:global>
-/* ── Cabecera ──────────────────────────────────────────────── */
-.cabecera-publica {
-  background: #fff;
-  border-bottom: 1px solid #e8eeec;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-  padding: 0 2rem;
-  height: 56px;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-.logo {
-  display: flex;
-  align-items: baseline;
-  gap: 0.2rem;
-  text-decoration: none;
-}
-.logo-marca {
-  font-size: 0.9rem;
-  font-weight: 400;
-  letter-spacing: 0.04em;
-  color: var(--color-text-muted);
-}
-.logo-umme {
-  font-size: 0.9rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  color: var(--color-text);
-}
-.cabecera-nav {
-  margin-left: auto;
-  display: flex;
-  gap: 1.5rem;
-}
-.cabecera-nav a {
-  font-size: 0.875rem;
-  color: var(--color-text-muted);
-  text-decoration: none;
-  font-weight: 500;
-}
-.cabecera-nav a.activo {
-  color: var(--color-text);
-  font-weight: 700;
-}
-
-/* ── Contenido ─────────────────────────────────────────────── */
 .contenido {
-  max-width: 1100px;
+  max-width: 1180px;
   margin: 0 auto;
-  padding: 2.5rem 1.5rem 5rem;
-  min-height: calc(100vh - 56px - 64px); /* 56px cabecera, 64px footer aprox */
+  padding: 3rem 1.5rem 5rem;
+  min-height: calc(100vh - 72px - 64px);
 }
 
-/* ── Título de página ──────────────────────────────────────── */
-.pagina-titulo {
-  margin-bottom: 2.5rem;
+/* ── Hero del catálogo ─────────────────────────────────────── */
+.catalogo-hero {
+  text-align: center;
+  margin: 0 auto 3.5rem;
+  max-width: 720px;
 }
-.pagina-titulo h1 {
-  font-size: clamp(1.5rem, 3vw, 2rem);
-  font-weight: 800;
-  color: var(--color-text);
-  margin-bottom: 0.4rem;
-  letter-spacing: -0.02em;
-}
-.pagina-titulo p {
-  font-size: 0.95rem;
+.catalogo-eyebrow {
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
   color: var(--color-text-muted);
-  line-height: 1.6;
+  margin-bottom: 0.85rem;
+}
+.catalogo-titulo {
+  font-size: clamp(1.9rem, 4vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin: 0 0 0.85rem;
+  color: var(--color-text);
+}
+.catalogo-sub {
+  font-size: 1rem;
+  color: var(--color-text-muted);
+  line-height: 1.65;
+  margin: 0;
 }
 
 /* ── Estados ───────────────────────────────────────────────── */
-.estado-carga {
-  text-align: center;
-  padding: 4rem 0;
-  color: #aaa;
-  font-size: 0.9rem;
-}
+.estado-carga,
 .estado-error {
   text-align: center;
-  padding: 3rem 0;
-  color: #c00;
-  font-size: 0.9rem;
+  padding: 3.5rem 1rem;
+  font-size: 0.95rem;
 }
+.estado-carga { color: #aaa; }
+.estado-error { color: #c0392b; }
 
-/* ── Título de sección ─────────────────────────────────────── */
-.seccion-titulo {
-  font-size: 0.72rem;
-  font-weight: 700;
+/* ── Secciones ─────────────────────────────────────────────── */
+.catalogo-seccion {
+  margin-bottom: 4rem;
+}
+.catalogo-seccion-header {
+  margin-bottom: 1.75rem;
+  max-width: 640px;
+}
+.catalogo-seccion-titulo {
+  font-size: clamp(1.2rem, 2vw, 1.5rem);
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  margin: 0 0 0.5rem;
+}
+.catalogo-seccion-sub {
+  font-size: 0.92rem;
   color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
-  margin: 0 0 1rem;
+  line-height: 1.6;
+  margin: 0;
 }
 
-/* ── Pack card ─────────────────────────────────────────────── */
-.packs-grid {
+/* ── Grid ──────────────────────────────────────────────────── */
+.catalogo-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1rem;
-  margin-bottom: 2.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
 }
-.pack-card {
+.catalogo-grid--packs {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (max-width: 720px) {
+  .catalogo-grid--packs { grid-template-columns: 1fr; }
+}
+
+/* ── Tarjeta de curso (sin imagen, altura uniforme) ───────── */
+.tarjeta-curso {
+  position: relative;
   background: #fff;
-  border: 1px solid #e8e8e8;
+  border: 1px solid #ececec;
   border-radius: var(--radius-md);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  text-decoration: none;
+  color: inherit;
+  height: 100%;
+  min-height: 340px;
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.28s,
+              border-color 0.2s;
+  will-change: transform;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: tarjetaEntra 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
-.pack-card:hover {
-  border-color: #c8c8c8;
-  box-shadow: var(--shadow-md);
+@keyframes tarjetaEntra {
+  to { opacity: 1; transform: translateY(0); }
 }
-.pack-acento {
-  height: 5px;
-  background: var(--color-primary);
+.tarjeta-curso:hover {
+  transform: translateY(-6px);
+  border-color: color-mix(in srgb, var(--curso-color, var(--color-primary)) 60%, #ffffff);
+  box-shadow: 0 18px 36px -10px color-mix(in srgb, var(--curso-color, var(--color-primary)) 50%, rgba(0,0,0,0.1));
 }
-.pack-body {
-  padding: 1.4rem 1.5rem 1.5rem;
+.tarjeta-curso-acento {
+  height: 6px;
+  background: var(--curso-color, var(--color-primary));
+  transition: height 0.2s;
+}
+.tarjeta-curso:hover .tarjeta-curso-acento { height: 8px; }
+
+/* Overlay link que cubre toda la tarjeta — el pie (precio +
+   botón Comprar) va por encima con z-index mayor para no robar
+   los clicks. NOTA: el body NO lleva z-index para que el pie
+   pueda elevarse por encima del overlay con z-index 2. */
+.tarjeta-curso-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  text-decoration: none;
+  text-indent: -9999px;
+}
+.tarjeta-curso-body { position: relative; }
+.tarjeta-curso-pie { position: relative; z-index: 2; }
+.tarjeta-curso-cta--full { width: 100%; justify-content: center; }
+
+.tarjeta-curso-chip {
+  display: inline-flex;
+  align-self: flex-start;
+  background: var(--color-light);
+  color: var(--color-text);
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.5rem;
+}
+.tarjeta-curso-chip--pack { background: var(--color-secondary); }
+
+.tarjeta-curso-body {
+  padding: 1.4rem;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.7rem;
   flex: 1;
 }
-.pack-badge {
-  font-size: 0.62rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
-  color: var(--color-text-muted);
-}
-.pack-nombre {
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: var(--color-text);
-  line-height: 1.3;
-  margin: 0;
-}
-.pack-desc {
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
-  line-height: 1.6;
-  margin: 0;
-  flex: 1;
-}
-.pack-footer {
+.tarjeta-curso-titulo-link {
+  text-decoration: none;
+  color: inherit;
   display: flex;
+  flex-direction: column;
+}
+.tarjeta-curso-titulo {
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: var(--color-text);
+}
+
+.tarjeta-curso-checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+}
+.tarjeta-curso-checklist li {
+  position: relative;
+  padding-left: 1.6rem;
+  font-size: 0.86rem;
+  color: var(--color-text);
+  line-height: 1.45;
+}
+.tarjeta-curso-checklist li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.15rem;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--curso-color, var(--color-primary)) 40%, #ffffff);
+}
+.tarjeta-curso-checklist li::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 0.45rem;
+  width: 9px;
+  height: 5px;
+  border-left: 2px solid var(--color-text);
+  border-bottom: 2px solid var(--color-text);
+  transform: rotate(-45deg);
+}
+
+.tarjeta-curso-pie {
+  display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  margin-top: 0.75rem;
+  gap: 0.75rem;
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid #f1f4f3;
 }
-.pack-precio {
-  font-size: 1.8rem;
+.tarjeta-curso-precio { flex-shrink: 0; }
+.tarjeta-curso-precio {
+  font-size: 1.5rem;
   font-weight: 800;
   color: var(--color-text);
   line-height: 1;
 }
-.pack-precio span {
-  font-size: 0.95rem;
-  font-weight: 400;
-  color: var(--color-text-muted);
-}
+.tarjeta-curso--pack { min-height: 380px; }
+.tarjeta-curso--pack .tarjeta-curso-precio { font-size: 1.8rem; }
 
-/* ── Curso card ────────────────────────────────────────────── */
-.cursos-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 1rem;
-}
-.curso-card {
-  background: #fff;
-  border: 1px solid #e8e8e8;
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-.curso-card:hover {
-  border-color: #c8c8c8;
-  box-shadow: var(--shadow-md);
-}
-.curso-fila {
-  display: flex;
-  align-items: stretch;
-  gap: 0.85rem;
-  padding: 1.1rem 1.2rem 1rem;
-  flex: 1;
-}
-.curso-acento {
-  flex-shrink: 0;
-  width: 4px;
-  align-self: stretch;
-  border-radius: 2px;
-}
-.curso-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-.curso-etiqueta {
-  font-size: 0.62rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
-  color: var(--color-text-muted);
-}
-.curso-titulo {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--color-text);
-  line-height: 1.4;
-  margin: 0;
-}
-.curso-meta {
-  font-size: 0.72rem;
-  color: #bbb;
-  margin-top: 0.1rem;
-}
-.curso-footer {
-  padding: 0 1.2rem 1.2rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-.curso-precio {
-  font-size: 1.3rem;
-  font-weight: 800;
-  color: var(--color-text);
-}
-
-/* ── Botones ───────────────────────────────────────────────── */
-.btn-comprar {
+.tarjeta-curso-cta {
   background: var(--color-coral);
   color: var(--color-text);
   border: none;
   border-radius: var(--radius-sm);
-  padding: 0.5rem 1rem;
+  padding: 0.6rem 1.1rem;
   font-family: 'DM Sans', sans-serif;
   font-weight: 800;
-  font-size: 0.82rem;
+  font-size: 0.85rem;
   cursor: pointer;
   white-space: nowrap;
-  transition: opacity 0.15s;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.15s, box-shadow 0.18s;
 }
-.btn-comprar:hover { opacity: 0.85; }
+.tarjeta-curso-cta:hover {
+  transform: translateY(-2px) scale(1.03);
+  opacity: 0.94;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+}
+.tarjeta-curso-cta:active { transform: translateY(0) scale(0.98); }
 
 /* ── Responsive ────────────────────────────────────────────── */
 @media (max-width: 480px) {
-  .cabecera-publica { padding: 0.85rem 1rem; }
   .contenido { padding: 2rem 1rem 4rem; }
-  .pack-footer { flex-direction: column; align-items: flex-start; }
-  .btn-comprar { width: 100%; text-align: center; }
+  .catalogo-seccion { margin-bottom: 3rem; }
+  .tarjeta-curso-pie { flex-direction: column; align-items: stretch; }
+  .tarjeta-curso-cta { width: 100%; text-align: center; }
 }
 </style>
 
 <script>
+// ───────────────────────────────────────────────────────────────
+// Carga packs + cursos desde la API pública y los renderiza como
+// tarjetas grandes con imagen. Cada tarjeta entera enlaza al detalle
+// (/cursos/[id]); el botón "Comprar" dispara Stripe Checkout sin salir.
+//
+// Modo ?preview en la URL = sin pago, datos de muestra (útil para
+// previsualizar la página sin Stripe en test).
+// ───────────────────────────────────────────────────────────────
 const PALETA = ['#b3e8da','#b5c8e8','#d4c8e8','#fff8b7','#ffb5a7','#c8e8b5'];
 
 const PREVIEW_PACKS = [
-  { id: 1, nombre: 'Pack Oposiciones Completo', descripcion: 'Acceso a todos los cursos de la academia: temario, test y vídeos explicativos para las principales oposiciones de la Junta de Andalucía.', precio: '149.00' },
-  { id: 2, nombre: 'Pack Administración General', descripcion: 'Cuerpo General Administrativo y Auxiliar. Incluye todas las materias comunes y específicas actualizadas para la convocatoria vigente.', precio: '89.00' },
+  { id: 1, nombre: 'Pack Oposiciones Completo', descripcion: 'Acceso a todos los cursos de PT.', precio: '149.00' },
+  { id: 2, nombre: 'Pack Administración General', descripcion: 'Cuerpo General Administrativo y Auxiliar.', precio: '89.00' },
 ];
 
 const PREVIEW_CURSOS = [
@@ -318,84 +341,101 @@ const PREVIEW_CURSOS = [
 
 const esPreview = new URLSearchParams(location.search).has('preview');
 
+function escapar(s: string): string {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtPrecio(v: string | number): string {
+  return parseFloat(String(v)).toFixed(2).replace('.', ',');
+}
+
+function pintarTarjetaPack(pack: any, idx: number): HTMLElement {
+  const color = PALETA[idx % PALETA.length];
+  const card = document.createElement('article');
+  card.className = 'tarjeta-curso tarjeta-curso--pack';
+  card.style.setProperty('--curso-color', color);
+  card.style.animationDelay = `${idx * 0.07}s`;
+  card.innerHTML = `
+    <div class="tarjeta-curso-acento"></div>
+    <div class="tarjeta-curso-body">
+      <span class="tarjeta-curso-chip tarjeta-curso-chip--pack">Pack completo</span>
+      <h3 class="tarjeta-curso-titulo">${escapar(pack.nombre)}</h3>
+      <ul class="tarjeta-curso-checklist">
+        <li>Todos los cursos del pack incluidos</li>
+        <li>Apuntes y materiales descargables</li>
+        <li>Acceso hasta 1 año</li>
+        <li>Ahorra frente a comprarlos sueltos</li>
+      </ul>
+      <div class="tarjeta-curso-pie">
+        <span class="tarjeta-curso-precio">${fmtPrecio(pack.precio ?? 0)} €</span>
+        <button class="tarjeta-curso-cta" data-tipo="pack" data-id="${pack.id}">Comprar pack →</button>
+      </div>
+    </div>
+  `;
+  return card;
+}
+
+function pintarTarjetaCurso(curso: any, idx: number): HTMLElement {
+  const color = curso.color || PALETA[idx % PALETA.length];
+  const numTemas = Number(curso.num_temas ?? 0);
+  const card = document.createElement('article');
+  card.className = 'tarjeta-curso';
+  card.style.setProperty('--curso-color', color);
+  card.style.animationDelay = `${idx * 0.06}s`;
+  card.innerHTML = `
+    <div class="tarjeta-curso-acento"></div>
+    <a href="/cursos/${curso.id}" class="tarjeta-curso-overlay" aria-label="Ver detalle de ${escapar(curso.titulo)}"></a>
+    <div class="tarjeta-curso-body">
+      ${curso.etiqueta ? `<span class="tarjeta-curso-chip">${escapar(curso.etiqueta)}</span>` : ''}
+      <h3 class="tarjeta-curso-titulo">${escapar(curso.titulo)}</h3>
+      <ul class="tarjeta-curso-checklist">
+        ${numTemas > 0 ? `<li>${numTemas} tema${numTemas !== 1 ? 's' : ''} en vídeo</li>` : `<li>Vídeo on-demand</li>`}
+        <li>Apuntes y materiales descargables</li>
+        <li>Acceso hasta 1 año</li>
+      </ul>
+      <div class="tarjeta-curso-pie">
+        <span class="tarjeta-curso-precio">${fmtPrecio(curso.precio ?? 0)} €</span>
+        <button class="tarjeta-curso-cta" data-tipo="curso" data-id="${curso.id}">Comprar →</button>
+      </div>
+    </div>
+  `;
+  return card;
+}
+
 function renderizar(dataPacks: any, dataCursos: any) {
-  // ── Packs ─────────────────────────────────────────────────
-  const packsSection = document.getElementById('packs-section')!;
-  const packs = (dataPacks.packs ?? []).filter((p: any) => p.precio);
-  if (packs.length > 0) {
-    const titulo = document.createElement('h2');
-    titulo.className = 'seccion-titulo';
-    titulo.textContent = 'Packs';
-    packsSection.appendChild(titulo);
-
-    const grid = document.createElement('div');
-    grid.className = 'packs-grid';
-    packs.forEach((pack: any, idx: number) => {
-      const color = PALETA[idx % PALETA.length];
-      const card  = document.createElement('div');
-      card.className = 'pack-card';
-      card.innerHTML = `
-        <div class="pack-acento" style="background:${color};"></div>
-        <div class="pack-body">
-          <div class="pack-badge">Pack completo</div>
-          <h3 class="pack-nombre">${pack.nombre}</h3>
-          ${pack.descripcion ? `<p class="pack-desc">${pack.descripcion}</p>` : ''}
-          <div class="pack-footer">
-            <div class="pack-precio">${parseFloat(pack.precio).toFixed(2).replace('.',',')} <span>€</span></div>
-            <button class="btn-comprar" data-tipo="pack" data-id="${pack.id}">Comprar →</button>
-          </div>
-        </div>
-      `;
-      grid.appendChild(card);
-    });
-    packsSection.appendChild(grid);
-  }
-
-  // ── Cursos individuales ────────────────────────────────────
-  const wrap   = document.getElementById('cursos-section-wrap')!;
-  const grid   = document.getElementById('cursos-section')!;
+  const packs  = (dataPacks.packs   ?? []).filter((p: any) => p.precio);
   const cursos = (dataCursos.cursos ?? []).filter((c: any) => c.precio);
 
-  wrap.style.display = 'block';
-  if (cursos.length > 0) {
-    cursos.forEach((curso: any, idx: number) => {
-      const color    = curso.color || PALETA[idx % PALETA.length];
-      const numTemas = Number(curso.num_temas ?? 0);
-      const card     = document.createElement('div');
-      card.className = 'curso-card';
-      card.innerHTML = `
-        <div class="curso-fila">
-          <div class="curso-acento" style="background:${color};"></div>
-          <div class="curso-info">
-            <div class="curso-etiqueta">${curso.etiqueta ?? ''}</div>
-            <h3 class="curso-titulo">${curso.titulo}</h3>
-            ${numTemas > 0 ? `<div class="curso-meta">${numTemas} tema${numTemas !== 1 ? 's' : ''}</div>` : ''}
-          </div>
-        </div>
-        <div class="curso-footer">
-          <span class="curso-precio">${parseFloat(curso.precio).toFixed(2).replace('.',',')} €</span>
-          <button class="btn-comprar" data-tipo="curso" data-id="${curso.id}">Comprar →</button>
-        </div>
-      `;
-      grid.appendChild(card);
-    });
-  } else {
-    grid.innerHTML = '<p style="color:#aaa;font-size:0.85rem;">No hay cursos disponibles aún.</p>';
+  if (packs.length > 0) {
+    const sec  = document.getElementById('packs-section')!;
+    const grid = document.getElementById('packs-grid')!;
+    sec.style.display = 'block';
+    packs.forEach((p: any, i: number) => grid.appendChild(pintarTarjetaPack(p, i)));
   }
 
-  // ── Botones de compra ──────────────────────────────────────
+  const wrap = document.getElementById('cursos-section-wrap')!;
+  const grid = document.getElementById('cursos-section')!;
+  wrap.style.display = 'block';
+  if (cursos.length > 0) {
+    cursos.forEach((c: any, i: number) => grid.appendChild(pintarTarjetaCurso(c, i)));
+  } else {
+    grid.innerHTML = '<p style="color:#aaa;font-size:0.9rem;grid-column:1/-1;">No hay cursos disponibles aún.</p>';
+  }
+
+  // Botones Comprar → Stripe
   document.addEventListener('click', async (e) => {
-    const btn = (e.target as HTMLElement).closest('.btn-comprar') as HTMLButtonElement | null;
+    const btn = (e.target as HTMLElement).closest('.tarjeta-curso-cta') as HTMLButtonElement | null;
     if (!btn) return;
+    e.preventDefault();
     if (esPreview) {
       window.mostrarToast('Modo preview — el pago no está activo', 'info');
       return;
     }
     await window.botonCargando(btn, 'Redirigiendo…', async () => {
       const res  = await fetch('/api/stripe-checkout.php', {
-        method:  'POST',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ tipo: btn.dataset.tipo, id: Number(btn.dataset.id) }),
+        body: JSON.stringify({ tipo: btn.dataset.tipo, id: Number(btn.dataset.id) }),
       });
       const data = await res.json();
       if (data.ok) {

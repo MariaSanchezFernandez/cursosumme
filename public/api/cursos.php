@@ -24,6 +24,38 @@ $metodo = $_SERVER['REQUEST_METHOD'];
 if ($metodo === 'GET') {
     // Modo público: solo cursos activos con precio para la página de precios (sin auth)
     if (!empty($_GET['publicos'])) {
+        // ── Detalle público de un curso concreto ─────────────────
+        // Devuelve descripción + listado de TÍTULOS de temas (sin
+        // URLs de vídeo ni materiales) para alimentar /cursos/[id].
+        if (!empty($_GET['id'])) {
+            $id = (int)$_GET['id'];
+            $stmt = $pdo->prepare(
+                'SELECT c.id, c.titulo, c.descripcion, c.etiqueta, c.nivel, c.duracion,
+                        c.pack, c.pack_color, c.color, c.imagen, c.precio, c.stripe_price_id,
+                        (SELECT COUNT(*) FROM temas t WHERE t.curso_id = c.id) AS num_temas
+                 FROM cursos c
+                 WHERE c.id = :id AND c.activo = 1 AND c.precio IS NOT NULL
+                 LIMIT 1'
+            );
+            $stmt->execute([':id' => $id]);
+            $curso = $stmt->fetch();
+            if (!$curso) {
+                http_response_code(404);
+                echo json_encode(['ok' => false, 'mensaje' => 'Curso no disponible']);
+                exit;
+            }
+            // Títulos de temas (sin contenido), ordenados como en el panel admin.
+            $stmtT = $pdo->prepare(
+                'SELECT id, titulo, duracion
+                 FROM temas WHERE curso_id = :id
+                 ORDER BY COALESCE(orden, id) ASC'
+            );
+            $stmtT->execute([':id' => $id]);
+            $curso['temas'] = $stmtT->fetchAll();
+            echo json_encode(['ok' => true, 'curso' => $curso]);
+            exit;
+        }
+
         $stmt = $pdo->query(
             'SELECT c.id, c.titulo, c.etiqueta, c.color, c.imagen, c.precio, c.stripe_price_id,
                     COUNT(t.id) AS num_temas
