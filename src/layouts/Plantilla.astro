@@ -3,6 +3,7 @@ import '../styles/global.css';
 import Toast from '../components/Toast.astro';
 import BotonCargando from '../components/BotonCargando.astro';
 import Modal from '../components/Modal.astro';
+import BotonesFlair from '../components/BotonesFlair.astro';
 
 interface Props {
   titulo?: string;
@@ -160,6 +161,9 @@ const { titulo = 'Cursos Umme' } = Astro.props;
 
     <!-- Helper global de modal de confirmación (window.confirmar) -->
     <Modal />
+
+    <!-- Efecto magnetic flair en CTAs (.cta, .tarjeta-curso-cta, .cd-cta, etc.) -->
+    <BotonesFlair />
 
     <!-- Helper global de estados vacíos (window.htmlEstadoVacio) -->
     <script is:inline>

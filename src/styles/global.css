@@ -48,3 +48,56 @@ body {
   color: var(--color-text);
   background-color: var(--color-light);
 }
+
+/* ───────────────────────────────────────────────────────────────
+   Botones de llamada a la acción reutilizables (.cta)
+   - Usados en landing (/), /precios, /cursos/[id], /pago-ok, /pago-ko.
+   - El efecto "magnetic flair" (GSAP) se aplica automáticamente
+     desde el componente BotonesFlair. Aquí solo definimos los
+     estilos base + variantes de color (--primary, --secondary, --ghost).
+   ─────────────────────────────────────────────────────────────── */
+.cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.7rem 1.5rem;
+  border-radius: var(--radius-sm);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 800;
+  font-size: 0.95rem;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+  position: relative;
+  will-change: transform;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.22s ease,
+              opacity 0.18s ease,
+              background 0.18s ease,
+              border-color 0.18s ease;
+}
+.cta:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 10px 24px -8px rgba(0, 0, 0, 0.18);
+}
+.cta:active { transform: translateY(0) scale(0.98); }
+
+.cta--primary {
+  background: var(--color-coral);
+  color: var(--color-text);
+}
+.cta--primary:hover { opacity: 0.96; }
+
+.cta--secondary {
+  background: var(--color-text);
+  color: #ffffff;
+}
+.cta--secondary:hover { background: #1a1a1a; }
+
+.cta--ghost {
+  background: transparent;
+  color: var(--color-text);
+  border-color: var(--color-text);
+}
+.cta--ghost:hover { background: var(--color-text); color: #ffffff; }

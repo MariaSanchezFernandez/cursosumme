@@ -1,0 +1,191 @@
+---
+/**
+ * COMPONENTE: BotonesFlair
+ * ------------------------
+ * Aplica el efecto "magnetic flair button" de GSAP a todos los CTAs
+ * de la web pública: un círculo coloreado se infla desde donde el
+ * cursor entra al botón, le sigue mientras está dentro y sale por
+ * donde sales. Basado en el pen oficial de GreenSock:
+ *   https://codepen.io/GreenSock/pen/MWRPXMr
+ *
+ * Cómo funciona:
+ *  1. La clase Button aplica los listeners mouseenter/mousemove/mouseleave
+ *     y mueve `.flair-flair` con `gsap.to` + `gsap.quickSetter` para
+ *     que sea fluido.
+ *  2. El selector `aplicarATodos()` recorre los botones de las clases
+ *     conocidas (.cta, .tarjeta-curso-cta, .cd-cta, .btn-acceder,
+ *     .carrusel-flecha) y, si aún no están preparados, les inyecta la
+ *     estructura HTML extra (`.flair-flair` + envoltorio `.flair-label`).
+ *  3. Un MutationObserver vigila el DOM para inicializar también los
+ *     botones que aparecen dinámicamente (tarjetas del carrusel, /precios).
+ *
+ * Color del flair:
+ *  Cada clase de botón define `--flair-color` y `--flair-text-color`
+ *  vía CSS para que el círculo que se infla contraste con el fondo.
+ *  Si no hay variable, usa negro como fallback.
+ *
+ * Acerca de prefers-reduced-motion:
+ *  Si el usuario lo tiene activo, los listeners no se aplican: el
+ *  botón funciona normal sin animación.
+ */
+---
+
+<style is:global>
+  /* Estructura base — todos los botones que vayan a llevar el efecto
+     deben poder tener position:relative y overflow:hidden. Se aplica
+     vía JS añadiendo la clase `boton-flair--init` para no romper
+     ningún cálculo previo. */
+  .boton-flair--init {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  /* Texto del botón — pasa a `--flair-text-color` al hacer hover */
+  .flair-label {
+    position: relative;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: color 0.38s ease;
+  }
+  .boton-flair--init:hover .flair-label {
+    color: var(--flair-text-color, #ffffff);
+  }
+
+  /* Círculo que se infla. Empieza con scale(0) anclado en la esquina
+     0,0 y GSAP lo mueve por xPercent/yPercent al cursor. El círculo
+     real es el ::before, que es enorme (170% del contenedor) para que
+     cubra el botón aunque el centro esté en una esquina. */
+  .flair-flair {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    transform: scale(0);
+    transform-origin: 0 0;
+    will-change: transform;
+    z-index: 1;
+  }
+  .flair-flair::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    aspect-ratio: 1 / 1;
+    width: 170%;
+    border-radius: 50%;
+    background-color: var(--flair-color, #1a1a1a);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  /* Mapeo de --flair-color: solo .cta--ghost por ahora.
+     Para outline/stroke: el flair rellena con el color del texto y
+     el texto se invierte a blanco. */
+  .cta--ghost {
+    --flair-color: var(--color-text);
+    --flair-text-color: #ffffff;
+  }
+</style>
+
+<script>
+  import { gsap } from 'gsap';
+
+  // Selectores que reciben el efecto.
+  // Solo se aplica a botones sin relleno de partida (outline/ghost).
+  // En botones ya rellenos (coral, oscuro), el flair sumaría un color
+  // encima de otro y queda confuso — esos se quedan con su lift+sombra
+  // simple definidos en su propio CSS.
+  const SELECTOR = '.cta--ghost';
+  const reducidaMov = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function preparar(boton: HTMLElement) {
+    if (boton.dataset.flairInit === '1') return;
+    boton.dataset.flairInit = '1';
+    boton.classList.add('boton-flair--init');
+
+    // Envuelve el contenido actual del botón en <span class="flair-label">
+    const label = document.createElement('span');
+    label.className = 'flair-label';
+    while (boton.firstChild) label.appendChild(boton.firstChild);
+
+    const flair = document.createElement('span');
+    flair.className = 'flair-flair';
+    boton.appendChild(flair);
+    boton.appendChild(label);
+
+    if (reducidaMov) return; // sin animaciones, el botón queda funcional
+
+    const xSet = gsap.quickSetter(flair, 'xPercent');
+    const ySet = gsap.quickSetter(flair, 'yPercent');
+
+    const getXY = (e: MouseEvent) => {
+      const r = boton.getBoundingClientRect();
+      const xPipe = gsap.utils.pipe(
+        gsap.utils.mapRange(0, r.width, 0, 100),
+        gsap.utils.clamp(0, 100),
+      );
+      const yPipe = gsap.utils.pipe(
+        gsap.utils.mapRange(0, r.height, 0, 100),
+        gsap.utils.clamp(0, 100),
+      );
+      return { x: xPipe(e.clientX - r.left), y: yPipe(e.clientY - r.top) };
+    };
+
+    boton.addEventListener('mouseenter', (e) => {
+      const { x, y } = getXY(e);
+      xSet(x);
+      ySet(y);
+      gsap.to(flair, { scale: 1, duration: 1.1, ease: 'power3.out' });
+    });
+
+    boton.addEventListener('mouseleave', (e) => {
+      const { x, y } = getXY(e);
+      gsap.killTweensOf(flair);
+      gsap.to(flair, {
+        xPercent: x > 90 ? x + 20 : x < 10 ? x - 20 : x,
+        yPercent: y > 90 ? y + 20 : y < 10 ? y - 20 : y,
+        scale: 0,
+        duration: 0.55,
+        ease: 'power2.out',
+      });
+    });
+
+    boton.addEventListener('mousemove', (e) => {
+      const { x, y } = getXY(e);
+      gsap.to(flair, {
+        xPercent: x,
+        yPercent: y,
+        duration: 0.7,
+        ease: 'power2',
+      });
+    });
+  }
+
+  function aplicarATodos(root: ParentNode = document) {
+    root.querySelectorAll<HTMLElement>(SELECTOR).forEach(preparar);
+  }
+
+  // Inicial: al cargar el DOM.
+  aplicarATodos();
+
+  // Tarjetas y elementos que se inyectan más tarde (carruseles, /precios):
+  // observador del body que se dispara cuando se añaden nodos.
+  const obs = new MutationObserver((muts) => {
+    for (const m of muts) {
+      m.addedNodes.forEach((n) => {
+        if (n.nodeType !== 1) return; // solo Elements
+        const el = n as Element;
+        if (el.matches?.(SELECTOR)) preparar(el as HTMLElement);
+        aplicarATodos(el);
+      });
+    }
+  });
+  obs.observe(document.body, { childList: true, subtree: true });
+
+  // Exponer también una función global por si algún script de página la
+  // quiere llamar manualmente tras renderizar (más eficiente que esperar
+  // al observer en algunos casos).
+  (window as any).aplicarFlairs = aplicarATodos;
+</script>

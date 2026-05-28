@@ -71,7 +71,7 @@ import PiePagina from '../components/PiePagina.astro';
         </p>
         <div class="hero-ctas">
           <a href="/precios" class="cta cta--primary">Ver cursos</a>
-          <a href="/login" class="cta cta--secondary">Acceder a mi cuenta</a>
+          <a href="/login" class="cta cta--ghost">Acceder a mi cuenta</a>
         </div>
 
         <p class="hero-licencia">
@@ -135,7 +135,7 @@ import PiePagina from '../components/PiePagina.astro';
         <header class="seccion-header animar-entrada">
           <p class="seccion-eyebrow">Catálogo</p>
           <h2 class="seccion-titulo">Cursos y packs destacados</h2>
-          <p class="seccion-sub">Selecciona lo que mejor encaje con tu convocatoria. Cada compra te abre el acceso de inmediato.</p>
+          <p class="seccion-sub">Cada curso incluye vídeo on-demand, apuntes y materiales descargables, y acceso hasta 1 año.</p>
         </header>
 
         <div id="destacados-loading" class="destacados-skeleton" aria-hidden="true">
@@ -149,11 +149,11 @@ import PiePagina from '../components/PiePagina.astro';
           <a href="/precios">Ver todos los cursos →</a>
         </div>
 
-        <!-- Carrusel 1 — PACKS -->
+        <!-- PACKS — carrusel si hay >2, grid si son pocos -->
         <div id="carrusel-packs-wrap" class="carrusel animar-entrada" style="display:none;">
           <div class="carrusel-cabecera">
             <h3 class="subseccion-titulo">Packs</h3>
-            <div class="carrusel-controles">
+            <div class="carrusel-controles" id="carrusel-packs-controles">
               <button class="carrusel-flecha" data-target="carrusel-packs" data-dir="-1" aria-label="Anterior">‹</button>
               <button class="carrusel-flecha" data-target="carrusel-packs" data-dir="1" aria-label="Siguiente">›</button>
             </div>
@@ -286,7 +286,7 @@ import PiePagina from '../components/PiePagina.astro';
         <p>Elige tu curso o entra a tu área si ya formas parte de Cursos Umme.</p>
         <div class="hero-ctas">
           <a href="/precios" class="cta cta--primary">Ver cursos</a>
-          <a href="/login" class="cta cta--secondary">Acceder a mi cuenta</a>
+          <a href="/login" class="cta cta--ghost">Acceder a mi cuenta</a>
         </div>
       </div>
     </section>
@@ -498,43 +498,8 @@ import PiePagina from '../components/PiePagina.astro';
 /* ───────────────────────────────────────────────────────────────
    Botones de llamada a la acción
    ─────────────────────────────────────────────────────────────── */
-.cta {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  padding: 0.7rem 1.5rem;
-  border-radius: var(--radius-sm);
-  font-family: 'DM Sans', sans-serif;
-  font-weight: 800;
-  font-size: 0.95rem;
-  text-decoration: none;
-  cursor: pointer;
-  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
-              box-shadow 0.18s,
-              opacity 0.15s, background 0.15s, border-color 0.15s;
-  border: 1px solid transparent;
-  position: relative;
-  will-change: transform;
-}
-.cta:hover { transform: translateY(-2px) scale(1.04); box-shadow: 0 8px 22px rgba(0,0,0,0.10); }
-.cta:active { transform: translateY(0) scale(0.98); }
-.cta--primary {
-  background: var(--color-coral);
-  color: var(--color-text);
-}
-.cta--primary:hover { opacity: 0.94; }
-.cta--secondary {
-  background: var(--color-text);
-  color: #fff;
-}
-.cta--secondary:hover { background: #1a1a1a; }
-.cta--ghost {
-  background: transparent;
-  color: var(--color-text);
-  border-color: var(--color-text);
-}
-.cta--ghost:hover { background: var(--color-text); color: #fff; }
+/* Estilos base de .cta y variantes en global.css.
+   Aquí solo añadimos centrado en el hero (flex wrap). */
 
 /* ───────────────────────────────────────────────────────────────
    Beneficios
@@ -672,12 +637,27 @@ import PiePagina from '../components/PiePagina.astro';
   overflow-y: visible;
   scroll-snap-type: x mandatory;
   scroll-behavior: smooth;
-  /* Padding generoso vertical para acoger la sombra del hover sin recorte */
-  padding: 1.25rem 0.5rem 1.5rem;
-  margin: -1.25rem -0.5rem -0.5rem;
+  /* Padding generoso vertical para acoger la sombra del hover sin recorte.
+     Compensamos con margin negativo para no descolocar la sección. */
+  padding: 2rem 0.5rem 2.5rem;
+  margin: -2rem -0.5rem -1.5rem;
   scrollbar-width: thin;
   scrollbar-color: #cfd9d4 transparent;
 }
+
+/* Variante "grid": cuando hay pocas tarjetas, en vez de un carrusel
+   con scroll, mostramos las tarjetas como grid responsive. Sin
+   flechas, sin dots, sin scroll-snap. */
+.carrusel--grid .carrusel-pista {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.25rem;
+  overflow: visible;
+  scroll-snap-type: none;
+  padding: 1rem 0;
+  margin: -1rem 0 0;
+}
+.carrusel--grid .carrusel-pista > * { flex: initial; }
 .carrusel-pista:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 4px;
@@ -780,6 +760,25 @@ import PiePagina from '../components/PiePagina.astro';
   letter-spacing: -0.01em;
   margin: 0;
   color: var(--color-text);
+}
+
+/* Meta breve bajo el título (nº de temas, o info corta del pack) */
+.tarjeta-curso-meta {
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  font-weight: 600;
+}
+.tarjeta-curso-desc {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  line-height: 1.55;
+  margin: 0;
+  flex: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 /* Checklist visual con tick — sustituye la descripción aburrida */
@@ -1148,9 +1147,22 @@ function escapar(texto: string): string {
 function pintarPacks(packs: PackApi[]) {
   const wrap = document.getElementById('carrusel-packs-wrap')!;
   const pista = document.getElementById('carrusel-packs')!;
+  const controles = document.getElementById('carrusel-packs-controles')!;
+  const dotsCont = document.getElementById('carrusel-packs-dots')!;
   if (packs.length === 0) return;
   wrap.style.display = 'block';
   pista.innerHTML = '';
+  // ≤2 packs: render como grid wrap, sin flechas ni dots.
+  const modoGrid = packs.length <= 2;
+  if (modoGrid) {
+    wrap.classList.add('carrusel--grid');
+    controles.style.display = 'none';
+    dotsCont.style.display = 'none';
+  } else {
+    wrap.classList.remove('carrusel--grid');
+    controles.style.display = '';
+    dotsCont.style.display = '';
+  }
   packs.forEach((pack, idx) => {
     const color = PALETA[idx % PALETA.length];
     const card  = document.createElement('article');
@@ -1161,12 +1173,7 @@ function pintarPacks(packs: PackApi[]) {
       <div class="tarjeta-curso-body">
         <span class="tarjeta-curso-chip tarjeta-curso-chip--pack">Pack completo</span>
         <h3 class="tarjeta-curso-titulo">${escapar(pack.nombre)}</h3>
-        <ul class="tarjeta-curso-checklist">
-          <li>Todos los cursos del pack incluidos</li>
-          <li>Apuntes y materiales descargables</li>
-          <li>Acceso hasta 1 año desde la compra</li>
-          <li>Ahorra frente a comprarlos por separado</li>
-        </ul>
+        ${pack.descripcion ? `<p class="tarjeta-curso-desc">${escapar(pack.descripcion)}</p>` : `<p class="tarjeta-curso-meta">Incluye todos los cursos del pack</p>`}
         <div class="tarjeta-curso-pie">
           <span class="tarjeta-curso-precio">${formateaPrecio(pack.precio ?? 0)} €</span>
           <a href="/precios#packs" class="tarjeta-curso-link">Ver detalles →</a>
@@ -1175,7 +1182,7 @@ function pintarPacks(packs: PackApi[]) {
     `;
     pista.appendChild(card);
   });
-  configurarCarrusel('carrusel-packs');
+  if (!modoGrid) configurarCarrusel('carrusel-packs');
 }
 
 function pintarCursos(cursos: (CursoApi & { imagen?: string })[]) {
@@ -1196,11 +1203,7 @@ function pintarCursos(cursos: (CursoApi & { imagen?: string })[]) {
       <div class="tarjeta-curso-body">
         ${curso.etiqueta ? `<span class="tarjeta-curso-chip">${escapar(curso.etiqueta)}</span>` : ''}
         <h3 class="tarjeta-curso-titulo">${escapar(curso.titulo)}</h3>
-        <ul class="tarjeta-curso-checklist">
-          ${numTemas > 0 ? `<li>${numTemas} tema${numTemas !== 1 ? 's' : ''} en vídeo</li>` : `<li>Vídeo on-demand</li>`}
-          <li>Apuntes y materiales descargables</li>
-          <li>Acceso hasta 1 año</li>
-        </ul>
+        ${numTemas > 0 ? `<p class="tarjeta-curso-meta">${numTemas} tema${numTemas !== 1 ? 's' : ''}</p>` : ''}
         <div class="tarjeta-curso-pie">
           <span class="tarjeta-curso-precio">${formateaPrecio(curso.precio ?? 0)} €</span>
           <span class="tarjeta-curso-link">Ver detalle →</span>
@@ -1227,19 +1230,22 @@ function configurarCarrusel(id: string) {
     `.carrusel-flecha[data-target="${id}"]`,
   );
 
-  // Paso de scroll = ancho de una tarjeta + el gap visible.
-  function pasoScroll(): number {
+  // Avance de cada flecha = "página" completa (N tarjetas visibles)
+  // para que el snap caiga limpio en el siguiente grupo.
+  function pasoPagina(): number {
     const t = pista.querySelector(':scope > *') as HTMLElement | null;
-    if (!t) return 320;
+    if (!t) return pista.clientWidth;
     const cs = window.getComputedStyle(pista);
     const gap = parseFloat(cs.columnGap || cs.gap || '16') || 16;
-    return t.getBoundingClientRect().width + gap;
+    const tarjeta = t.getBoundingClientRect().width;
+    const visibles = Math.max(1, Math.floor((pista.clientWidth + gap) / (tarjeta + gap)));
+    return visibles * (tarjeta + gap);
   }
 
   flechas.forEach((btn) => {
     btn.addEventListener('click', () => {
       const dir = Number(btn.dataset.dir || '1');
-      pista.scrollBy({ left: pasoScroll() * dir, behavior: 'smooth' });
+      pista.scrollBy({ left: pasoPagina() * dir, behavior: 'smooth' });
     });
   });
 

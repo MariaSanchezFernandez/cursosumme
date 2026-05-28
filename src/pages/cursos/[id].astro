@@ -460,43 +460,55 @@ const tituloPag = `${curso.titulo} — Cursos Umme`;
   margin: 0;
 }
 
-/* ── Descripción HTML del curso ───────────────────────────────
-   El admin escribe la descripción con un editor enriquecido que
-   produce <p>, <blockquote>, <em>, <strong>, <ul>, <h3> y unas
-   clases custom: `.desc-card`, `.desc-stats`/`.desc-stat`,
-   `.desc-bienvenida`, `.desc-nota`. Aquí las estilamos todas.
+/* ── Descripción HTML del curso (estilo editorial Medium/Substack)
+   Tipografía generosa, mucho aire, sin cajas con borde ni fondos.
+   Los bloques custom del editor (.desc-card, .desc-stats, .desc-nota,
+   .desc-bienvenida) se aplanan: títulos clásicos, números grandes,
+   barras laterales en lugar de fondos. La columna mantiene medida
+   de lectura cómoda (~720px) centrada para no cansar la vista.
    ─────────────────────────────────────────────────────────── */
 .cd-descripcion {
-  font-size: 1.02rem;
-  line-height: 1.75;
-  color: var(--color-text);
+  font-size: 1.13rem;
+  line-height: 1.78;
+  color: #1f1f1f;
+  max-width: 720px;
   margin: 0 auto;
+  font-feature-settings: "kern" 1, "liga" 1;
 }
-.cd-descripcion > * + * { margin-top: 1rem; }
+.cd-descripcion > * + * { margin-top: 1.4rem; }
 
 .cd-descripcion p {
   margin: 0;
-  color: #2a2a2a;
 }
 .cd-descripcion p span { display: inline; }
 
 .cd-descripcion em {
   font-style: italic;
-  background: linear-gradient(180deg, transparent 70%,
-              color-mix(in srgb, var(--curso-color) 45%, transparent) 70%);
-  padding: 0 0.1em;
+  color: #1f1f1f;
 }
 
-.cd-descripcion strong { font-weight: 800; color: var(--color-text); }
+.cd-descripcion strong {
+  font-weight: 700;
+  color: var(--color-text);
+}
 
-.cd-descripcion h2,
-.cd-descripcion h3 {
-  font-size: 1.25rem;
+.cd-descripcion h2 {
+  font-size: 1.85rem;
   font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--color-text);
+  margin-top: 3rem;
+  margin-bottom: 0.4rem;
+}
+.cd-descripcion h3 {
+  font-size: 1.35rem;
+  font-weight: 700;
   letter-spacing: -0.01em;
   line-height: 1.3;
   color: var(--color-text);
-  margin-top: 2rem;
+  margin-top: 2.5rem;
+  margin-bottom: 0.3rem;
 }
 
 .cd-descripcion ul,
@@ -506,112 +518,101 @@ const tituloPag = `${curso.titulo} — Cursos Umme`;
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
+  gap: 0.85rem;
 }
 .cd-descripcion li {
   position: relative;
-  padding-left: 1.85rem;
-  line-height: 1.55;
+  padding-left: 1.6rem;
+  line-height: 1.7;
 }
 .cd-descripcion li::before {
   content: '';
   position: absolute;
-  left: 0;
-  top: 0.55em;
-  width: 10px;
-  height: 10px;
+  left: 0.25rem;
+  top: 0.78em;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: var(--curso-color);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--curso-color) 25%, transparent);
+  background: var(--color-text);
 }
 
 .cd-descripcion blockquote {
-  margin: 1.5rem 0;
-  padding: 1.25rem 1.5rem;
-  background: color-mix(in srgb, var(--curso-color) 14%, #ffffff);
+  margin: 2.2rem 0;
+  padding: 0.2rem 0 0.2rem 1.5rem;
   border-left: 4px solid var(--curso-color);
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
-  font-size: 1.08rem;
-  font-weight: 700;
+  font-size: 1.3rem;
+  font-weight: 500;
   line-height: 1.5;
+  letter-spacing: -0.01em;
   color: var(--color-text);
-  font-style: normal;
-  letter-spacing: -0.005em;
+  font-style: italic;
 }
 .cd-descripcion blockquote p { margin: 0; }
 
-/* ── Bloques custom del editor ───────────────────────────── */
+/* ── Bloques custom del editor (aplanados, sin cajas) ──── */
+
+/* .desc-card: el editor lo usa para listas tipo "Qué aprenderás".
+   Eliminamos la caja: solo queda un h3 + lista, separados del
+   resto por un poco más de margen vertical. */
 .cd-descripcion .desc-card {
-  background: #fff;
-  border: 1px solid color-mix(in srgb, var(--curso-color) 40%, #eef0ef);
-  border-radius: var(--radius-md);
-  padding: 1.5rem 1.6rem 1.6rem;
-  box-shadow: 0 6px 18px -10px color-mix(in srgb, var(--curso-color) 50%, rgba(0,0,0,0.08));
-  margin: 1.75rem 0;
+  margin: 2.5rem 0;
 }
 .cd-descripcion .desc-card h3 {
   margin-top: 0;
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--color-text-muted);
   margin-bottom: 1rem;
 }
 
+/* .desc-stats: cifras destacadas en grid. Sin cajas — solo
+   números enormes y label discreto, separados por una línea
+   sutil arriba y abajo. */
 .cd-descripcion .desc-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 0.85rem;
-  margin: 1.75rem 0;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1.5rem 2rem;
+  margin: 2.5rem 0;
+  padding: 1.75rem 0;
+  border-top: 1px solid #eef0ef;
+  border-bottom: 1px solid #eef0ef;
 }
 .cd-descripcion .desc-stat {
-  background:
-    linear-gradient(135deg,
-      color-mix(in srgb, var(--curso-color) 18%, #ffffff),
-      color-mix(in srgb, var(--curso-color) 38%, #ffffff));
-  border-radius: var(--radius-md);
-  padding: 1.1rem 1.1rem 1.15rem;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.15rem;
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  gap: 0.2rem;
 }
-.cd-descripcion .desc-stat:hover { transform: translateY(-3px); }
 .cd-descripcion .desc-stat strong {
-  font-size: 1.9rem;
+  font-size: 2.4rem;
   font-weight: 800;
   line-height: 1;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
   color: var(--color-text);
 }
 .cd-descripcion .desc-stat span {
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
+  font-size: 0.82rem;
+  font-weight: 500;
   color: var(--color-text-muted);
+  text-transform: none;
+  letter-spacing: 0;
 }
 
+/* .desc-nota: barra lateral discreta a la izquierda, sin fondo. */
 .cd-descripcion .desc-nota {
-  background: var(--color-secondary);
-  border-radius: var(--radius-md);
-  padding: 1.1rem 1.3rem;
-  margin: 1.5rem 0;
-  font-size: 0.95rem;
-  line-height: 1.6;
+  margin: 2rem 0;
+  padding: 0.2rem 0 0.2rem 1.25rem;
+  border-left: 3px solid color-mix(in srgb, var(--curso-color) 70%, #ffffff);
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #2a2a2a;
 }
 .cd-descripcion .desc-nota p { margin: 0; }
 .cd-descripcion .desc-nota strong {
-  display: inline-block;
-  margin-right: 0.25rem;
+  font-weight: 700;
 }
 
+/* .desc-bienvenida: en la mayoría de cursos viene vacía o casi.
+   Si tiene contenido, se ve como otro bloque limpio. */
 .cd-descripcion .desc-bienvenida {
-  background: color-mix(in srgb, var(--curso-color) 10%, var(--color-light));
-  border-radius: var(--radius-md);
-  padding: 1.5rem;
-  margin: 1.75rem 0;
+  margin: 2rem 0;
 }
 .cd-descripcion .desc-bienvenida:empty,
 .cd-descripcion .desc-bienvenida .desc-bienvenida-inner:empty {
