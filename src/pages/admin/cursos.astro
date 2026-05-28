@@ -447,7 +447,12 @@ function renderizarCursos(filtro: string) {
         const btnEditar = document.createElement('button');
         btnEditar.className = 'btn-editar-pack';
         btnEditar.textContent = 'Editar pack';
-        btnEditar.addEventListener('click', (e) => { e.stopPropagation(); abrirPanelEditar(pack); });
+        btnEditar.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const packBD = packsBD.find((p: any) => p.nombre === pack || p.etiqueta === pack);
+          if (packBD) abrirPanelEditarPorId(Number(packBD.id));
+          else abrirPanel(); // pack solo visual (cursos.pack) sin entrada en tabla packs
+        });
         header.appendChild(btnEditar);
       }
       section.appendChild(header);
@@ -659,7 +664,13 @@ function renderizarCursos(filtro: string) {
   });
 }
 
-// ── Panel de packs ─────────────────────────────────────────────
+// ── Panel de packs (modelo N:N: tabla packs + pack_cursos) ─────
+//
+// El panel lee la lista de packs de /api/packs.php (tabla `packs`)
+// y la pertenencia curso→pack de /api/pack-cursos.php. Un curso puede
+// estar en varios packs simultáneamente. `cursos.pack` se mantiene
+// como etiqueta visual independiente (color/agrupación), no se toca
+// desde este panel.
 const overlay      = document.getElementById('overlay-pack')!;
 const panel        = document.getElementById('panel-pack')!;
 const inputNombre  = document.getElementById('pack-nombre-input') as HTMLInputElement;
@@ -670,12 +681,17 @@ const listaDiv     = document.getElementById('pack-cursos-lista')!;
 const btnDisolver  = document.getElementById('btn-disolver-pack') as HTMLButtonElement;
 const panelMsg     = document.getElementById('panel-msg')!;
 
-// Packs de Stripe cargados desde BD
+// Estado del panel
 let packsBD: any[] = [];
+let packIdActual: number | null = null;   // null = modo "crear nuevo"
+
+const token = JSON.parse(sessionStorage.getItem('umme_session') || '{}').token || '';
+
 async function cargarPacksBD() {
   const res  = await fetch('/api/packs.php');
   const data = await res.json();
   packsBD = data.packs ?? [];
+  actualizarSelectorPacks();
 }
 cargarPacksBD();
 
@@ -689,52 +705,24 @@ function mostrarPanelMsg(texto: string, tipo: 'ok' | 'error') {
 }
 
 function actualizarSelectorPacks() {
-  const packs = [...new Set(todosLosCursos.map((c: any) => c.pack).filter(Boolean))] as string[];
   selector.innerHTML = '<option value="">— Nuevo pack —</option>';
-  packs.forEach(p => {
+  packsBD.forEach((p: any) => {
     const opt = document.createElement('option');
-    opt.value = p; opt.textContent = p;
+    opt.value = String(p.id);
+    opt.textContent = p.nombre;
     selector.appendChild(opt);
   });
 }
 
-function rellenarDatosPack(nombrePack: string) {
-  const packBD = packsBD.find(p => p.nombre === nombrePack || p.etiqueta === nombrePack);
-  inputPrecio.value = packBD?.precio ? String(parseFloat(packBD.precio).toFixed(2)) : '';
-  inputSpid.value   = packBD?.stripe_price_id ?? '';
+function slugificar(s: string): string {
+  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
-function abrirPanel() {
-  overlay.style.display = 'block';
-  panel.style.display   = 'flex';
-  panelMsg.style.display = 'none';
-  inputNombre.value = '';
-  inputPrecio.value = '';
-  inputSpid.value   = '';
-  selector.value    = '';
-  btnDisolver.style.display = 'none';
-  renderListaCursos('');
-  inputNombre.focus();
-}
-
-function abrirPanelEditar(pack: string) {
-  abrirPanel();
-  selector.value    = pack;
-  inputNombre.value = pack;
-  btnDisolver.style.display = 'inline-flex';
-  renderListaCursos(pack);
-  rellenarDatosPack(pack);
-}
-
-function cerrarPanel() {
-  overlay.style.display = 'none';
-  panel.style.display   = 'none';
-}
-
-function renderListaCursos(packActual: string) {
+function renderListaCursos(cursoIdsMarcados: Set<number>) {
   listaDiv.innerHTML = '';
-  todosLosCursos.forEach(c => {
-    const checked = c.pack === packActual && packActual !== '';
+  todosLosCursos.forEach((c: any) => {
+    const checked = cursoIdsMarcados.has(Number(c.id));
     const item = document.createElement('label');
     item.className = `pack-curso-item${checked ? ' checked' : ''}`;
     item.innerHTML = `
@@ -752,14 +740,58 @@ function renderListaCursos(packActual: string) {
   });
 }
 
-// Sincronizar selector → input nombre
+function abrirPanel() {
+  packIdActual = null;
+  overlay.style.display = 'block';
+  panel.style.display   = 'flex';
+  panelMsg.style.display = 'none';
+  inputNombre.value = '';
+  inputPrecio.value = '';
+  inputSpid.value   = '';
+  selector.value    = '';
+  btnDisolver.style.display = 'none';
+  renderListaCursos(new Set());
+  inputNombre.focus();
+}
+
+async function abrirPanelEditarPorId(packId: number) {
+  abrirPanel();
+  const pack = packsBD.find((p: any) => Number(p.id) === packId);
+  if (!pack) return;
+  packIdActual         = packId;
+  selector.value       = String(packId);
+  inputNombre.value    = pack.nombre;
+  inputPrecio.value    = pack.precio ? String(parseFloat(pack.precio).toFixed(2)) : '';
+  inputSpid.value      = pack.stripe_price_id ?? '';
+  btnDisolver.style.display = 'inline-flex';
+  // Cargar enlaces actuales
+  try {
+    const res  = await fetch(`/api/pack-cursos.php?pack_id=${packId}`);
+    const data = await res.json();
+    renderListaCursos(new Set((data.curso_ids ?? []).map((n: any) => Number(n))));
+  } catch {
+    renderListaCursos(new Set());
+  }
+}
+
+function cerrarPanel() {
+  overlay.style.display = 'none';
+  panel.style.display   = 'none';
+  packIdActual = null;
+}
+
+// Sincronizar selector → cargar pack
 selector.addEventListener('change', () => {
   const v = selector.value;
-  inputNombre.value = v;
-  btnDisolver.style.display = v ? 'inline-flex' : 'none';
-  renderListaCursos(v);
-  if (v) rellenarDatosPack(v);
-  else { inputPrecio.value = ''; inputSpid.value = ''; }
+  if (v) abrirPanelEditarPorId(Number(v));
+  else {
+    packIdActual = null;
+    inputNombre.value = '';
+    inputPrecio.value = '';
+    inputSpid.value   = '';
+    btnDisolver.style.display = 'none';
+    renderListaCursos(new Set());
+  }
 });
 
 // Abrir con botón principal
@@ -773,121 +805,84 @@ document.getElementById('btn-guardar-pack')!.addEventListener('click', async () 
   const nombre = inputNombre.value.trim();
   if (!nombre) { mostrarPanelMsg('Escribe el nombre del pack.', 'error'); return; }
 
-  const packAnterior = selector.value;
-  const checks = listaDiv.querySelectorAll<HTMLInputElement>('input[type="checkbox"]');
+  const precio = inputPrecio.value.trim();
+  const spid   = inputSpid.value.trim();
+  const checks = listaDiv.querySelectorAll<HTMLInputElement>('input[type="checkbox"]:checked');
+  const cursoIds = Array.from(checks).map(cb => Number(cb.dataset.id)).filter(Boolean);
 
   const btn = document.getElementById('btn-guardar-pack') as HTMLButtonElement;
   btn.disabled = true; btn.textContent = 'Guardando…';
 
-  const promesas: Promise<any>[] = [];
+  try {
+    let packId = packIdActual;
 
-  checks.forEach(cb => {
-    const id = Number(cb.dataset.id);
-    const curso = todosLosCursos.find(c => c.id == id);
-    if (!curso) return;
-
-    const nuevoPackValor = cb.checked ? nombre : null;
-    const packActualCurso = curso.pack ?? null;
-
-    // Solo actualizar si cambia
-    const debeActualizar =
-      (cb.checked && packActualCurso !== nombre) ||
-      (!cb.checked && packActualCurso === packAnterior && packAnterior !== '');
-
-    if (!debeActualizar) return;
-
-    promesas.push(
-      fetch('/api/cursos.php', {
-        method: 'PUT',
+    // 1. Crear o actualizar pack en tabla `packs`
+    if (packId) {
+      const packBD = packsBD.find((p: any) => Number(p.id) === packId);
+      await fetch(`/api/packs.php?id=${packId}&token=${encodeURIComponent(token)}`, {
+        method:  'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id:         curso.id,
-          titulo:     curso.titulo,
-          etiqueta:   curso.etiqueta,
-          nivel:      curso.nivel,
-          duracion:   curso.duracion,
-          activo:     curso.activo,
-          pack:       nuevoPackValor,
-          pack_color: cb.checked ? (curso.pack_color || null) : null,
-          color:      curso.color || null,
+          id:              packId,
+          nombre,
+          descripcion:     packBD?.descripcion ?? '',
+          precio:          precio || null,
+          stripe_price_id: spid   || null,
+          etiqueta:        packBD?.etiqueta ?? slugificar(nombre),
+          activo:          1,
         }),
-      })
-    );
-  });
+      });
+    } else {
+      const r = await fetch(`/api/packs.php?token=${encodeURIComponent(token)}`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre,
+          descripcion:     '',
+          precio:          precio || null,
+          stripe_price_id: spid   || null,
+          etiqueta:        slugificar(nombre),
+        }),
+      });
+      const data = await r.json();
+      if (!data.ok || !data.id) throw new Error('No se pudo crear el pack');
+      packId = Number(data.id);
+      packIdActual = packId;
+    }
 
-  await Promise.all(promesas);
-
-  // Guardar precio y stripe_price_id del pack en packs.php
-  const precio = inputPrecio.value.trim();
-  const spid   = inputSpid.value.trim();
-  const packBDExistente = packsBD.find(p => p.nombre === nombre || p.etiqueta === nombre);
-  const etiquetasPack = [...new Set(
-    todosLosCursos.filter((c: any) => c.pack === nombre || listaDiv.querySelector<HTMLInputElement>(`input[data-id="${c.id}"]`)?.checked)
-      .map((c: any) => c.etiqueta)
-  )].join(',') || nombre;
-
-  if (packBDExistente) {
-    await fetch(`/api/packs.php?id=${packBDExistente.id}`, {
-      method: 'PUT',
+    // 2. Reemplazar enlaces pack_cursos
+    await fetch(`/api/pack-cursos.php?token=${encodeURIComponent(token)}`, {
+      method:  'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: packBDExistente.id, nombre, descripcion: packBDExistente.descripcion,
-        precio: precio || null, stripe_price_id: spid || null, etiqueta: packBDExistente.etiqueta, activo: 1 }),
+      body: JSON.stringify({ pack_id: packId, curso_ids: cursoIds }),
     });
-  } else if (precio || spid) {
-    await fetch('/api/packs.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nombre, precio: precio || null, stripe_price_id: spid || null, etiqueta: nombre }),
-    });
+
+    await cargarPacksBD();
+    btn.disabled = false; btn.textContent = 'Guardar pack';
+    mostrarPanelMsg(`✓ Pack "${nombre}" guardado con ${cursoIds.length} curso(s).`, 'ok');
+    setTimeout(cerrarPanel, 1200);
+  } catch (err: any) {
+    btn.disabled = false; btn.textContent = 'Guardar pack';
+    mostrarPanelMsg(err?.message || 'Error al guardar el pack', 'error');
   }
-  await cargarPacksBD();
-
-  btn.disabled = false; btn.textContent = 'Guardar pack';
-  mostrarPanelMsg(`✓ Pack "${nombre}" guardado.`, 'ok');
-
-  // Recargar lista
-  const res  = await fetch('/api/cursos.php');
-  const data = await res.json();
-  if (data.ok) {
-    todosLosCursos = data.cursos;
-    construirFiltros();
-    renderizarCursos('todos');
-    actualizarSelectorPacks();
-  }
-
-  setTimeout(cerrarPanel, 1200);
 });
 
 // ── Disolver pack ──────────────────────────────────────────────
 btnDisolver.addEventListener('click', async () => {
+  if (!packIdActual) return;
   const nombre = inputNombre.value.trim();
   const okDisolver = await window.confirmar({
     titulo: 'Disolver pack',
-    mensaje: `¿Disolver el pack "${nombre}"? Los cursos quedarán sin pack.`,
+    mensaje: `¿Eliminar el pack "${nombre}"? Los cursos no se borran, solo se desvincula el pack.`,
     textoConfirmar: 'Disolver',
   });
   if (!okDisolver) return;
 
   btnDisolver.disabled = true;
-  const cursosPack = todosLosCursos.filter(c => c.pack === nombre);
-  await Promise.all(cursosPack.map(curso =>
-    fetch('/api/cursos.php', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: curso.id, titulo: curso.titulo, etiqueta: curso.etiqueta,
-        nivel: curso.nivel, duracion: curso.duracion, activo: curso.activo, pack: null, pack_color: null }),
-    })
-  ));
-
+  await fetch(`/api/packs.php?id=${packIdActual}&token=${encodeURIComponent(token)}`, { method: 'DELETE' });
+  // FK ON DELETE CASCADE limpia pack_cursos automáticamente
+  await cargarPacksBD();
   btnDisolver.disabled = false;
-  const res  = await fetch('/api/cursos.php');
-  const data = await res.json();
-  if (data.ok) {
-    todosLosCursos = data.cursos;
-    construirFiltros();
-    renderizarCursos('todos');
-    actualizarSelectorPacks();
-  }
   cerrarPanel();
 });
 

@@ -1,13 +1,15 @@
 <?php
 // ─────────────────────────────────────────────────────────────
 // api/materiales.php  —  Gestión de materiales de un tema
-// GET    ?tema_id=X  → lista materiales del tema
-// DELETE ?id=X       → elimina material (archivo + registro BD)
+// GET    ?tema_id=X    → lista materiales del tema
+// GET    ?reusables=1  → lista vídeos VdoCipher 'ready' ya usados (admin)
+// POST   { tema_id, vdocipher_video_id } → reutiliza un vídeo existente (admin)
+// DELETE ?id=X         → elimina material (archivo + registro BD)
 // ─────────────────────────────────────────────────────────────
 
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, X-Token');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
@@ -18,6 +20,28 @@ $pdo  = obtenerPDO();
 $user = requireAuth($pdo);
 
 $metodo = $_SERVER['REQUEST_METHOD'];
+
+// ── GET ?reusables=1 — vídeos ya subidos para reutilizar (admin) ─
+if ($metodo === 'GET' && isset($_GET['reusables'])) {
+    if ($user['rol'] !== 'admin') { http_response_code(403); echo json_encode(['ok' => false, 'mensaje' => 'Acceso denegado']); exit; }
+    // Un vídeo se identifica por su vdocipher_video_id. Puede estar usado en
+    // varios temas; agrupamos para listarlo una sola vez. Mostramos el nombre
+    // del primer material que lo usó y en cuántos temas se reutiliza ya.
+    $stmt = $pdo->query(
+        "SELECT vdocipher_video_id,
+                SUBSTRING_INDEX(GROUP_CONCAT(nombre ORDER BY id ASC SEPARATOR 0x1f), 0x1f, 1) AS nombre,
+                MAX(duracion_seg) AS duracion_seg,
+                COUNT(*)          AS usos
+         FROM materiales
+         WHERE tipo = 'video'
+           AND vdocipher_video_id IS NOT NULL
+           AND vdo_status = 'ready'
+         GROUP BY vdocipher_video_id
+         ORDER BY nombre ASC"
+    );
+    echo json_encode(['ok' => true, 'videos' => $stmt->fetchAll()]);
+    exit;
+}
 
 // ── GET ──────────────────────────────────────────────────────
 if ($metodo === 'GET') {
@@ -33,6 +57,80 @@ if ($metodo === 'GET') {
     );
     $stmt->execute([':tema_id' => $temaId]);
     echo json_encode(['ok' => true, 'materiales' => $stmt->fetchAll()]);
+    exit;
+}
+
+// ── POST — reutilizar un vídeo ya existente en otro tema (admin) ─
+if ($metodo === 'POST') {
+    if ($user['rol'] !== 'admin') { http_response_code(403); echo json_encode(['ok' => false, 'mensaje' => 'Acceso denegado']); exit; }
+    $body  = json_decode(file_get_contents('php://input'), true);
+    $temaId = (int)($body['tema_id'] ?? 0);
+    $vdoId  = trim($body['vdocipher_video_id'] ?? '');
+    if (!$temaId || $vdoId === '') {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'mensaje' => 'Faltan tema_id y vdocipher_video_id']);
+        exit;
+    }
+    // Seguridad: el vídeo debe existir ya en NUESTRA BD y estar 'ready'.
+    // Así evitamos que se inyecten IDs arbitrarios de vídeos de otras cuentas.
+    $src = $pdo->prepare(
+        "SELECT nombre, duracion_seg FROM materiales
+         WHERE vdocipher_video_id = :vid AND tipo = 'video' AND vdo_status = 'ready'
+         ORDER BY id ASC LIMIT 1"
+    );
+    $src->execute([':vid' => $vdoId]);
+    $origen = $src->fetch();
+    if (!$origen) {
+        http_response_code(404);
+        echo json_encode(['ok' => false, 'mensaje' => 'Vídeo no encontrado o aún no está listo']);
+        exit;
+    }
+    // El tema destino debe existir.
+    $chk = $pdo->prepare('SELECT id FROM temas WHERE id = :id');
+    $chk->execute([':id' => $temaId]);
+    if (!$chk->fetchColumn()) {
+        http_response_code(404);
+        echo json_encode(['ok' => false, 'mensaje' => 'Tema no encontrado']);
+        exit;
+    }
+    // Evitar duplicar el mismo vídeo dentro del mismo tema.
+    $dup = $pdo->prepare(
+        "SELECT id FROM materiales WHERE tema_id = :tema AND vdocipher_video_id = :vid LIMIT 1"
+    );
+    $dup->execute([':tema' => $temaId, ':vid' => $vdoId]);
+    if ($dup->fetchColumn()) {
+        http_response_code(409);
+        echo json_encode(['ok' => false, 'mensaje' => 'Ese vídeo ya está en este tema']);
+        exit;
+    }
+
+    $ins = $pdo->prepare(
+        'INSERT INTO materiales
+           (tema_id, tipo, nombre, ruta, tamano_kb, duracion_seg, vdocipher_video_id, vdo_status)
+         VALUES (:tema, :tipo, :nombre, NULL, 0, :dur, :vid, :status)'
+    );
+    $ins->execute([
+        ':tema'   => $temaId,
+        ':tipo'   => 'video',
+        ':nombre' => $origen['nombre'],
+        ':dur'    => $origen['duracion_seg'] !== null ? (int)$origen['duracion_seg'] : null,
+        ':vid'    => $vdoId,
+        ':status' => 'ready',
+    ]);
+    $nuevoId = (int)$pdo->lastInsertId();
+    registrar_log($pdo, 'material_reutilizado',
+        "Vídeo reutilizado \"{$origen['nombre']}\" (videoId={$vdoId}) en tema {$temaId}", $user['id'] ?? 0);
+
+    echo json_encode(['ok' => true, 'material' => [
+        'id'                 => $nuevoId,
+        'tipo'               => 'video',
+        'nombre'             => $origen['nombre'],
+        'ruta'               => null,
+        'tamano_kb'          => 0,
+        'duracion_seg'       => $origen['duracion_seg'] !== null ? (int)$origen['duracion_seg'] : null,
+        'vdocipher_video_id' => $vdoId,
+        'vdo_status'         => 'ready',
+    ]]);
     exit;
 }
 
@@ -115,10 +213,18 @@ if ($metodo === 'DELETE') {
             $rutaFisica = rtrim($_SERVER['DOCUMENT_ROOT'], '/') . $mat['ruta'];
             if (file_exists($rutaFisica)) { @unlink($rutaFisica); }
         }
-        // Vídeo VdoCipher: borrar del CDN
+        // Vídeo VdoCipher: borrar del CDN SOLO si ningún otro material
+        // reutiliza el mismo vídeo. Si está reutilizado en otro tema,
+        // borrarlo del CDN dejaría a los demás materiales sin vídeo.
         if ($mat['vdocipher_video_id']) {
+            $usos = $pdo->prepare(
+                'SELECT COUNT(*) FROM materiales WHERE vdocipher_video_id = :vid AND id != :id'
+            );
+            $usos->execute([':vid' => $mat['vdocipher_video_id'], ':id' => $id]);
+            $reutilizado = (int)$usos->fetchColumn() > 0;
+
             $apiKey = defined('VDOCIPHER_API_KEY') ? VDOCIPHER_API_KEY : '';
-            if ($apiKey) {
+            if (!$reutilizado && $apiKey) {
                 $vid = rawurlencode($mat['vdocipher_video_id']);
                 $ch  = curl_init("https://dev.vdocipher.com/api/videos?videos={$vid}");
                 curl_setopt_array($ch, [
