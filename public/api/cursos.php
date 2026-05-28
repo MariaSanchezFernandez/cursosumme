@@ -211,12 +211,15 @@ if ($metodo === 'PUT') {
         echo json_encode(['ok' => true]);
         exit;
     }
-    $stmt = $pdo->prepare(
-        'UPDATE cursos SET titulo=:titulo, descripcion=:descripcion, etiqueta=:etiqueta, nivel=:nivel,
-         duracion=:duracion, pack=:pack, pack_color=:pack_color, color=:color, imagen=:imagen, activo=:activo,
-         precio=:precio, stripe_price_id=:spid WHERE id=:id'
-    );
-    $stmt->execute([
+    // `precio` y `stripe_price_id` se actualizan SOLO si vienen en el body.
+    // Si no se incluyen, conservan el valor actual (evita que acciones del admin
+    // que no tocan el pricing — como cambiar el color del pack — los borren).
+    $sets = [
+        'titulo=:titulo', 'descripcion=:descripcion', 'etiqueta=:etiqueta', 'nivel=:nivel',
+        'duracion=:duracion', 'pack=:pack', 'pack_color=:pack_color', 'color=:color',
+        'imagen=:imagen', 'activo=:activo',
+    ];
+    $params = [
         ':titulo'      => trim($body['titulo'] ?? ''),
         ':descripcion' => isset($body['descripcion']) ? limpiarHtml($body['descripcion']) : null,
         ':etiqueta'    => trim($body['etiqueta'] ?? ''),
@@ -227,10 +230,18 @@ if ($metodo === 'PUT') {
         ':color'       => !empty($body['color']) ? trim($body['color']) : null,
         ':imagen'      => !empty($body['imagen']) ? trim($body['imagen']) : null,
         ':activo'      => isset($body['activo']) ? (int)$body['activo'] : 1,
-        ':precio'      => isset($body['precio']) && $body['precio'] !== '' ? (float)$body['precio'] : null,
-        ':spid'        => !empty($body['stripe_price_id']) ? trim($body['stripe_price_id']) : null,
         ':id'          => (int)$body['id'],
-    ]);
+    ];
+    if (array_key_exists('precio', $body)) {
+        $sets[] = 'precio=:precio';
+        $params[':precio'] = ($body['precio'] !== '' && $body['precio'] !== null) ? (float)$body['precio'] : null;
+    }
+    if (array_key_exists('stripe_price_id', $body)) {
+        $sets[] = 'stripe_price_id=:spid';
+        $params[':spid']   = !empty($body['stripe_price_id']) ? trim($body['stripe_price_id']) : null;
+    }
+    $stmt = $pdo->prepare('UPDATE cursos SET ' . implode(', ', $sets) . ' WHERE id=:id');
+    $stmt->execute($params);
     $adminIdPut = isset($body['admin_id']) ? (int)$body['admin_id'] : 0;
     registrar_log($pdo, 'curso_editado', "Curso \"" . trim($body['titulo'] ?? '') . "\" editado", $adminIdPut);
     echo json_encode(['ok' => true]);

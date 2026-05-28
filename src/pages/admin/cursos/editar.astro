@@ -394,6 +394,28 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
 .upload-row input[type="file"] { flex: 1; font-size: 0.76rem; min-width: 0; color: #666; }
 .btn-upload { font-size: 0.74rem !important; padding: 0.28rem 0.7rem !important; height: auto !important; white-space: nowrap; flex-shrink: 0; }
 .subiendo-msg { font-size: 0.73rem; color: #88a; font-style: italic; }
+
+/* Reutilizar vídeo ya subido */
+.reuse-video { margin-top: 0.5rem; }
+.reuse-toggle {
+  background: none; border: none; padding: 0.2rem 0; cursor: pointer;
+  font-family: inherit; font-size: 0.74rem; font-weight: 600;
+  color: var(--color-acento, #3aaa74); text-decoration: underline;
+}
+.reuse-toggle:hover { opacity: 0.8; }
+.reuse-panel { flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; }
+.reuse-search {
+  font-size: 0.78rem; padding: 0.4rem 0.6rem;
+  border: 1px solid #d6e2dd; border-radius: 6px; width: 100%; box-sizing: border-box;
+}
+.reuse-select {
+  font-size: 0.78rem; padding: 0.25rem; border: 1px solid #d6e2dd;
+  border-radius: 6px; width: 100%; box-sizing: border-box; background: #fff;
+}
+.reuse-select option { padding: 0.25rem 0.4rem; }
+.reuse-add { font-size: 0.74rem !important; padding: 0.32rem 0.7rem !important; height: auto !important; align-self: flex-start; }
+.reuse-add:disabled { opacity: 0.5; cursor: not-allowed; }
+
 .upload-progreso { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
 .upload-progreso-barra { flex: 1; height: 6px; background: #e8eeec; border-radius: 3px; overflow: hidden; }
 .upload-progreso-fill { height: 100%; background: var(--color-acento, #3aaa74); border-radius: 3px; transition: width 0.15s ease; }
@@ -1068,6 +1090,14 @@ async function crearTemaCard(tema: any): Promise<HTMLElement> {
             <span class="upload-progreso-txt">0%</span>
           </div>
         </form>
+        <div class="reuse-video">
+          <button type="button" class="reuse-toggle">↻ Reutilizar un vídeo ya subido</button>
+          <div class="reuse-panel" style="display:none;">
+            <input type="text" class="reuse-search form-input" placeholder="Buscar vídeo por nombre…" autocomplete="off" />
+            <select class="reuse-select" size="6"></select>
+            <button type="button" class="btn-admin primario reuse-add" disabled>Añadir vídeo seleccionado</button>
+          </div>
+        </div>
       </div>
     </div>
     <div class="upload-zona">
@@ -1264,6 +1294,89 @@ async function crearTemaCard(tema: any): Promise<HTMLElement> {
     });
     progresoVideo.style.display = 'none';
     input.value = '';
+  });
+
+  // ── Reutilizar vídeo ya subido ────────────────────────────
+  const reuseToggle = cuerpo.querySelector('.reuse-toggle') as HTMLButtonElement;
+  const reusePanel  = cuerpo.querySelector('.reuse-panel') as HTMLElement;
+  const reuseSearch = cuerpo.querySelector('.reuse-search') as HTMLInputElement;
+  const reuseSelect = cuerpo.querySelector('.reuse-select') as HTMLSelectElement;
+  const reuseAdd    = cuerpo.querySelector('.reuse-add') as HTMLButtonElement;
+  let reuseVideos: any[] = [];
+
+  function pintarReuseOpciones(filtro = '') {
+    const f = filtro.trim().toLowerCase();
+    const items = f
+      ? reuseVideos.filter(v => (v.nombre || '').toLowerCase().includes(f))
+      : reuseVideos;
+    reuseSelect.innerHTML = '';
+    if (!items.length) {
+      const o = document.createElement('option');
+      o.disabled = true;
+      o.textContent = reuseVideos.length ? 'Sin resultados' : 'No hay vídeos subidos todavía';
+      reuseSelect.appendChild(o);
+      reuseAdd.disabled = true;
+      return;
+    }
+    for (const v of items) {
+      const o = document.createElement('option');
+      o.value = v.vdocipher_video_id;
+      const dur = v.duracion_seg ? ' · ' + fmtDuracionSeg(v.duracion_seg) : '';
+      const usos = v.usos > 1 ? ` · usado en ${v.usos}` : '';
+      o.textContent = (v.nombre || v.vdocipher_video_id) + dur + usos;
+      reuseSelect.appendChild(o);
+    }
+  }
+
+  function fmtDuracionSeg(seg: number): string {
+    const s = Math.round(Number(seg) || 0);
+    if (s <= 0) return '';
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+    return h > 0
+      ? `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`
+      : `${m}:${String(sec).padStart(2,'0')}`;
+  }
+
+  reuseToggle.addEventListener('click', async () => {
+    const abierto = reusePanel.style.display !== 'none';
+    if (abierto) { reusePanel.style.display = 'none'; return; }
+    reusePanel.style.display = 'flex';
+    if (!reuseVideos.length) {
+      reuseSelect.innerHTML = '<option disabled>Cargando…</option>';
+      try {
+        const res  = await fetch('/api/materiales.php?reusables=1');
+        const data = await res.json();
+        reuseVideos = data.ok ? (data.videos || []) : [];
+      } catch { reuseVideos = []; }
+      pintarReuseOpciones(reuseSearch.value);
+    }
+  });
+
+  reuseSearch.addEventListener('input', () => pintarReuseOpciones(reuseSearch.value));
+  reuseSelect.addEventListener('change', () => { reuseAdd.disabled = !reuseSelect.value; });
+
+  reuseAdd.addEventListener('click', async () => {
+    const vdoId = reuseSelect.value;
+    if (!vdoId) return;
+    await window.botonCargando(reuseAdd, 'Añadiendo…', async () => {
+      const res = await fetch('/api/materiales.php', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tema_id: tema.id, vdocipher_video_id: vdoId }),
+      });
+      const data = await res.json();
+      if (!data.ok) { mostrarMsg(data.mensaje || 'No se pudo reutilizar el vídeo', 'error'); return false; }
+      const lista = cuerpo.querySelector('.mat-lista-video') as HTMLElement;
+      lista.appendChild(crearFilaMat(data.material));
+      if (data.material.duracion_seg) {
+        actualizarDuracionTrasSubida(cuerpo, tema, Number(data.material.duracion_seg), data.material.id);
+      }
+      mostrarMsg('✓ Vídeo reutilizado en este tema.', 'ok');
+      reusePanel.style.display = 'none';
+      reuseSearch.value = '';
+      reuseSelect.value = '';
+      reuseAdd.disabled = true;
+      return true;
+    });
   });
 
   // ── Upload documento ──────────────────────────────────────

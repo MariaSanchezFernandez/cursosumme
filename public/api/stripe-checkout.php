@@ -54,9 +54,14 @@ if ($tipo === 'curso') {
         echo json_encode(['ok' => false, 'mensaje' => 'Pack no disponible para la venta']);
         exit;
     }
-    // Obtener cursos del pack mediante la columna cursos.pack (igual que la gestión en admin)
-    $cStmt = $pdo->prepare('SELECT id FROM cursos WHERE pack=:pack AND activo=1');
-    $cStmt->execute([':pack' => $item['nombre']]);
+    // Obtener cursos del pack vía tabla N:N pack_cursos (un curso puede estar en varios packs)
+    $cStmt = $pdo->prepare(
+        'SELECT c.id
+         FROM pack_cursos pc
+         JOIN cursos c ON c.id = pc.curso_id
+         WHERE pc.pack_id = :pid AND c.activo = 1'
+    );
+    $cStmt->execute([':pid' => $item['id']]);
     $idsPack       = array_map('intval', array_column($cStmt->fetchAll(), 'id'));
     if (empty($idsPack)) {
         http_response_code(409);
@@ -80,7 +85,22 @@ $params  = [
     'metadata[referencia_id]'      => (string)$id,
     'metadata[cursos_ids]'         => $cursosIds,
     'payment_intent_data[metadata][cursos_ids]' => $cursosIds,
+
+    // Campo personalizado para pedir nombre y apellidos del alumno.
+    // El webhook lee el valor de session.custom_fields[0].text.value.
+    'custom_fields[0][key]'                 => 'nombre',
+    'custom_fields[0][label][type]'         => 'custom',
+    'custom_fields[0][label][custom]'       => 'Nombre y apellidos',
+    'custom_fields[0][type]'                => 'text',
+    'custom_fields[0][text][minimum_length]' => '2',
+    'custom_fields[0][text][maximum_length]' => '80',
+    'custom_fields[0][optional]'            => 'false',
 ];
+// Adjuntar tax_rate (IVA España inclusive) si está configurado.
+// Stripe muestra automáticamente Subtotal / IVA / Total en el recibo.
+if (defined('STRIPE_TAX_RATE_IVA') && STRIPE_TAX_RATE_IVA) {
+    $params['line_items[0][tax_rates][0]'] = STRIPE_TAX_RATE_IVA;
+}
 
 $ch = curl_init('https://api.stripe.com/v1/checkout/sessions');
 curl_setopt_array($ch, [

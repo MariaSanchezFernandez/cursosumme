@@ -112,3 +112,21 @@ CREATE TABLE IF NOT EXISTS pagos (
   PRIMARY KEY (id),
   UNIQUE KEY uq_stripe_session_id (stripe_session_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- -----------------------------------------------------------------
+-- Tabla: pack_cursos
+-- Relación N:N entre packs y cursos (un curso puede estar en varios packs)
+-- `cursos.pack` se mantiene como etiqueta visual (color/agrupación);
+-- la pertenencia real al pack para la compra Stripe se lee de aquí.
+-- -----------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS pack_cursos (
+  pack_id     INT          NOT NULL,
+  curso_id    INT UNSIGNED NOT NULL,
+  asignado_en DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (pack_id, curso_id),
+  KEY idx_curso (curso_id),
+  CONSTRAINT fk_pc_pack  FOREIGN KEY (pack_id)  REFERENCES packs(id)  ON DELETE CASCADE,
+  CONSTRAINT fk_pc_curso FOREIGN KEY (curso_id) REFERENCES cursos(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

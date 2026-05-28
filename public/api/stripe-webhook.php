@@ -64,6 +64,15 @@ $importe   = ($sesion['amount_total'] ?? 0) / 100;
 $metadata  = $sesion['metadata'] ?? [];
 $cursosIds = json_decode($metadata['cursos_ids'] ?? '[]', true);
 
+// Nombre del alumno: prioridad custom_field "nombre", fallback derivado del email.
+$nombreCustomField = '';
+foreach ($sesion['custom_fields'] ?? [] as $cf) {
+    if (($cf['key'] ?? '') === 'nombre') {
+        $nombreCustomField = trim($cf['text']['value'] ?? '');
+        break;
+    }
+}
+
 if (!$email || empty($cursosIds)) {
     // Payload incompleto: 400 — no es recuperable por reintento
     error_log("stripe-webhook: payload incompleto session={$sessionId}");
@@ -103,15 +112,17 @@ $esNuevo       = false;
 if (!$usuario) {
     $passwordPlano = generarPassword();
     $hash          = password_hash($passwordPlano, PASSWORD_BCRYPT, ['cost' => 12]);
-    $nombre        = ucfirst(explode('@', $email)[0]);
+    // Nombre: del custom_field si se rellenó, si no del email (fallback)
+    $nombre        = $nombreCustomField !== '' ? $nombreCustomField : ucfirst(explode('@', $email)[0]);
     $pdo->prepare('INSERT INTO usuarios (nombre, email, contrasena, rol, activo) VALUES (:n, :e, :h, "alumno", 1)')
         ->execute([':n' => $nombre, ':e' => $email, ':h' => $hash]);
     $alumnoId = (int)$pdo->lastInsertId();
     $esNuevo  = true;
-    registrar_log($pdo, 'alumno_creado_stripe', "Alumno {$email} creado tras pago Stripe", 0);
+    registrar_log($pdo, 'alumno_creado_stripe', "Alumno {$nombre} ({$email}) creado tras pago Stripe", 0);
 } else {
     $alumnoId = (int)$usuario['id'];
-    $nombre   = $usuario['nombre'];
+    // Para los emails: usa el nombre del custom_field si vino, si no el que ya tenía
+    $nombre   = $nombreCustomField !== '' ? $nombreCustomField : $usuario['nombre'];
 }
 
 // ── Asignar cursos ────────────────────────────────────────────
@@ -140,7 +151,33 @@ if ($pagoRow) {
         ->execute([':sid' => $sessionId, ':email' => $email, ':cids' => json_encode($cursosIds), ':aid' => $alumnoId, ':imp' => $importe]);
 }
 
-// ── Enviar email ──────────────────────────────────────────────
+// ── Obtener URL del recibo de Stripe (para el email de confirmación) ─
+$reciboUrl     = '';
+$paymentIntent = $sesion['payment_intent'] ?? '';
+if ($paymentIntent) {
+    $ch = curl_init("https://api.stripe.com/v1/payment_intents/" . urlencode($paymentIntent) . "?expand[]=latest_charge");
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_USERPWD        => STRIPE_SECRET_KEY . ':',
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_TIMEOUT        => 10,
+    ]);
+    $resp     = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    if ($httpCode === 200) {
+        $piData    = json_decode($resp, true);
+        $reciboUrl = $piData['latest_charge']['receipt_url'] ?? '';
+    } else {
+        error_log("stripe-webhook: no se pudo obtener recibo para PI {$paymentIntent} (HTTP {$httpCode})");
+    }
+}
+
+// ── Enviar emails ─────────────────────────────────────────────
+// Confirmación de compra: SIEMPRE (nuevos y existentes)
+enviarEmailConfirmacionCompra($email, $nombre, $nombresCursos, $importe, $reciboUrl, $sessionId);
+
+// Bienvenida con credenciales: SOLO si es un alumno nuevo
 if ($esNuevo && $passwordPlano) {
     enviarEmailBienvenida($email, $nombre, $passwordPlano, $nombresCursos);
 }
