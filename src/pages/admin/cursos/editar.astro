@@ -1306,14 +1306,25 @@ async function crearTemaCard(tema: any): Promise<HTMLElement> {
 
   function pintarReuseOpciones(filtro = '') {
     const f = filtro.trim().toLowerCase();
+    // Excluir los vídeos que ya están en este tema; los leemos del DOM
+    // (cada fila vdo trae data-vdo-id) para que esté siempre al día tras
+    // añadir/borrar materiales sin tener que recargar la lista del server.
+    const idsEnTema = new Set(
+      Array.from(cuerpo.querySelectorAll('.mat-lista-video .mat-fila'))
+        .map(el => (el as HTMLElement).dataset.vdoId)
+        .filter(Boolean) as string[]
+    );
+    const base = reuseVideos.filter(v => !idsEnTema.has(v.vdocipher_video_id));
     const items = f
-      ? reuseVideos.filter(v => (v.nombre || '').toLowerCase().includes(f))
-      : reuseVideos;
+      ? base.filter(v => (v.nombre || '').toLowerCase().includes(f))
+      : base;
     reuseSelect.innerHTML = '';
     if (!items.length) {
       const o = document.createElement('option');
       o.disabled = true;
-      o.textContent = reuseVideos.length ? 'Sin resultados' : 'No hay vídeos subidos todavía';
+      if (!reuseVideos.length)        o.textContent = 'Aún no has subido ningún vídeo a la plataforma.';
+      else if (!base.length)          o.textContent = 'Todos los vídeos disponibles ya están en este tema.';
+      else                            o.textContent = 'Ningún vídeo coincide con la búsqueda.';
       reuseSelect.appendChild(o);
       reuseAdd.disabled = true;
       return;
@@ -1322,7 +1333,7 @@ async function crearTemaCard(tema: any): Promise<HTMLElement> {
       const o = document.createElement('option');
       o.value = v.vdocipher_video_id;
       const dur = v.duracion_seg ? ' · ' + fmtDuracionSeg(v.duracion_seg) : '';
-      const usos = v.usos > 1 ? ` · usado en ${v.usos}` : '';
+      const usos = v.usos > 1 ? ` · usado en ${v.usos} temas` : '';
       o.textContent = (v.nombre || v.vdocipher_video_id) + dur + usos;
       reuseSelect.appendChild(o);
     }
@@ -1427,6 +1438,41 @@ async function cargarMateriales(card: HTMLElement, temaId: number) {
   }
   const listaVideo = card.querySelector('.mat-lista-video') as HTMLElement;
   if (listaVideo) activarReorden(listaVideo);
+
+  // Si algún vídeo cargó con estado distinto de 'ready', pedimos al
+  // servidor que reconsulte a VdoCipher. Esto desbloquea materiales que
+  // quedaron atascados (por ejemplo si el polling de subida se cortó al
+  // cerrar el navegador).
+  const ses   = JSON.parse(sessionStorage.getItem('umme_session') || '{}');
+  const token = ses.token || '';
+  for (const mat of data.materiales) {
+    if (mat.tipo === 'video' && mat.vdocipher_video_id && mat.vdo_status !== 'ready') {
+      refrescarEstadoVdo(card, mat, token);
+    }
+  }
+}
+
+// Reconsulta el estado de un vídeo concreto y actualiza badge + duración
+// si VdoCipher ya ha terminado de procesarlo. Se llama una sola vez por
+// vídeo al cargar materiales; no es un bucle de polling continuo.
+async function refrescarEstadoVdo(card: HTMLElement, mat: any, token: string): Promise<void> {
+  try {
+    const r = await fetch(`/api/vdocipher-status.php?material_id=${mat.id}&token=${encodeURIComponent(token)}`);
+    const d = await r.json();
+    if (!d.ok || d.status === mat.vdo_status) return;
+    const fila  = card.querySelector(`.mat-fila[data-mat-id="${mat.id}"]`) as HTMLElement | null;
+    const badge = fila?.querySelector('.vdo-badge') as HTMLElement | null;
+    if (badge) badge.textContent = textoEstadoVdo(d.status);
+    mat.vdo_status = d.status;
+    // Si VdoCipher acaba de pasar a ready y devuelve la duración recién
+    // rellenada en BD, la sumamos al total del tema (vdocipher-status.php
+    // solo incluye duracion_seg cuando acaba de persistirla, así que sumar
+    // aquí no duplica el total previo).
+    if (d.status === 'ready' && d.duracion_seg) {
+      mat.duracion_seg = Number(d.duracion_seg);
+      actualizarDuracionTrasSubida(card, null, mat.duracion_seg, mat.id);
+    }
+  } catch { /* silencioso: si VdoCipher no responde no rompemos la UI */ }
 }
 
 // ── Drag & drop para reordenar vídeos ────────────────────────
@@ -1484,6 +1530,14 @@ async function guardarOrden(lista: HTMLElement) {
   });
 }
 
+// Texto de estado VdoCipher unificado para badges y mensajes UI.
+function textoEstadoVdo(status: string | null | undefined): string {
+  if (status === 'ready')      return '✓ Listo';
+  if (status === 'processing') return 'Procesando…';
+  if (status === 'uploading')  return 'Subiendo…';
+  return '…';
+}
+
 function crearFilaMat(mat: any): HTMLElement {
   const kb    = mat.tamano_kb > 1024 ? `${(mat.tamano_kb/1024).toFixed(1)} MB` : `${mat.tamano_kb} KB`;
   const icono = mat.tipo === 'video'
@@ -1495,6 +1549,9 @@ function crearFilaMat(mat: any): HTMLElement {
   if (mat.tipo === 'video') div.draggable = true;
 
   const esVdo = !!(mat.vdocipher_video_id);
+  // Marcamos el vdocipher_video_id en el DOM para que el desplegable
+  // de reutilización pueda filtrar los vídeos ya presentes en este tema.
+  if (esVdo) div.dataset.vdoId = mat.vdocipher_video_id;
 
   function fmtDuracion(seg: number | null | undefined): string {
     if (seg === null || seg === undefined || Number.isNaN(seg) || seg <= 0) return '—';
@@ -1529,7 +1586,7 @@ function crearFilaMat(mat: any): HTMLElement {
       : '';
 
     const cfBadge = esVdo
-      ? `<span class="vdo-badge" style="font-size:0.68rem;padding:0.1rem 0.4rem;border-radius:4px;background:#fff7ed;border:1px solid #f5c090;color:#c05010;flex-shrink:0;white-space:nowrap;">${mat.vdo_status === 'ready' ? '✓ CF Stream' : 'CF: ' + (mat.vdo_status ?? '…')}</span>`
+      ? `<span class="vdo-badge" style="font-size:0.68rem;padding:0.1rem 0.4rem;border-radius:4px;background:#fff7ed;border:1px solid #f5c090;color:#c05010;flex-shrink:0;white-space:nowrap;">${textoEstadoVdo(mat.vdo_status)}</span>`
       : '';
 
     const nombreHTML = esVdo
@@ -1764,13 +1821,13 @@ async function subirVideoVdoCipher(
     });
     credRes = await fetch(`/api/vdocipher-upload.php?${uploadParams.toString()}`);
   } catch {
-    mostrarMsg('Error de red al conectar con VdoCipher.', 'error');
+    mostrarMsg('Error de red al iniciar la subida del vídeo.', 'error');
     return;
   }
 
   const cred = await credRes.json().catch(() => ({ ok: false }));
   if (!cred.ok) {
-    mostrarMsg(cred.mensaje || 'Error al obtener credenciales de VdoCipher.', 'error');
+    mostrarMsg(cred.mensaje || 'No se pudo iniciar la subida del vídeo.', 'error');
     return;
   }
 
@@ -1790,7 +1847,7 @@ async function subirVideoVdoCipher(
   formData.append('success_action_redirect',  '');
   formData.append('file', archivo);          // file siempre al final
 
-  onEstado?.('Subiendo a VdoCipher…');
+  onEstado?.('Subiendo vídeo…');
   onProgress?.(0);
 
   const s3Ok = await new Promise<boolean>((resolve) => {
@@ -1802,14 +1859,14 @@ async function subirVideoVdoCipher(
     xhr.addEventListener('load', () => {
       if (xhr.status >= 200 && xhr.status < 300) { onProgress?.(100); resolve(true); }
       else {
-        mostrarMsg(`Error al subir a VdoCipher (HTTP ${xhr.status}). Inténtalo de nuevo.`, 'error');
+        mostrarMsg(`Error al subir el vídeo (HTTP ${xhr.status}). Inténtalo de nuevo.`, 'error');
         (window as any).logAppError?.('upload', `VdoCipher S3 HTTP ${xhr.status}`,
           { detalle: archivo.name + ' · tema=' + tema.id + ' · respuesta=' + xhr.responseText.slice(0, 300) });
         resolve(false);
       }
     });
-    xhr.addEventListener('error',   () => { mostrarMsg('Error de red subiendo a VdoCipher.', 'error'); resolve(false); });
-    xhr.addEventListener('timeout', () => { mostrarMsg('Tiempo agotado subiendo a VdoCipher.', 'error'); resolve(false); });
+    xhr.addEventListener('error',   () => { mostrarMsg('Error de red durante la subida del vídeo.', 'error'); resolve(false); });
+    xhr.addEventListener('timeout', () => { mostrarMsg('Tiempo agotado subiendo el vídeo.', 'error'); resolve(false); });
     xhr.open('POST', uploadLink);
     xhr.send(formData);
   });
@@ -1824,7 +1881,7 @@ async function subirVideoVdoCipher(
   (cuerpo.querySelector('.mat-lista-video') as HTMLElement).appendChild(filaEl);
 
   // 4. Polling cada 5 s hasta que VdoCipher termine de codificar
-  onEstado?.('Procesando en VdoCipher…');
+  onEstado?.('Procesando vídeo…');
   const badgeEl = filaEl.querySelector('.vdo-badge') as HTMLElement | null;
 
   for (let i = 0; i < 120; i++) {
@@ -1833,11 +1890,11 @@ async function subirVideoVdoCipher(
       const sRes  = await fetch(`/api/vdocipher-status.php?material_id=${material_id}&token=${encodeURIComponent(rawToken)}`);
       const sData = await sRes.json();
       if (!sData.ok) break;
-      if (badgeEl) badgeEl.textContent = sData.status === 'ready' ? '✓ VdoCipher DRM' : `VDO: ${sData.status}`;
+      if (badgeEl) badgeEl.textContent = textoEstadoVdo(sData.status);
       if (sData.status === 'ready') {
         if (sData.duracion_seg) actualizarDuracionTrasSubida(cuerpo, tema, sData.duracion_seg, material_id);
         onEstado?.('ready');
-        mostrarMsg('✓ Vídeo listo en VdoCipher.', 'ok');
+        mostrarMsg('Vídeo listo para reproducir.', 'ok');
         return;
       }
     } catch { break; }

@@ -102,10 +102,18 @@ if ($curlError || $httpStatus !== 200) {
 $info = json_decode($respuesta, true);
 $vdoStatusRaw = strtolower($info['status'] ?? 'processing');
 
+// Mapeo a nuestro ENUM:
+//  - 'Pre' / 'Pre-Upload' = se obtuvo la política pero el archivo aún no
+//    se ha terminado de subir a S3  →  uploading
+//  - 'Queued' / 'Queue'   = el archivo ya está en VdoCipher y se está
+//    codificando/encriptando        →  processing
+//  - 'Encoding'           = codificando explícito  →  processing
+//  - 'ready'              = listo para reproducir  →  ready
 $nuestroStatus = match(true) {
-    $vdoStatusRaw === 'ready'                          => 'ready',
-    in_array($vdoStatusRaw, ['queued','queue','pre'])  => 'uploading',
-    default                                             => 'processing',
+    $vdoStatusRaw === 'ready'                                  => 'ready',
+    in_array($vdoStatusRaw, ['pre', 'pre-upload'], true)        => 'uploading',
+    in_array($vdoStatusRaw, ['queued', 'queue', 'encoding'], true) => 'processing',
+    default                                                     => 'processing',
 };
 
 // Decidir qué hay que actualizar.

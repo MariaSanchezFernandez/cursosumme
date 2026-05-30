@@ -81,7 +81,9 @@
       "Bash(curl -s -o /dev/null -w \"migrar-quitar-cloudflare.php → HTTP %{http_code}\\\\n\" -X POST \"https://cursosumme.es/api/migrar-quitar-cloudflare.php\")",
       "Bash(git fetch *)",
       "Bash(git pull *)",
-      "Bash(git stash *)"
+      "Bash(git stash *)",
+      "Bash(php -l /Users/mariasanchez/Desktop/cursosumme/public/api/vdocipher-status.php)",
+      "Bash(curl -s -o /dev/null -w \"vdocipher-status.php → HTTP %{http_code}\\\\n\" \"https://cursosumme.es/api/vdocipher-status.php\")"
     ],
     "additionalDirectories": [
       "/tmp",
