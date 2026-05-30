@@ -134,6 +134,8 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
 </style>
 
 <script>
+import { formatearDuracion } from '../../../utils/duracion.ts';
+
 const acentos = ['#b5d8cc','#b5c8e8','#d4c8e8','#e8d4b5','#e8c8b5','#c8e8b5'];
 const cursosSeleccionados = new Set<number>();
 
@@ -261,7 +263,7 @@ function crearItemCurso(curso: any, asignado: boolean, idx: number, btnPack: HTM
     <div class="modulo-acento" style="background:${curso.color || curso.pack_color || acentos[idx % acentos.length]}"></div>
     <div class="modulo-info">
       <p class="modulo-titulo">${curso.titulo}</p>
-      <p class="modulo-meta">${curso.etiqueta} · ${curso.nivel}${curso.duracion ? ' · ' + curso.duracion : ''}</p>
+      <p class="modulo-meta">${curso.etiqueta} · ${curso.nivel}${(() => { const d = formatearDuracion(curso.duracion_seg); return d ? ' · ' + d : ''; })()}</p>
     </div>
   `;
 

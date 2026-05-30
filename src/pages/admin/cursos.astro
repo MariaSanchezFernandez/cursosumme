@@ -294,6 +294,8 @@ import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
 </style>
 
 <script>
+import { formatearDuracion } from '../../utils/duracion.ts';
+
 const PALETA = ['#b5d8cc','#b5c8e8','#d4c8e8','#e8d4b5','#e8c8b5','#c8e8b5'];
 const PALETA_COLORES = ['#b5d8cc','#b5c8e8','#d4c8e8','#e8d4b5','#e8c8b5','#c8e8b5','#f5b5c0','#c0d4f5'];
 let todosLosCursos: any[] = [];
@@ -428,7 +430,7 @@ function renderizarCursos(filtro: string) {
                 fetch('/api/cursos.php', {
                   method: 'PUT', headers: {'Content-Type':'application/json'},
                   body: JSON.stringify({ id: c.id, titulo: c.titulo, etiqueta: c.etiqueta,
-                    nivel: c.nivel, duracion: c.duracion, activo: c.activo,
+                    nivel: c.nivel, activo: c.activo,
                     pack: packActual, pack_color: color }),
                 })
               ));
@@ -480,7 +482,7 @@ function renderizarCursos(filtro: string) {
           </div>
           <div class="curso-card-meta">
             <span class="curso-tag">${c.etiqueta}</span>
-            ${c.duracion ? `<span class="curso-tag">⏱ ${c.duracion}</span>` : ''}
+            ${(() => { const d = formatearDuracion(c.duracion_seg); return d ? `<span class="curso-tag">⏱ ${d}</span>` : ''; })()}
             <span class="curso-tag ${c.activo == 1 ? 'activo' : 'inactivo'}">${c.activo == 1 ? '● Activo' : '● Inactivo'}</span>
             <span class="curso-tag precio-badge" style="cursor:pointer;background:${c.precio ? '#e8f4ee' : '#f5f5f5'};color:${c.precio ? '#1d7a52' : '#999'};" title="Editar precio">
               ${c.precio ? parseFloat(c.precio).toFixed(2) + ' €' : '+ Precio'}
@@ -599,7 +601,7 @@ function renderizarCursos(filtro: string) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             id: c.id, titulo: c.titulo, etiqueta: c.etiqueta,
-            nivel: c.nivel, duracion: c.duracion, activo: c.activo,
+            nivel: c.nivel, activo: c.activo,
             pack: c.pack, pack_color: c.pack_color, color: c.color, imagen: c.imagen,
             precio: nuevoPrecio || null,
             stripe_price_id: nuevoSpid || null,

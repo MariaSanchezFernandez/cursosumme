@@ -581,35 +581,16 @@ function formatearMinutosCC(segundos: number): string {
   return h > 0 ? (m > 0 ? `${h}h ${m}min` : `${h}h`) : `${m} min`;
 }
 
-// Suma duraciones por tema. Para cada tema:
-//   - si hay override manual en .input-dur-tema → minutos × 60.
-//   - si no → segundos calculados de los vídeos (data-duracion-seg-calc).
+// Suma duraciones por tema usando data-duracion-seg-calc, que el
+// servidor rellena con SUM(materiales.duracion_seg). Única fuente:
+// los vídeos del tema. Sin override manual.
 function calcularDuracionTotal(): string {
   let totalSeg = 0;
   document.querySelectorAll<HTMLElement>('.tema-card').forEach(card => {
-    const inputDur  = card.querySelector('.input-dur-tema') as HTMLInputElement | null;
-    const manualMin = inputDur ? parseInt(inputDur.value) : NaN;
-    if (!isNaN(manualMin) && manualMin > 0) {
-      totalSeg += manualMin * 60;
-      return;
-    }
     const calc = parseInt(card.dataset.duracionSegCalc || '0', 10) || 0;
     if (calc > 0) totalSeg += calc;
   });
   return formatearMinutosCC(totalSeg);
-}
-
-async function guardarDuracionCurso() {
-  if (!cursoId) return;
-  const dur = calcularDuracionTotal();
-  const res = await fetch('/api/cursos.php');
-  const data = await res.json();
-  const c = data.cursos?.find((x: any) => x.id == cursoId);
-  if (!c) return;
-  await fetch('/api/cursos.php', {
-    method: 'PUT', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ id: cursoId, titulo: c.titulo, etiqueta: c.etiqueta, nivel: c.nivel, duracion: dur, activo: c.activo }),
-  });
 }
 
 // ── Temas ──────────────────────────────────────────────────────
@@ -636,13 +617,13 @@ formNuevo.addEventListener('submit', async (e) => {
     const titulo = (document.getElementById('tema-titulo') as HTMLInputElement).value.trim();
     const res    = await fetch('/api/temas.php', {
       method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ curso_id: cursoId, titulo, duracion: '' }),
+      body: JSON.stringify({ curso_id: cursoId, titulo }),
     });
     const data = await res.json();
 
     if (!data.ok) { mostrarMsg(data.mensaje || 'Error al crear el tema', 'error'); return; }
 
-    const nuevoTema = { id: data.id, titulo, duracion: '', orden: data.orden };
+    const nuevoTema = { id: data.id, titulo, orden: data.orden };
     temasVacio.style.display = 'none';
     const card = await crearTemaCard(nuevoTema);
     temasLista.appendChild(card);
@@ -659,17 +640,13 @@ async function crearTemaCard(tema: any): Promise<HTMLElement> {
   card.className      = 'tema-card';
   card.dataset.temaId = tema.id;
 
-  // duracion_seg viene calculado de la API (suma de los vídeos del
-  // tema). Lo guardamos para poder acumular al subir más vídeos sin
-  // sobrescribir el override manual.
+  // duracion_seg viene de la API (suma de los vídeos del tema). Es
+  // la única fuente; al subir/borrar vídeos se actualiza en cliente.
   const durSegCalc = Number(tema.duracion_seg) || 0;
   card.dataset.duracionSegCalc = String(durSegCalc);
 
   const colorBadge = 'var(--color-light)';
-  // Pill: prefiere segundos calculados; fallback al override textual.
-  const pillTexto = durSegCalc > 0
-    ? formatearMinutosCC(durSegCalc)
-    : (tema.duracion ? `${tema.duracion} min` : '');
+  const pillTexto = formatearMinutosCC(durSegCalc);
   card.innerHTML = `
     <div class="tema-card-cabecera">
       <div class="tema-badge" id="tema-badge-${tema.id}" style="background:${colorBadge}">${String(tema.orden).padStart(2,'0')}</div>
@@ -690,15 +667,9 @@ async function crearTemaCard(tema: any): Promise<HTMLElement> {
     </div>
 
     <div class="tema-editar-inline" id="editar-wrap-${tema.id}" style="display:none; flex-direction:column; gap:0.6rem;">
-      <div style="display:flex; gap:0.6rem; flex-wrap:wrap; align-items:flex-end;">
-        <div class="form-grupo" style="flex:2; min-width:160px; margin:0;">
-          <label class="form-label">Título del tema</label>
-          <input class="form-input input-titulo-tema" type="text" value="${tema.titulo}" required />
-        </div>
-        <div class="form-grupo" style="flex:1; min-width:100px; margin:0;">
-          <label class="form-label">Duración (min)</label>
-          <input class="form-input input-dur-tema" type="number" min="0" value="${tema.duracion || ''}" placeholder="${durSegCalc > 0 ? `Auto: ${formatearMinutosCC(durSegCalc)}` : 'Ej. 45'}" />
-        </div>
+      <div class="form-grupo" style="margin:0;">
+        <label class="form-label">Título del tema</label>
+        <input class="form-input input-titulo-tema" type="text" value="${tema.titulo}" required />
       </div>
       <div class="form-grupo" style="margin:0;">
         <label class="form-label">Descripción del tema <span style="font-weight:400; color:#aaa;">(opcional)</span></label>
@@ -767,20 +738,17 @@ async function crearTemaCard(tema: any): Promise<HTMLElement> {
 
   card.querySelector('.btn-guardar-tema')!.addEventListener('click', async () => {
     const titulo      = (card.querySelector('.input-titulo-tema') as HTMLInputElement).value.trim();
-    const duracion    = (card.querySelector('.input-dur-tema')    as HTMLInputElement).value.trim();
     const descEl = card.querySelector('.input-desc-tema') as HTMLElement;
     const descripcion = descEl.innerHTML.trim() === '<br>' ? '' : descEl.innerHTML.trim();
     const res = await fetch('/api/temas.php', {
       method: 'PUT', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ id: tema.id, titulo, descripcion, duracion, orden: tema.orden, color: tema.color || null }),
+      body: JSON.stringify({ id: tema.id, titulo, descripcion, orden: tema.orden, color: tema.color || null }),
     });
     const data = await res.json();
     if (data.ok) {
-      tema.titulo = titulo; tema.duracion = duracion; tema.descripcion = descripcion;
+      tema.titulo = titulo; tema.descripcion = descripcion;
       (card.querySelector('.tema-titulo-txt') as HTMLElement).textContent = titulo;
-      document.getElementById(`dur-label-${tema.id}`)!.textContent = duracion ? duracion + ' min' : '';
       editWrap.style.display = 'none';
-      await guardarDuracionCurso();
       mostrarMsg('✓ Tema actualizado.', 'ok');
     } else mostrarMsg(data.mensaje || 'Error', 'error');
   });
@@ -924,7 +892,6 @@ function crearFilaMat(mat: any): HTMLElement {
             pill.textContent = txt;
             pill.style.display = txt ? '' : 'none';
           }
-          await guardarDuracionCurso();
         }
       }
     });
@@ -1036,7 +1003,6 @@ function subirArchivo(
             durLabel.textContent = formatearMinutosCC(nuevo);
             durLabel.style.display = '';
           }
-          await guardarDuracionCurso();
         }
         mostrarMsg(`✓ ${tipo === 'video' ? 'Vídeo' : 'Archivo'} subido.`, 'ok');
       } catch (err) {

@@ -611,36 +611,26 @@ function formatearDuracion(segundos: number): string {
 }
 
 // ── Duración total del curso ─────────────────────────────────
-// 1º: si la API trae curso.duracion_seg (calculada en BD a partir
-//     de los vídeos), úsala — es exacta.
-// 2º: si no, sumar duracion_seg de cada tema.
-// 3º: por compatibilidad con cursos antiguos sin vídeos
-//     instrumentados, si no hay segundos pero los temas tienen
-//     t.duracion textual, sumar los minutos parseados.
+// Fuente única: SUM(materiales.duracion_seg) por tema, agregada en BD.
+//   1º: si la API trae curso.duracion_seg (servidor ya lo sumó), úsalo.
+//   2º: si no, sumar duracion_seg de cada tema.
 function calcularDuracionTotal(temas: any[], cursoSeg?: number): string {
   if (cursoSeg && cursoSeg > 0) return formatearDuracion(cursoSeg);
   let totalSeg = 0;
-  let totalMinFallback = 0;
   for (const t of temas) {
     if (typeof t.duracion_seg === 'number' && t.duracion_seg > 0) {
       totalSeg += t.duracion_seg;
-    } else {
-      const n = parseInt(t.duracion);
-      if (!isNaN(n)) totalMinFallback += n;
     }
   }
-  if (totalSeg > 0) return formatearDuracion(totalSeg + totalMinFallback * 60);
-  if (totalMinFallback > 0) return formatearDuracion(totalMinFallback * 60);
-  return '';
+  return formatearDuracion(totalSeg);
 }
 
-// Duración a mostrar para un tema concreto: prefiere los segundos
-// reales si existen, si no cae al texto manual t.duracion.
+// Duración a mostrar para un tema concreto.
 function duracionTemaTexto(t: any): string {
   if (typeof t.duracion_seg === 'number' && t.duracion_seg > 0) {
     return formatearDuracion(t.duracion_seg);
   }
-  return t.duracion ? `${t.duracion} min` : '';
+  return '';
 }
 
 // ── Abrir panel de detalle ────────────────────────────────────

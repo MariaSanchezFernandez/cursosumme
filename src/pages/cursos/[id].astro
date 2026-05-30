@@ -22,6 +22,7 @@
 import Plantilla from '../../layouts/Plantilla.astro';
 import CabeceraPublica from '../../components/CabeceraPublica.astro';
 import PiePagina from '../../components/PiePagina.astro';
+import { formatearDuracion } from '../../utils/duracion';
 
 interface CursoBasico {
   id: number;
@@ -32,11 +33,11 @@ interface CursoBasico {
   precio?: string | number;
   num_temas?: number | string;
 }
-interface Tema { id: number; titulo: string; duracion?: string | null; }
+interface Tema { id: number; titulo: string; duracion_seg?: number | null; }
 interface CursoDetalle extends CursoBasico {
   descripcion?: string;
   nivel?: string;
-  duracion?: string;
+  duracion_seg?: number | null;
   pack?: string;
   pack_color?: string;
   temas?: Tema[];
@@ -109,10 +110,10 @@ const tituloPag = `${curso.titulo} — Cursos Umme`;
                 <span><strong>{numTemas}</strong> {numTemas === 1 ? 'tema' : 'temas'}</span>
               </li>
             )}
-            {curso.duracion && (
+            {formatearDuracion(curso.duracion_seg) && (
               <li>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                <span>{curso.duracion}</span>
+                <span>{formatearDuracion(curso.duracion_seg)}</span>
               </li>
             )}
             {curso.nivel && (

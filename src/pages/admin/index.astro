@@ -102,6 +102,8 @@ import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
 </PlantillaAdmin>
 
 <script>
+import { formatearDuracion } from '../../utils/duracion.ts';
+
 const acentos = ['#b5d8cc','#b5c8e8','#d4c8e8','#e8d4b5','#e8c8b5','#c8e8b5'];
 
 async function cargarDashboard() {
@@ -228,7 +230,7 @@ async function cargarDashboard() {
           <div style="width:3px; height:28px; border-radius:2px; background:${acento}; flex-shrink:0;"></div>
           <div style="flex:1; min-width:0;">
             <p style="font-size:0.83rem; font-weight:600; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${c.titulo}</p>
-            <p style="font-size:0.7rem; color:#aaa; margin:0;">${c.etiqueta} · ${c.nivel}${c.duracion ? ' · ' + c.duracion : ''}</p>
+            <p style="font-size:0.7rem; color:#aaa; margin:0;">${c.etiqueta} · ${c.nivel}${(() => { const d = formatearDuracion(c.duracion_seg); return d ? ' · ' + d : ''; })()}</p>
           </div>
           <span style="font-size:0.68rem; color:#aaa; flex-shrink:0;">${c.num_temas} tema${c.num_temas != 1 ? 's' : ''}</span>
           <a href="/admin/cursos/editar?id=${c.id}" class="btn-admin" style="font-size:0.7rem; padding:0.2rem 0.55rem; height:auto; flex-shrink:0;">Editar</a>

@@ -40,7 +40,7 @@ if ($usuarioId !== (int)$user['id'] && $user['rol'] !== 'admin') {
 
 // Cursos asignados al alumno (activos)
 $stmtCursos = $pdo->prepare(
-    'SELECT c.id, c.titulo, c.descripcion, c.etiqueta, c.nivel, c.duracion, c.color, c.pack_color, c.imagen
+    'SELECT c.id, c.titulo, c.descripcion, c.etiqueta, c.nivel, c.color, c.pack_color, c.imagen
      FROM cursos c
      INNER JOIN usuarios_cursos uc ON uc.curso_id = c.id
      WHERE uc.usuario_id = :uid AND c.activo = 1
@@ -58,10 +58,9 @@ $cursoIds = array_column($cursos, 'id');
 $placeholders = implode(',', array_fill(0, count($cursoIds), '?'));
 
 // Temas de los cursos del alumno. duracion_seg sale de la suma de
-// duraciones reales de los vídeos (materiales.duracion_seg).
-// La columna t.duracion se mantiene como override manual opcional.
+// duraciones reales de los vídeos (materiales.duracion_seg) — fuente única.
 $stmtTemas = $pdo->prepare(
-    "SELECT t.id, t.curso_id, t.titulo, t.descripcion, t.duracion, t.orden,
+    "SELECT t.id, t.curso_id, t.titulo, t.descripcion, t.orden,
             COALESCE(SUM(m.duracion_seg), 0) AS duracion_seg
      FROM temas t
      LEFT JOIN materiales m ON m.tema_id = t.id

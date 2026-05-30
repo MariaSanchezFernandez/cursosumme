@@ -169,6 +169,8 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
 </style>
 
 <script>
+import { formatearDuracion } from '../../../utils/duracion.ts';
+
 const params   = new URLSearchParams(window.location.search);
 const alumnoId = parseInt(params.get('id') || '0', 10);
 if (!alumnoId) window.location.href = '/admin/alumnos';
@@ -591,7 +593,7 @@ function crearItemCurso(curso: any, asignado: boolean, btnPack: HTMLButtonElemen
     <div class="modulo-acento" style="background:${curso.color || curso.pack_color || PALETA[Number(curso.id) % PALETA.length]}"></div>
     <div class="modulo-info">
       <p class="modulo-titulo">${curso.titulo}</p>
-      <p class="modulo-meta">${curso.etiqueta} · ${curso.nivel}${curso.duracion ? ' · ' + curso.duracion : ''}</p>
+      <p class="modulo-meta">${curso.etiqueta} · ${curso.nivel}${(() => { const d = formatearDuracion(curso.duracion_seg); return d ? ' · ' + d : ''; })()}</p>
     </div>
   `;
   item.addEventListener('click', () => {

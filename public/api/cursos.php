@@ -30,9 +30,13 @@ if ($metodo === 'GET') {
         if (!empty($_GET['id'])) {
             $id = (int)$_GET['id'];
             $stmt = $pdo->prepare(
-                'SELECT c.id, c.titulo, c.descripcion, c.etiqueta, c.nivel, c.duracion,
+                'SELECT c.id, c.titulo, c.descripcion, c.etiqueta, c.nivel,
                         c.pack, c.pack_color, c.color, c.imagen, c.precio, c.stripe_price_id,
-                        (SELECT COUNT(*) FROM temas t WHERE t.curso_id = c.id) AS num_temas
+                        (SELECT COUNT(*) FROM temas t WHERE t.curso_id = c.id) AS num_temas,
+                        (SELECT COALESCE(SUM(m.duracion_seg), 0)
+                         FROM materiales m
+                         INNER JOIN temas tt ON tt.id = m.tema_id
+                         WHERE tt.curso_id = c.id) AS duracion_seg
                  FROM cursos c
                  WHERE c.id = :id AND c.activo = 1 AND c.precio IS NOT NULL
                  LIMIT 1'
@@ -72,7 +76,7 @@ if ($metodo === 'GET') {
     requireAdmin($pdo);
 
     $cursos = $pdo->query(
-        'SELECT c.id, c.titulo, c.descripcion, c.etiqueta, c.nivel, c.duracion, c.pack, c.pack_color, c.color, c.imagen, c.activo, c.creado_en,
+        'SELECT c.id, c.titulo, c.descripcion, c.etiqueta, c.nivel, c.pack, c.pack_color, c.color, c.imagen, c.activo, c.creado_en,
                 c.precio, c.stripe_price_id,
                 COUNT(t.id) AS num_temas,
                 (SELECT COALESCE(SUM(m.duracion_seg), 0)
