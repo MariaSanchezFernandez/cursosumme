@@ -31,7 +31,10 @@ key, policy, success_action_status=201, success_action_redirect='', file (siempr
 - `vdocipher_video_id VARCHAR(100)` — ID del vídeo en VdoCipher
 - `vdo_status ENUM('uploading','processing','ready')` — estado de procesamiento
 - `ruta` es nullable — vídeos VdoCipher no tienen archivo local
-- Antiguas columnas `cf_video_id`/`cf_status` (Cloudflare) se conservan en BD pero ya no se usan
+
+Las antiguas columnas `cf_video_id`/`cf_status` (Cloudflare Stream) se eliminaron
+el 2026-05-30 con la migración `migrar-quitar-cloudflare.php` + el SQL de
+`base-de-datos/migracion-quitar-cloudflare.sql`.
 
 ## Archivos clave
 

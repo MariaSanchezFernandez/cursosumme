@@ -73,10 +73,16 @@
       "Bash(curl -s -o /dev/null -w \"reusables sin auth → HTTP %{http_code}\\\\n\" \"https://cursosumme.es/api/materiales.php?reusables=1\")",
       "Bash(node scripts/analizar-videos-vdo.mjs)",
       "Bash(php -l /Users/mariasanchez/Desktop/cursosumme/public/api/limpiar-videos-vdo.php)",
-      "Bash(curl -s -o /dev/null -w \"test-vdo en prod: HTTP %{http_code}\\\\n\" \"https://cursosumme.es/test-vdo/\")"
+      "Bash(curl -s -o /dev/null -w \"test-vdo en prod: HTTP %{http_code}\\\\n\" \"https://cursosumme.es/test-vdo/\")",
+      "Bash(rm /Users/mariasanchez/Desktop/cursosumme/public/api/cloudflare-status.php /Users/mariasanchez/Desktop/cursosumme/public/api/cloudflare-upload.php && echo \"Borrados ✓\")",
+      "Bash(php -l /Users/mariasanchez/Desktop/cursosumme/public/api/migrar-quitar-cloudflare.php)",
+      "Bash(curl -s -o /dev/null -w \"cloudflare-status.php → HTTP %{http_code}\\\\n\" \"https://cursosumme.es/api/cloudflare-status.php\")",
+      "Bash(curl -s -o /dev/null -w \"cloudflare-upload.php → HTTP %{http_code}\\\\n\" \"https://cursosumme.es/api/cloudflare-upload.php\")",
+      "Bash(curl -s -o /dev/null -w \"migrar-quitar-cloudflare.php → HTTP %{http_code}\\\\n\" -X POST \"https://cursosumme.es/api/migrar-quitar-cloudflare.php\")"
     ],
     "additionalDirectories": [
-      "/tmp"
+      "/tmp",
+      "/Users/mariasanchez/Desktop/cursosumme/public/api"
     ]
   }
 }
