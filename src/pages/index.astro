@@ -65,9 +65,8 @@ import PiePagina from '../components/PiePagina.astro';
           Prepara tu plaza de PT <span class="hero-acento">a tu ritmo</span>
         </h1>
         <p class="hero-sub">
-          Vídeo on-demand, temario actualizado a cada convocatoria y materiales
-          descargables. Sin clases en directo, sin horarios y sin atajos:
-          tú decides cuándo y desde dónde estudias.
+          Todo lo que necesitas para triunfar adaptado 100% a tus necesidades
+          y ritmos: tú decides cuándo y desde dónde estudias.
         </p>
         <div class="hero-ctas">
           <a href="/precios" class="cta cta--primary">Ver cursos</a>
@@ -76,7 +75,7 @@ import PiePagina from '../components/PiePagina.astro';
 
         <p class="hero-licencia">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
-          Contenido creado por <strong>Una Maestra Muy Especial</strong>
+          <span>Materiales didácticos de <strong>Una Maestra Muy Especial</strong>, bajo licencia</span>
         </p>
       </div>
     </section>
@@ -97,7 +96,7 @@ import PiePagina from '../components/PiePagina.astro';
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             </div>
             <h3>Vídeo on-demand 24/7</h3>
-            <p>Cada tema explicado en vídeo, disponible cuando puedas conectarte. Sin clases en directo, sin perderte nada.</p>
+            <p>Avanza vídeo a vídeo, bloque a bloque. Prepara la prueba completa o repasa solo aquella parte que más floja lleves.</p>
           </article>
 
           <article class="beneficio">
@@ -105,7 +104,7 @@ import PiePagina from '../components/PiePagina.astro';
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             </div>
             <h3>Materiales descargables</h3>
-            <p>Apuntes, esquemas y audios que te llevas para repasar en el coche, en la cola o en el sofá. También sin conexión.</p>
+            <p>Temas listos, infografías, vídeos y documentos complementarios para preparar tu programación, UD/SA, defensas y los supuestos prácticos.</p>
           </article>
 
           <article class="beneficio">
@@ -113,7 +112,7 @@ import PiePagina from '../components/PiePagina.astro';
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
             </div>
             <h3>Temario al día</h3>
-            <p>Revisado en cada convocatoria. Si la legislación cambia, lo que estudias también — sin tener que rebuscar entre PDFs viejos.</p>
+            <p>Revisado y actualizado en cada convocatoria con las últimas novedades bibliográficas, normativas y webgráficas del ámbito educativo.</p>
           </article>
 
           <article class="beneficio">
@@ -121,7 +120,7 @@ import PiePagina from '../components/PiePagina.astro';
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </div>
             <h3>Tu ritmo, tu plan</h3>
-            <p>Hasta 1 año de acceso. Estudia cuando te venga bien y vuelve sobre cualquier tema todas las veces que necesites.</p>
+            <p>Estudia cuando te venga bien y vuelve sobre cualquier tema todas las veces que necesites para fijar conceptos con calma.</p>
           </article>
         </div>
       </div>
@@ -135,7 +134,7 @@ import PiePagina from '../components/PiePagina.astro';
         <header class="seccion-header animar-entrada">
           <p class="seccion-eyebrow">Catálogo</p>
           <h2 class="seccion-titulo">Cursos y packs destacados</h2>
-          <p class="seccion-sub">Cada curso incluye vídeo on-demand, apuntes y materiales descargables, y acceso hasta 1 año.</p>
+          <p class="seccion-sub">Cada curso incluye vídeo on-demand, apuntes y materiales descargables. Compra única, sin suscripciones.</p>
         </header>
 
         <div id="destacados-loading" class="destacados-skeleton" aria-hidden="true">
@@ -149,20 +148,7 @@ import PiePagina from '../components/PiePagina.astro';
           <a href="/precios">Ver todos los cursos →</a>
         </div>
 
-        <!-- PACKS — carrusel si hay >2, grid si son pocos -->
-        <div id="carrusel-packs-wrap" class="carrusel animar-entrada" style="display:none;">
-          <div class="carrusel-cabecera">
-            <h3 class="subseccion-titulo">Packs</h3>
-            <div class="carrusel-controles" id="carrusel-packs-controles">
-              <button class="carrusel-flecha" data-target="carrusel-packs" data-dir="-1" aria-label="Anterior">‹</button>
-              <button class="carrusel-flecha" data-target="carrusel-packs" data-dir="1" aria-label="Siguiente">›</button>
-            </div>
-          </div>
-          <div id="carrusel-packs" class="carrusel-pista" tabindex="0" aria-label="Packs"></div>
-          <div id="carrusel-packs-dots" class="carrusel-dots" aria-hidden="true"></div>
-        </div>
-
-        <!-- Carrusel 2 — CURSOS INDIVIDUALES -->
+        <!-- CURSOS INDIVIDUALES — primero, ordenados de más barato a más caro -->
         <div id="carrusel-cursos-wrap" class="carrusel animar-entrada" style="display:none;">
           <div class="carrusel-cabecera">
             <h3 class="subseccion-titulo">Cursos individuales</h3>
@@ -173,6 +159,19 @@ import PiePagina from '../components/PiePagina.astro';
           </div>
           <div id="carrusel-cursos" class="carrusel-pista" tabindex="0" aria-label="Cursos individuales"></div>
           <div id="carrusel-cursos-dots" class="carrusel-dots" aria-hidden="true"></div>
+        </div>
+
+        <!-- PACKS — después de cursos, también de más barato a más caro -->
+        <div id="carrusel-packs-wrap" class="carrusel animar-entrada" style="display:none;">
+          <div class="carrusel-cabecera">
+            <h3 class="subseccion-titulo">Packs</h3>
+            <div class="carrusel-controles" id="carrusel-packs-controles">
+              <button class="carrusel-flecha" data-target="carrusel-packs" data-dir="-1" aria-label="Anterior">‹</button>
+              <button class="carrusel-flecha" data-target="carrusel-packs" data-dir="1" aria-label="Siguiente">›</button>
+            </div>
+          </div>
+          <div id="carrusel-packs" class="carrusel-pista" tabindex="0" aria-label="Packs"></div>
+          <div id="carrusel-packs-dots" class="carrusel-dots" aria-hidden="true"></div>
         </div>
 
         <div class="ver-todos">
@@ -242,8 +241,12 @@ import PiePagina from '../components/PiePagina.astro';
 
         <div class="faq animar-entrada-cascada">
           <details class="faq-item">
-            <summary>¿Cuánto dura mi acceso al curso?</summary>
-            <div class="faq-cuerpo"><p>El acceso es de hasta 1 año desde su activación. Tendrás tiempo de sobra para preparar la convocatoria y volver sobre cualquier tema todas las veces que necesites.</p></div>
+            <summary>¿Cómo funciona la compra?</summary>
+            <div class="faq-cuerpo"><p>Es una compra única: sin suscripciones, sin renovaciones automáticas ni costes ocultos. Una vez activado tu curso, podrás repasar cada bloque todas las veces que necesites mientras esté disponible.</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>¿Hasta cuándo puedo comprar?</summary>
+            <div class="faq-cuerpo"><p>En <strong>julio cerramos temporalmente</strong> la web para actualizar todos los contenidos a la próxima convocatoria. Si compras antes, podrás seguir el curso hasta entonces y te avisaremos por email cuando vuelva a estar disponible con los materiales nuevos.</p></div>
           </details>
           <details class="faq-item">
             <summary>¿Puedo descargar los vídeos?</summary>
@@ -478,17 +481,22 @@ import PiePagina from '../components/PiePagina.astro';
 .hero-licencia {
   margin: 1.5rem auto 0;
   display: inline-flex;
-  align-items: center;
+  /* En móvil el texto puede ocupar 2 líneas: alineamos al inicio para
+     que el icono quede pegado a la primera línea, no centrado en el bloque. */
+  align-items: flex-start;
   gap: 0.45rem;
+  max-width: 100%;
+  text-align: left;
   font-size: 0.78rem;
   color: var(--color-text-muted);
   background: rgba(255,255,255,0.6);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  padding: 0.4rem 0.85rem;
+  padding: 0.5rem 0.95rem;
   border-radius: 999px;
   animation: heroEntra 0.7s 0.6s both;
 }
+.hero-licencia svg { flex-shrink: 0; margin-top: 2px; }
 .hero-licencia strong { color: var(--color-text); font-weight: 700; }
 @keyframes heroEntra {
   from { opacity: 0; transform: translateY(18px); }
@@ -507,12 +515,20 @@ import PiePagina from '../components/PiePagina.astro';
 .beneficios-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  /* Todas las filas miden lo mismo (la más alta), así si el grid
+     se rompe en 2x2 las dos filas quedan alineadas. */
+  grid-auto-rows: 1fr;
   gap: 1.25rem;
 }
 .beneficio {
   background: var(--color-light);
   border-radius: var(--radius-md);
   padding: 1.5rem;
+  /* Flex column para que la tarjeta ocupe TODO el alto de su celda
+     (las celdas son 1fr en su fila, así que con esto las tarjetas
+     se nivelan visualmente aunque sus textos varíen en longitud). */
+  display: flex;
+  flex-direction: column;
   transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s;
   will-change: transform;
 }
@@ -669,7 +685,11 @@ import PiePagina from '../components/PiePagina.astro';
   border-radius: 3px;
 }
 .carrusel-pista > * {
-  flex: 0 0 320px;
+  /* En anchos <360px (móviles muy estrechos o plegables) una tarjeta fija
+     de 320px sobresale del viewport y arrastra scroll horizontal en TODA
+     la página. El min() limita la tarjeta al ancho disponible cuando hace
+     falta y deja los 320px nominales en el resto de casos. */
+  flex: 0 0 min(320px, calc(100vw - 2.5rem));
   scroll-snap-align: start;
 }
 @media (min-width: 720px) {
@@ -710,7 +730,13 @@ import PiePagina from '../components/PiePagina.astro';
   text-decoration: none;
   color: inherit;
   height: 100%;
-  min-height: 320px;
+  /* Altura mínima común a packs y cursos para que todas las tarjetas,
+     vivan donde vivan (carrusel de packs, carrusel de cursos, futuras
+     secciones), se vean siempre con la misma silueta. El flex stretch
+     del .carrusel-pista termina de nivelar la fila con la más alta.
+     En el home las queremos un pelín más bajas que en /precios porque
+     aquí no llevan botón Comprar ni enlace "Ver detalle". */
+  min-height: 340px;
   transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
               box-shadow 0.28s,
               border-color 0.2s;
@@ -770,13 +796,13 @@ import PiePagina from '../components/PiePagina.astro';
   font-weight: 600;
 }
 .tarjeta-curso-desc {
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   color: var(--color-text-muted);
-  line-height: 1.55;
+  line-height: 1.5;
   margin: 0;
   flex: 1;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -835,17 +861,29 @@ import PiePagina from '../components/PiePagina.astro';
   color: var(--color-text);
   line-height: 1;
 }
+/* "Ver detalle →" como pill clara, no como texto suelto:
+   da una afordancia clara de "esto es un destino, click aquí". */
 .tarjeta-curso-link {
-  font-size: 0.82rem;
-  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.45rem 0.85rem;
+  background: var(--color-light);
+  border: 1px solid #e3e6e5;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
   color: var(--color-text);
   text-decoration: none;
   white-space: nowrap;
-  transition: transform 0.2s;
+  transition: background 0.15s, border-color 0.15s, transform 0.2s;
 }
-.tarjeta-curso:hover .tarjeta-curso-link { transform: translateX(3px); }
+.tarjeta-curso:hover .tarjeta-curso-link {
+  background: #fff;
+  border-color: var(--curso-color, var(--color-primary));
+  transform: translateX(3px);
+}
 
-.tarjeta-curso--pack { min-height: 360px; }
 .tarjeta-curso--pack .tarjeta-curso-precio { font-size: 1.7rem; }
 
 .ver-todos {
@@ -1043,7 +1081,9 @@ import PiePagina from '../components/PiePagina.astro';
    ─────────────────────────────────────────────────────────────── */
 .cta-final {
   padding: 4.5rem 1.5rem;
-  background: var(--color-primary);
+  /* Coral diluido (~18%) plano: cálido pero discreto, marca claramente
+     que la sección es un cierre sin gritar como hacía el turquesa pleno. */
+  background: color-mix(in srgb, var(--color-coral) 18%, #ffffff);
 }
 .cta-final-inner {
   max-width: 720px;
@@ -1130,7 +1170,7 @@ import PiePagina from '../components/PiePagina.astro';
 const PALETA = ['#b3e8da','#b5c8e8','#d4c8e8','#fff8b7','#ffb5a7','#c8e8b5'];
 
 interface PackApi  { id: number; nombre: string; descripcion?: string; precio?: string | number; }
-interface CursoApi { id: number; titulo: string; etiqueta?: string; color?: string; precio?: string | number; num_temas?: number | string; }
+interface CursoApi { id: number; titulo: string; etiqueta?: string; color?: string; precio?: string | number; num_temas?: number | string; puntos?: string[]; duracion_seg?: number | string; }
 
 function formateaPrecio(valor: string | number): string {
   return parseFloat(String(valor)).toFixed(2).replace('.', ',');
@@ -1168,12 +1208,20 @@ function pintarPacks(packs: PackApi[]) {
     const card  = document.createElement('article');
     card.className = 'tarjeta-curso tarjeta-curso--pack';
     card.style.setProperty('--curso-color', color);
+    // Misma estructura que los cursos individuales: chip + título +
+    // checklist de 4 items + pie con precio. Así packs y cursos son
+    // visualmente idénticos dentro del carrusel.
+    const items = [
+      'Todos los cursos del pack',
+      'Apuntes y materiales descargables',
+      'Ahorra frente a comprarlos sueltos',
+    ];
     card.innerHTML = `
       <div class="tarjeta-curso-acento"></div>
       <div class="tarjeta-curso-body">
         <span class="tarjeta-curso-chip tarjeta-curso-chip--pack">Pack completo</span>
         <h3 class="tarjeta-curso-titulo">${escapar(pack.nombre)}</h3>
-        ${pack.descripcion ? `<p class="tarjeta-curso-desc">${escapar(pack.descripcion)}</p>` : `<p class="tarjeta-curso-meta">Incluye todos los cursos del pack</p>`}
+        <ul class="tarjeta-curso-checklist">${items.map((p) => `<li>${p}</li>`).join('')}</ul>
         <div class="tarjeta-curso-pie">
           <span class="tarjeta-curso-precio">${formateaPrecio(pack.precio ?? 0)} €</span>
           <a href="/precios#packs" class="tarjeta-curso-link">Ver detalles →</a>
@@ -1194,16 +1242,28 @@ function pintarCursos(cursos: (CursoApi & { imagen?: string })[]) {
   cursos.forEach((curso, idx) => {
     const color    = curso.color || PALETA[idx % PALETA.length];
     const numTemas = Number(curso.num_temas ?? 0);
+    const puntosRaw: string[] = Array.isArray(curso.puntos) ? curso.puntos : [];
     const card     = document.createElement('a');
     card.className = 'tarjeta-curso';
     card.style.setProperty('--curso-color', color);
     card.setAttribute('href', `/cursos/${curso.id}`);
+    // Lista compacta — máx 4 ideas. El nº de temas va como primer punto
+    // (no pill aparte) y luego los puntos personalizados del curso.
+    const items: string[] = [];
+    if (numTemas > 0) items.push(`${numTemas} ${numTemas === 1 ? 'tema' : 'temas'} en vídeo`);
+    for (const p of puntosRaw) {
+      if (items.length >= 4) break;
+      items.push(p);
+    }
+    const checklistHtml = items.length > 0
+      ? `<ul class="tarjeta-curso-checklist">${items.map((p) => `<li>${escapar(p)}</li>`).join('')}</ul>`
+      : '';
     card.innerHTML = `
       <div class="tarjeta-curso-acento"></div>
       <div class="tarjeta-curso-body">
         ${curso.etiqueta ? `<span class="tarjeta-curso-chip">${escapar(curso.etiqueta)}</span>` : ''}
         <h3 class="tarjeta-curso-titulo">${escapar(curso.titulo)}</h3>
-        ${numTemas > 0 ? `<p class="tarjeta-curso-meta">${numTemas} tema${numTemas !== 1 ? 's' : ''}</p>` : ''}
+        ${checklistHtml}
         <div class="tarjeta-curso-pie">
           <span class="tarjeta-curso-precio">${formateaPrecio(curso.precio ?? 0)} €</span>
           <span class="tarjeta-curso-link">Ver detalle →</span>
@@ -1305,8 +1365,14 @@ async function cargarDestacados() {
     const dataPacks  = await resPacks.json();
     const dataCursos = await resCursos.json();
 
-    const packs  = (dataPacks.packs   ?? []).filter((p: PackApi)  => p.precio);
-    const cursos = (dataCursos.cursos ?? []).filter((c: CursoApi) => c.precio);
+    // Orden ascendente por precio: más barato primero. parseFloat
+    // tolera tanto strings ("12.50") como números (12.5) — la API
+    // devuelve DECIMAL como string en la mayoría de drivers MySQL.
+    const porPrecio = (a: { precio?: string | number }, b: { precio?: string | number }) =>
+      parseFloat(String(a.precio ?? 0)) - parseFloat(String(b.precio ?? 0));
+
+    const packs  = (dataPacks.packs   ?? []).filter((p: PackApi)  => p.precio).sort(porPrecio);
+    const cursos = (dataCursos.cursos ?? []).filter((c: CursoApi) => c.precio).sort(porPrecio);
 
     loading.remove();
 
@@ -1320,8 +1386,10 @@ async function cargarDestacados() {
       return;
     }
 
-    pintarPacks(packs);
+    // Cursos antes que packs (orden de las llamadas no afecta al
+    // orden visual — eso lo decide el HTML — pero por coherencia).
     pintarCursos(cursos);
+    pintarPacks(packs);
     activarObserverEnNuevos();
   } catch {
     loading.remove();

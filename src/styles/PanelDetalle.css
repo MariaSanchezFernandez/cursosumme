@@ -59,15 +59,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 34px;
+  height: 34px;
   border: 1px solid #e4e4e4;
-  border-radius: 6px;
+  border-radius: 8px;
   background: #fff;
   cursor: pointer;
-  color: #bbb;
+  color: #888;
   flex-shrink: 0;
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  transition: background 0.12s, border-color 0.12s, color 0.12s, transform 0.12s, box-shadow 0.12s;
 }
 
 .btn-toggle-lista:hover {
@@ -77,14 +77,23 @@
 }
 
 .btn-toggle-lista svg {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
 }
 
+/* Cuando la lista está oculta, el botón llama más la atención: color
+   de marca, sombra suave. Invita a abrirla. */
 .lista-oculta .btn-toggle-lista {
-  background: color-mix(in srgb, var(--color-primary) 12%, white);
+  background: var(--color-primary);
   border-color: var(--color-primary);
-  color: var(--color-primary);
+  color: #fff;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+.lista-oculta .btn-toggle-lista:hover {
+  background: color-mix(in srgb, var(--color-primary) 85%, black);
+  border-color: color-mix(in srgb, var(--color-primary) 85%, black);
+  color: #fff;
+  transform: translateY(-1px);
 }
 
 @media (max-width: 768px) {
@@ -419,14 +428,14 @@
 
 .leccion-titulo:empty { display: none; }
 
-.leccion-descripcion {
+:is(.leccion-descripcion, .intro-desc) {
   font-size: 0.92rem;
   color: var(--color-text-muted);
   line-height: 1.75;
 }
-.leccion-descripcion p { margin: 0 0 0.5rem; }
-.leccion-descripcion p:last-child { margin-bottom: 0; }
-.leccion-descripcion h2 {
+:is(.leccion-descripcion, .intro-desc) p { margin: 0 0 0.5rem; }
+:is(.leccion-descripcion, .intro-desc) p:last-child { margin-bottom: 0; }
+:is(.leccion-descripcion, .intro-desc) h2 {
   font-size: 1rem;
   font-weight: 700;
   color: var(--color-text);
@@ -435,19 +444,19 @@
   border-bottom: 2px solid var(--curso-color, var(--color-primary));
   display: inline-block;
 }
-.leccion-descripcion h2:first-child { margin-top: 0; }
-.leccion-descripcion h3 { font-size: 0.9rem; font-weight: 700; color: var(--color-text); margin: 0.75rem 0 0.2rem; padding-left: 0.6rem; border-left: 3px solid var(--curso-color, var(--color-primary)); }
-.leccion-descripcion ul {
+:is(.leccion-descripcion, .intro-desc) h2:first-child { margin-top: 0; }
+:is(.leccion-descripcion, .intro-desc) h3 { font-size: 0.9rem; font-weight: 700; color: var(--color-text); margin: 0.75rem 0 0.2rem; padding-left: 0.6rem; border-left: 3px solid var(--curso-color, var(--color-primary)); }
+:is(.leccion-descripcion, .intro-desc) ul {
   padding-left: 0;
   margin: 0.35rem 0;
   list-style: none;
 }
-.leccion-descripcion ul li {
+:is(.leccion-descripcion, .intro-desc) ul li {
   padding-left: 1rem;
   position: relative;
   margin-bottom: 0.2rem;
 }
-.leccion-descripcion ul li::before {
+:is(.leccion-descripcion, .intro-desc) ul li::before {
   content: '';
   position: absolute;
   left: 0;
@@ -457,16 +466,16 @@
   border-radius: 50%;
   background: var(--curso-color, var(--color-primary));
 }
-.leccion-descripcion ol { padding-left: 1.4rem; margin: 0.35rem 0; }
-.leccion-descripcion li { margin-bottom: 0.2rem; }
-.leccion-descripcion strong, .leccion-descripcion b { font-weight: 700; color: var(--color-text); }
-.leccion-descripcion em, .leccion-descripcion i { font-style: italic; }
-.leccion-descripcion a { color: var(--curso-color, var(--color-primary)); text-decoration: underline; }
+:is(.leccion-descripcion, .intro-desc) ol { padding-left: 1.4rem; margin: 0.35rem 0; }
+:is(.leccion-descripcion, .intro-desc) li { margin-bottom: 0.2rem; }
+:is(.leccion-descripcion, .intro-desc) strong, :is(.leccion-descripcion, .intro-desc) b { font-weight: 700; color: var(--color-text); }
+:is(.leccion-descripcion, .intro-desc) em, :is(.leccion-descripcion, .intro-desc) i { font-style: italic; }
+:is(.leccion-descripcion, .intro-desc) a { color: var(--curso-color, var(--color-primary)); text-decoration: underline; }
 
 /* ── Componentes de descripción enriquecida ── */
 
 /* blockquote: línea lateral + tipografía con peso */
-.leccion-descripcion blockquote {
+:is(.leccion-descripcion, .intro-desc) blockquote {
   background: none;
   border-left: 3px solid var(--curso-color, var(--color-primary));
   border-radius: 0;
@@ -480,13 +489,13 @@
   box-shadow: none;
 }
 /* desc-card: tarjeta con fondo del curso */
-.leccion-descripcion .desc-card {
+:is(.leccion-descripcion, .intro-desc) .desc-card {
   background: var(--curso-color, var(--color-primary));
   border-radius: var(--radius-md);
   padding: 0.9rem 1.05rem;
   margin: 0.75rem 0;
 }
-.leccion-descripcion .desc-card h3 {
+:is(.leccion-descripcion, .intro-desc) .desc-card h3 {
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -497,12 +506,12 @@
   padding: 0;
   border: none;
 }
-.leccion-descripcion .desc-card ul {
+:is(.leccion-descripcion, .intro-desc) .desc-card ul {
   padding: 0;
   margin: 0;
   list-style: none;
 }
-.leccion-descripcion .desc-card li {
+:is(.leccion-descripcion, .intro-desc) .desc-card li {
   padding: 0.32rem 0 0.32rem 1.45rem;
   border-bottom: 1px solid rgba(0,0,0,0.07);
   position: relative;
@@ -511,8 +520,8 @@
   margin: 0;
   color: var(--color-text);
 }
-.leccion-descripcion .desc-card li:last-child { border-bottom: none; }
-.leccion-descripcion .desc-card li::before {
+:is(.leccion-descripcion, .intro-desc) .desc-card li:last-child { border-bottom: none; }
+:is(.leccion-descripcion, .intro-desc) .desc-card li::before {
   content: '✓';
   position: absolute;
   left: 0;
@@ -526,21 +535,107 @@
   top: auto;
   font-size: 0.88rem;
 }
+
+/* .desc-temario: lista del temario del curso (10-20 bloques
+   numerados). Tarjetas compactas con número grande a la izquierda
+   y título a la derecha, en grid de 1-2 columnas. La numeración la
+   inyecta CSS vía counter, el HTML solo necesita títulos planos
+   en cada <li>. */
+:is(.leccion-descripcion, .intro-desc) .desc-temario {
+  margin: 1rem 0;
+}
+:is(.leccion-descripcion, .intro-desc) .desc-temario > p {
+  margin: 0 0 0.85rem;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+:is(.leccion-descripcion, .intro-desc) .desc-temario > p:last-child {
+  margin: 0.85rem 0 0;
+}
+:is(.leccion-descripcion, .intro-desc) .desc-temario ol,
+:is(.leccion-descripcion, .intro-desc) .desc-temario ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  /* Filas igualadas a la fila más alta para que los items con título
+     de 2 líneas no descoloquen a los más cortos de su fila. */
+  grid-auto-rows: 1fr;
+  gap: 0.45rem 0.6rem;
+  counter-reset: temario;
+}
+:is(.leccion-descripcion, .intro-desc) .desc-temario li {
+  counter-increment: temario;
+  display: flex;
+  /* align-items: center centra el texto del título; el badge mantiene
+     su alto completo vía align-self: stretch en ::before. */
+  align-items: center;
+  padding: 0 0.85rem 0 0;
+  background: #fff;
+  border: 1px solid #ebebeb;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  /* min-height para que TODAS las cards tengan el mismo alto (igual
+     que en /cursos/[id]). 60px da espacio para 2 líneas a 0.82rem. */
+  min-height: 60px;
+  height: 100%;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--color-text);
+  margin: 0;
+  transition: border-color 0.15s, transform 0.15s;
+}
+:is(.leccion-descripcion, .intro-desc) .desc-temario li::before {
+  content: counter(temario, decimal-leading-zero);
+  flex-shrink: 0;
+  width: 42px;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--curso-color, var(--color-primary)) 50%, #ffffff);
+  color: var(--color-text);
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: -0.01em;
+  margin-right: 0.75rem;
+  position: static;
+  border-radius: 0;
+  top: auto;
+  background-image: linear-gradient(180deg, transparent, rgba(0,0,0,0.05));
+}
+:is(.leccion-descripcion, .intro-desc) .desc-temario li:hover {
+  border-color: color-mix(in srgb, var(--curso-color, var(--color-primary)) 60%, transparent);
+  transform: translateX(2px);
+}
+:is(.leccion-descripcion, .intro-desc) .desc-temario li > * {
+  align-self: center;
+  flex: 1;
+}
+@media (max-width: 600px) {
+  :is(.leccion-descripcion, .intro-desc) .desc-temario ol,
+  :is(.leccion-descripcion, .intro-desc) .desc-temario ul {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* desc-stats: grid 2×2 de estadísticas */
-.leccion-descripcion .desc-stats {
+:is(.leccion-descripcion, .intro-desc) .desc-stats {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.4rem;
   margin: 0.75rem 0;
 }
-.leccion-descripcion .desc-stat {
+:is(.leccion-descripcion, .intro-desc) .desc-stat {
   background: #fff;
   border: 1px solid rgba(0,0,0,0.06);
   border-top: 2px solid var(--curso-color, var(--color-primary));
   border-radius: var(--radius-sm);
   padding: 0.55rem 0.65rem;
 }
-.leccion-descripcion .desc-stat strong {
+:is(.leccion-descripcion, .intro-desc) .desc-stat strong {
   display: block;
   font-size: 1rem;
   font-weight: 800;
@@ -548,7 +643,7 @@
   margin-bottom: 0.1rem;
   letter-spacing: -0.01em;
 }
-.leccion-descripcion .desc-stat span {
+:is(.leccion-descripcion, .intro-desc) .desc-stat span {
   font-size: 0.72rem;
   color: var(--color-text-muted);
   font-weight: 400;
@@ -556,8 +651,8 @@
 }
 
 /* desc-chips: píldoras verdes suaves */
-.leccion-descripcion .desc-chips { margin: 0.65rem 0; }
-.leccion-descripcion .desc-chips ul {
+:is(.leccion-descripcion, .intro-desc) .desc-chips { margin: 0.65rem 0; }
+:is(.leccion-descripcion, .intro-desc) .desc-chips ul {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
@@ -565,7 +660,7 @@
   margin: 0;
   list-style: none;
 }
-.leccion-descripcion .desc-chips li {
+:is(.leccion-descripcion, .intro-desc) .desc-chips li {
   background: var(--curso-color, var(--color-primary));
   border-radius: 999px;
   padding: 0.28rem 0.8rem;
@@ -575,12 +670,12 @@
   margin: 0;
   position: static;
 }
-.leccion-descripcion .desc-chips li::before { display: none; }
+:is(.leccion-descripcion, .intro-desc) .desc-chips li::before { display: none; }
 
-.leccion-descripcion:empty { display: none; }
+:is(.leccion-descripcion, .intro-desc):empty { display: none; }
 
 /* desc-highlight: dato/número grande + texto */
-.leccion-descripcion .desc-highlight {
+:is(.leccion-descripcion, .intro-desc) .desc-highlight {
   display: flex;
   align-items: center;
   gap: 0.85rem;
@@ -591,7 +686,7 @@
   margin: 0.55rem 0;
   box-shadow: var(--shadow-sm);
 }
-.leccion-descripcion .desc-highlight-num {
+:is(.leccion-descripcion, .intro-desc) .desc-highlight-num {
   font-size: 2rem;
   font-weight: 900;
   line-height: 1;
@@ -602,15 +697,15 @@
   flex-shrink: 0;
   letter-spacing: -0.03em;
 }
-.leccion-descripcion .desc-highlight-txt {
+:is(.leccion-descripcion, .intro-desc) .desc-highlight-txt {
   font-size: 0.86rem;
   color: var(--color-text);
   line-height: 1.5;
 }
 
 /* desc-pasos: lista numerada con número tipográfico */
-.leccion-descripcion .desc-pasos { margin: 0.65rem 0; }
-.leccion-descripcion .desc-pasos ol {
+:is(.leccion-descripcion, .intro-desc) .desc-pasos { margin: 0.65rem 0; }
+:is(.leccion-descripcion, .intro-desc) .desc-pasos ol {
   counter-reset: paso;
   list-style: none;
   padding: 0;
@@ -619,7 +714,7 @@
   flex-direction: column;
   gap: 0.55rem;
 }
-.leccion-descripcion .desc-pasos li {
+:is(.leccion-descripcion, .intro-desc) .desc-pasos li {
   counter-increment: paso;
   display: flex;
   gap: 0.75rem;
@@ -631,7 +726,7 @@
   border-bottom: none;
   margin: 0;
 }
-.leccion-descripcion .desc-pasos li::before {
+:is(.leccion-descripcion, .intro-desc) .desc-pasos li::before {
   content: counter(paso);
   font-size: 1.35rem;
   font-weight: 900;
@@ -649,7 +744,7 @@
 }
 
 /* desc-nota: tip/aviso con borde lateral accent */
-.leccion-descripcion .desc-nota {
+:is(.leccion-descripcion, .intro-desc) .desc-nota {
   background: var(--color-light);
   border-left: 3px solid var(--color-accent, #f9c30e);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
@@ -659,17 +754,17 @@
   line-height: 1.6;
   color: var(--color-text-muted);
 }
-.leccion-descripcion .desc-nota p { margin: 0; }
-.leccion-descripcion .desc-nota strong { color: var(--color-text); }
+:is(.leccion-descripcion, .intro-desc) .desc-nota p { margin: 0; }
+:is(.leccion-descripcion, .intro-desc) .desc-nota strong { color: var(--color-text); }
 
 /* desc-banner: franja-cabecera con fondo del curso */
-.leccion-descripcion .desc-banner {
+:is(.leccion-descripcion, .intro-desc) .desc-banner {
   background: var(--curso-color, var(--color-primary));
   border-radius: var(--radius-md);
   padding: 0.75rem 1rem;
   margin: 0.55rem 0;
 }
-.leccion-descripcion .desc-banner h3 {
+:is(.leccion-descripcion, .intro-desc) .desc-banner h3 {
   margin: 0;
   font-size: 0.78rem;
   font-weight: 800;
@@ -681,13 +776,13 @@
 }
 
 /* desc-bienvenida: fondo curso + interior blanco (inspirada en el html de referencia) */
-.leccion-descripcion .desc-bienvenida {
+:is(.leccion-descripcion, .intro-desc) .desc-bienvenida {
   background: var(--curso-color, var(--color-primary));
   border-radius: var(--radius-md);
   padding: 1rem 1.05rem 0.9rem;
   margin: 0.65rem 0;
 }
-.leccion-descripcion .desc-bienvenida-tag {
+:is(.leccion-descripcion, .intro-desc) .desc-bienvenida-tag {
   display: block;
   font-size: 0.7rem;
   font-weight: 800;
@@ -696,28 +791,28 @@
   color: rgba(0,0,0,0.5);
   margin-bottom: 0.6rem;
 }
-.leccion-descripcion .desc-bienvenida-inner {
+:is(.leccion-descripcion, .intro-desc) .desc-bienvenida-inner {
   background: #fff;
   border-radius: var(--radius-sm);
   padding: 0.85rem 1rem;
 }
-.leccion-descripcion .desc-bienvenida-inner p {
+:is(.leccion-descripcion, .intro-desc) .desc-bienvenida-inner p {
   margin: 0 0 0.5rem;
   font-size: 0.875rem;
   line-height: 1.7;
   color: var(--color-text);
 }
-.leccion-descripcion .desc-bienvenida-inner p:last-child { margin-bottom: 0; }
-.leccion-descripcion .desc-bienvenida-inner strong { font-weight: 700; color: var(--color-text); }
-.leccion-descripcion .desc-bienvenida-inner em { font-style: italic; color: var(--color-text-muted); }
+:is(.leccion-descripcion, .intro-desc) .desc-bienvenida-inner p:last-child { margin-bottom: 0; }
+:is(.leccion-descripcion, .intro-desc) .desc-bienvenida-inner strong { font-weight: 700; color: var(--color-text); }
+:is(.leccion-descripcion, .intro-desc) .desc-bienvenida-inner em { font-style: italic; color: var(--color-text-muted); }
 
 /* desc-impacto: frase tipográfica de golpe — sin caja, solo texto */
-.leccion-descripcion .desc-impacto {
+:is(.leccion-descripcion, .intro-desc) .desc-impacto {
   background: none;
   padding: 0.2rem 0;
   margin: 0.5rem 0;
 }
-.leccion-descripcion .desc-impacto p {
+:is(.leccion-descripcion, .intro-desc) .desc-impacto p {
   margin: 0;
   font-size: 1rem;
   font-weight: 800;
@@ -725,33 +820,33 @@
   line-height: 1.45;
   letter-spacing: -0.01em;
 }
-.leccion-descripcion .desc-impacto em {
+:is(.leccion-descripcion, .intro-desc) .desc-impacto em {
   font-style: normal;
   color: var(--curso-color, var(--color-primary));
   filter: brightness(0.65);
 }
 
 /* desc-para-quien: dos columnas sí/no */
-.leccion-descripcion .desc-para-quien {
+:is(.leccion-descripcion, .intro-desc) .desc-para-quien {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.55rem;
   margin: 0.65rem 0;
 }
-.leccion-descripcion .desc-si {
+:is(.leccion-descripcion, .intro-desc) .desc-si {
   background: color-mix(in srgb, var(--curso-color, var(--color-primary)) 20%, white);
   border: 1px solid color-mix(in srgb, var(--curso-color, var(--color-primary)) 30%, white);
   border-radius: var(--radius-sm);
   padding: 0.75rem 0.9rem;
 }
-.leccion-descripcion .desc-no {
+:is(.leccion-descripcion, .intro-desc) .desc-no {
   background: #f7f7f7;
   border: 1px solid #e4e4e4;
   border-radius: var(--radius-sm);
   padding: 0.75rem 0.9rem;
 }
-.leccion-descripcion .desc-si h3,
-.leccion-descripcion .desc-no h3 {
+:is(.leccion-descripcion, .intro-desc) .desc-si h3,
+:is(.leccion-descripcion, .intro-desc) .desc-no h3 {
   font-size: 0.7rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -760,15 +855,15 @@
   padding: 0;
   border: none;
 }
-.leccion-descripcion .desc-si h3 { color: rgba(0,0,0,0.45); }
-.leccion-descripcion .desc-no h3 { color: rgba(0,0,0,0.4); }
-.leccion-descripcion .desc-si ul,
-.leccion-descripcion .desc-no ul {
+:is(.leccion-descripcion, .intro-desc) .desc-si h3 { color: rgba(0,0,0,0.45); }
+:is(.leccion-descripcion, .intro-desc) .desc-no h3 { color: rgba(0,0,0,0.4); }
+:is(.leccion-descripcion, .intro-desc) .desc-si ul,
+:is(.leccion-descripcion, .intro-desc) .desc-no ul {
   margin: 0; padding: 0; list-style: none;
   display: flex; flex-direction: column; gap: 0.3rem;
 }
-.leccion-descripcion .desc-si li,
-.leccion-descripcion .desc-no li {
+:is(.leccion-descripcion, .intro-desc) .desc-si li,
+:is(.leccion-descripcion, .intro-desc) .desc-no li {
   font-size: 0.82rem;
   line-height: 1.4;
   padding-left: 1.1rem;
@@ -777,7 +872,7 @@
   margin: 0;
   color: var(--color-text);
 }
-.leccion-descripcion .desc-si li::before {
+:is(.leccion-descripcion, .intro-desc) .desc-si li::before {
   content: '';
   position: absolute;
   left: 0;
@@ -788,7 +883,7 @@
   background: var(--curso-color, var(--color-primary));
   filter: brightness(0.75);
 }
-.leccion-descripcion .desc-no li::before {
+:is(.leccion-descripcion, .intro-desc) .desc-no li::before {
   content: '';
   position: absolute;
   left: 0;
@@ -1526,6 +1621,27 @@
   white-space: nowrap;
 }
 
+/* Tema bloqueado en la lista de la intro */
+.intro-tema-item.bloqueado .intro-tema-icono {
+  background: #fff2dc;
+  color: #b56b1f;
+}
+.intro-tema-item.bloqueado .intro-tema-titulo {
+  color: #b56b1f;
+}
+.intro-tema-lock {
+  color: #b56b1f !important;
+  font-weight: 600;
+}
+.intro-tema-lock-pill {
+  background: #fff3e8;
+  color: #b56b1f !important;
+  font-weight: 700;
+  padding: 0.18rem 0.65rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+}
+
 /* ════════════════════════════════════════════
    RESPONSIVE PANTALLA GRANDE (≥ 1025 px)
    ════════════════════════════════════════════ */
@@ -1586,11 +1702,17 @@
     overflow-y: visible;
   }
 
-  .intro-layout { flex-direction: column; height: auto; }
-  .intro-col-izq { flex: none; max-width: 100%; width: 100%; height: auto; border-right: none; border-bottom: 1px solid #ebebeb; padding: 0; }
-  .intro-col-content { padding: 1.25rem; }
-  .intro-col-der { height: auto; padding: 1.25rem; }
+  .intro-layout { flex-direction: column; height: auto; min-width: 0; width: 100%; }
+  .intro-col-izq { flex: none; max-width: 100%; width: 100%; height: auto; border-right: none; border-bottom: 1px solid #ebebeb; padding: 0; min-width: 0; }
+  .intro-col-content { padding: 1.25rem; min-width: 0; }
+  .intro-col-der { height: auto; padding: 1.25rem; width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; }
   .intro-curso-titulo { font-size: 1.15rem; }
+  /* Garantiza que ningún tema mida más que su columna en móvil:
+     intro-tema-info ya tiene min-width: 0 — añadimos el mismo a la
+     fila y al desc/título para que el text-overflow: ellipsis active
+     correctamente y no haya desbordamientos horizontales. */
+  .intro-tema-item { min-width: 0; max-width: 100%; box-sizing: border-box; }
+  .intro-tema-titulo, .intro-tema-desc { max-width: 100%; }
 
   /* En móvil: detalle-top se convierte en barra de navegación */
   .detalle-top {
@@ -1628,4 +1750,98 @@
   }
 
   .tema-btn { min-height: 44px; }
+}
+
+/* ─── Tema bloqueado ───────────────────────────────────────── */
+.panel-tema-bloqueado {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+}
+.lock-card {
+  background: linear-gradient(180deg, #fffaf3 0%, #fff 100%);
+  border: 1.5px solid #f3d6a8;
+  border-radius: 18px;
+  padding: 2.25rem 2rem;
+  text-align: center;
+  max-width: 520px;
+  width: 100%;
+  box-shadow: 0 2px 14px rgba(180, 110, 30, 0.06);
+}
+.lock-icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 76px; height: 76px;
+  border-radius: 50%;
+  background: #fff2dc;
+  color: #b56b1f;
+  margin: 0 auto 1rem;
+}
+.lock-titulo {
+  margin: 0 0 0.35rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #2b2b2b;
+}
+.lock-subtitulo {
+  margin: 0 0 1.25rem;
+  font-size: 0.9rem;
+  color: #8a8a8a;
+}
+.lock-contador {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.6rem;
+  margin: 0 auto 1.25rem;
+  max-width: 380px;
+}
+.lock-bloque {
+  background: #fff;
+  border: 1px solid #f0e4d2;
+  border-radius: 12px;
+  padding: 0.8rem 0.25rem 0.55rem;
+  display: flex; flex-direction: column; align-items: center; gap: 0.15rem;
+}
+.lock-num {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #b56b1f;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.lock-lbl {
+  font-size: 0.7rem;
+  color: #aa9377;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.lock-fecha {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #8a8a8a;
+}
+.lock-fecha span { color: #555; font-weight: 600; }
+
+/* Candado pequeño en la lista de temas (sidebar) */
+.tema-btn.bloqueado .tema-icono {
+  color: #b56b1f;
+}
+.tema-btn.bloqueado .tema-texto {
+  color: #b56b1f;
+}
+.tema-btn .tema-lock-hasta {
+  display: block;
+  font-size: 0.66rem;
+  color: #b56b1f;
+  font-weight: 600;
+  margin-top: 0.1rem;
+}
+
+@media (max-width: 560px) {
+  .lock-num { font-size: 1.4rem; }
+  .lock-bloque { padding: 0.6rem 0.2rem 0.45rem; }
+  .lock-card { padding: 1.5rem 1rem; }
 }

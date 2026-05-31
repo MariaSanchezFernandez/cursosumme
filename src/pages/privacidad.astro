@@ -1,0 +1,160 @@
+---
+/**
+ * PÁGINA: /privacidad
+ * -------------------
+ * Política de privacidad (RGPD + LOPDGDD). Detalla qué datos
+ * personales se tratan, con qué finalidad, en qué base legal, a quién
+ * se ceden y cómo ejercer los derechos.
+ *
+ * Datos del responsable marcados como [PENDIENTE] hasta recibirlos.
+ */
+import Plantilla from '../layouts/Plantilla.astro';
+import CabeceraPublica from '../components/CabeceraPublica.astro';
+import PiePagina from '../components/PiePagina.astro';
+import '../styles/global.css';
+
+const actualizado = '30 de mayo de 2026';
+---
+
+<Plantilla titulo="Política de privacidad — Cursos Umme">
+  <CabeceraPublica activa="inicio" />
+
+  <main class="legal-pagina">
+    <article class="legal-inner">
+      <header class="legal-cabecera">
+        <p class="legal-eyebrow">Información legal</p>
+        <h1>Política de privacidad</h1>
+        <p class="legal-fecha">Última actualización: {actualizado}</p>
+      </header>
+
+      <section>
+        <h2>1. Responsable del tratamiento</h2>
+        <ul class="legal-lista-datos">
+          <li><strong>Titular:</strong> Emilio José Piote Bueno (trabajador autónomo)</li>
+          <li><strong>NIF:</strong> 26246974H</li>
+          <li><strong>Domicilio:</strong> Calle Cervantes nº 4, 1ºA · 23213 Santa Elena, Jaén</li>
+          <li><strong>Email de contacto:</strong> <a href="mailto:info@cursosumme.es">info@cursosumme.es</a></li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>2. Datos que tratamos</h2>
+        <p>Tratamos únicamente los datos que tú nos facilitas al comprar un curso y al usar tu cuenta:</p>
+        <ul>
+          <li><strong>Datos de identificación y contacto:</strong> nombre, apellidos, email.</li>
+          <li><strong>Datos de facturación:</strong> los necesarios para emitir tu factura conforme a la normativa fiscal.</li>
+          <li><strong>Datos de uso:</strong> progreso en los cursos, materiales descargados, fecha de último acceso, dispositivos conectados (máximo 3 por cuenta).</li>
+          <li><strong>Datos técnicos:</strong> dirección IP y registros de inicio de sesión para fines de seguridad.</li>
+        </ul>
+        <p>
+          <strong>No tratamos datos de tarjeta bancaria:</strong> los pagos se procesan
+          íntegramente por <a href="https://stripe.com/es/privacy" target="_blank" rel="noopener noreferrer">Stripe</a>;
+          nosotros solo recibimos la confirmación del pago.
+        </p>
+      </section>
+
+      <section>
+        <h2>3. Finalidades y base jurídica</h2>
+        <div class="legal-tabla-wrap">
+        <table class="legal-tabla">
+          <thead>
+            <tr><th>Finalidad</th><th>Base legal</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Tramitar tu compra y darte acceso al curso adquirido.</td><td>Ejecución del contrato (art. 6.1.b RGPD).</td></tr>
+            <tr><td>Emitir factura y conservar los datos fiscales.</td><td>Obligación legal (art. 6.1.c RGPD — normativa fiscal).</td></tr>
+            <tr><td>Enviarte tus credenciales de acceso y comunicaciones operativas (incidencias, soporte).</td><td>Ejecución del contrato.</td></tr>
+            <tr><td>Prevenir fraudes, abusos y proteger la seguridad de la plataforma.</td><td>Interés legítimo (art. 6.1.f RGPD).</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>
+          <strong>No usamos tus datos para enviarte newsletter</strong> ni para fines
+          comerciales: solo te escribiremos por temas operativos relacionados con tu cuenta o compra.
+        </p>
+      </section>
+
+      <section>
+        <h2>4. Destinatarios y encargados del tratamiento</h2>
+        <p>
+          Para prestarte el servicio, ciertos datos se comunican a proveedores que
+          actúan como encargados del tratamiento bajo contrato y solo en lo
+          estrictamente necesario:
+        </p>
+        <ul>
+          <li>
+            <strong>Stripe Payments Europe Ltd.</strong> (Irlanda) — procesamiento de pagos.
+            <a href="https://stripe.com/es/privacy" target="_blank" rel="noopener noreferrer">Política de Stripe</a>.
+          </li>
+          <li>
+            <strong>1&amp;1 IONOS SE</strong> (Alemania) — alojamiento web y servidor de correo SMTP.
+            <a href="https://www.ionos.es/terms-gtc/terms-privacy/" target="_blank" rel="noopener noreferrer">Política de IONOS</a>.
+          </li>
+          <li>
+            <strong>VdoCipher Media Solutions Pvt. Ltd.</strong> (India) — alojamiento y reproducción cifrada de vídeos.
+            <a href="https://www.vdocipher.com/blog/privacy-policy/" target="_blank" rel="noopener noreferrer">Política de VdoCipher</a>.
+          </li>
+        </ul>
+        <p>
+          Algunos proveedores se encuentran fuera del Espacio Económico Europeo;
+          en esos casos las transferencias se amparan en las Cláusulas Contractuales
+          Tipo aprobadas por la Comisión Europea o equivalentes.
+        </p>
+        <p>
+          <strong>No vendemos, alquilamos ni cedemos tus datos a terceros</strong> con
+          fines comerciales.
+        </p>
+      </section>
+
+      <section>
+        <h2>5. Plazo de conservación</h2>
+        <ul>
+          <li>Tus datos de cuenta y de uso, mientras tengas acceso activo al curso.</li>
+          <li>Las facturas y datos asociados a las compras, durante los plazos exigidos por la normativa fiscal y mercantil (6 años).</li>
+          <li>Los registros de seguridad (IPs, logins), un máximo de 12 meses salvo que sean necesarios para investigar un incidente.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>6. Tus derechos</h2>
+        <p>
+          Puedes ejercer en cualquier momento los siguientes derechos enviando un email a
+          <a href="mailto:info@cursosumme.es">info@cursosumme.es</a> indicando el derecho que ejerces y adjuntando, si es necesario, un documento que acredite tu identidad:
+        </p>
+        <ul>
+          <li><strong>Acceso:</strong> saber qué datos tuyos tratamos.</li>
+          <li><strong>Rectificación:</strong> corregir datos inexactos.</li>
+          <li><strong>Supresión:</strong> pedir que eliminemos tus datos cuando ya no sean necesarios.</li>
+          <li><strong>Limitación:</strong> restringir el tratamiento en determinados casos.</li>
+          <li><strong>Portabilidad:</strong> recibir tus datos en un formato estructurado.</li>
+          <li><strong>Oposición:</strong> oponerte al tratamiento por motivos personales.</li>
+        </ul>
+        <p>
+          Si consideras que no hemos atendido correctamente tu solicitud, puedes
+          presentar una reclamación ante la Agencia Española de Protección de Datos
+          (<a href="https://www.aepd.es" target="_blank" rel="noopener noreferrer">www.aepd.es</a>).
+        </p>
+      </section>
+
+      <section>
+        <h2>7. Seguridad</h2>
+        <p>
+          Aplicamos medidas técnicas y organizativas para proteger tus datos:
+          conexiones cifradas, contraseñas almacenadas con bcrypt, vídeos
+          protegidos con DRM (Widevine y FairPlay) y registros de acceso para
+          detectar usos no autorizados.
+        </p>
+      </section>
+
+      <section>
+        <h2>8. Cambios en esta política</h2>
+        <p>
+          Si actualizamos esta política, publicaremos la nueva versión en esta
+          misma URL y modificaremos la fecha de "Última actualización".
+        </p>
+      </section>
+    </article>
+  </main>
+
+  <PiePagina />
+</Plantilla>

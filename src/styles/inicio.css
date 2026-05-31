@@ -1,15 +1,35 @@
+/* main ocupa SIEMPRE al menos el alto del viewport disponible bajo la
+   cabecera (56px). Así, en el panel intro de un curso, el footer
+   marketing nunca aparece "a mitad" de la zona de lectura cuando la
+   columna izquierda (descripción) es más corta que la derecha (lista
+   de bloques) — el footer queda por debajo del fold y solo se ve si
+   el usuario scrollea hasta el final del contenido. */
 .main {
-  min-height: calc(100vh - 56px - 56px);
+  min-height: calc(100vh - 56px);
   background: #f4f7f6;
+  /* Defensa anti-overflow horizontal: si algún hijo (header, lista de
+     temas, tarjeta…) se sale del viewport en móvil, evitamos que la
+     página entera gane scroll lateral y los items aparezcan cortados
+     o desplazados a la derecha. Contiene el escape pero la causa real
+     (ej. botones con texto largo en cabecera) se ve cortada en su
+     elemento, no arrastra al resto. */
+  overflow-x: clip;
 }
 
 /* ── Layout de dos columnas ── */
 .vista {
   display: flex;
+  /* Garantiza que la vista herede la altura mínima de main para que las
+     dos columnas (lista + detalle) crezcan a la misma altura cuando una
+     sea más corta que la otra: evita el escalón visual que dejaba ver
+     el footer por debajo del lado más corto. */
+  min-height: calc(100vh - 56px);
 }
 
 body.detalle-abierto .main {
-  height: calc(100vh - 56px - 56px);
+  /* En modo "viendo un tema" main es altura fija (sin scroll de página)
+     para que el reproductor de vídeo quede anclado al viewport. */
+  height: calc(100vh - 56px);
   overflow: hidden;
 }
 
@@ -115,24 +135,27 @@ body.detalle-abierto .vista {
   gap: 0;
 }
 
-/* ── Skeleton de tarjeta de curso (durante carga) ── */
+/* ── Skeleton de tarjeta de curso (durante carga) ──
+   Réplica visual de .curso (TarjetaCurso.css): imagen FULL-WIDTH
+   arriba con aspect-ratio 21/9, debajo padding + líneas de texto.
+   Así, al sustituir el skeleton por la tarjeta real no hay salto
+   de layout. */
 .curso-skel {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1.2rem 1rem;
   background: #fff;
   border-radius: 8px;
+  border: 1px solid #e8e8e8;
+  overflow: hidden;
   margin-bottom: 0.5rem;
-  border: 1px solid #ebebeb;
+  display: flex;
+  flex-direction: column;
 }
 .curso-skel-img {
-  flex-shrink: 0;
-  width: 110px;
+  width: 100%;
   aspect-ratio: 21 / 9;
+  border-radius: 0;
 }
 .curso-skel-info {
-  flex: 1 1 auto;
+  padding: 1rem 1rem 0.85rem;
   display: flex;
   flex-direction: column;
   gap: 0.4rem;

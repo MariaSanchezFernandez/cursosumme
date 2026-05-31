@@ -12,6 +12,12 @@ import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
         style="border:1px solid var(--color-borde); border-radius:6px; padding:0.35rem 0.7rem; font-size:0.82rem; width:200px; outline:none;">
     </div>
     <div style="display:flex; gap:0.5rem;">
+      <button id="btn-comprimir-imgs" class="btn-admin" title="Reduce el peso de las portadas ya subidas">
+        <svg viewBox="0 0 16 16" fill="none">
+          <path d="M2 8l3-3M2 8l3 3M2 8h5M14 8l-3-3M14 8l-3 3M14 8H9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Optimizar portadas
+      </button>
       <button id="btn-nuevo-pack" class="btn-admin">
         <svg viewBox="0 0 16 16" fill="none">
           <rect x="1" y="3" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.4"/>
@@ -295,6 +301,39 @@ import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
 
 <script>
 import { formatearDuracion } from '../../utils/duracion.ts';
+
+// ── Optimizar portadas ya subidas ──────────────────────────
+// Llama una vez a /api/comprimir-imagenes.php y muestra un resumen
+// con KB ahorrados. Es idempotente, se puede pulsar varias veces.
+document.getElementById('btn-comprimir-imgs')!.addEventListener('click', async (e) => {
+  const btn = e.currentTarget as HTMLButtonElement;
+  const ok = await window.confirmar({
+    titulo: 'Optimizar portadas',
+    mensaje: 'Voy a redimensionar y reencodear todas las portadas a WebP. Las imágenes ya optimizadas se saltan. ¿Continuar?',
+    textoConfirmar: 'Optimizar',
+  });
+  if (!ok) return;
+  await window.botonCargando(btn, 'Optimizando…', async () => {
+    try {
+      const res  = await fetch('/api/comprimir-imagenes.php', { method: 'POST' });
+      const data = await res.json();
+      if (!data.ok) {
+        window.mostrarToast(data.mensaje || 'Error al optimizar', 'error');
+        (window as any).logAppError?.('comprimir_imagenes', 'Servidor rechazó optimizar', { detalle: data.mensaje });
+        return;
+      }
+      const msg = `Procesadas ${data.optimizadas} de ${data.revisadas} portadas. Ahorrados ${data.kb_ahorrados} KB (${data.kb_antes} → ${data.kb_despues} KB).`;
+      window.mostrarToast(msg, 'ok');
+      if (data.optimizadas > 0) {
+        // Las URLs cambiaron de .jpg/.png a .webp — recargamos para que se vean
+        setTimeout(() => window.location.reload(), 1500);
+      }
+    } catch (err: any) {
+      window.mostrarToast('Error de red al optimizar', 'error');
+      (window as any).logAppError?.('comprimir_imagenes', 'Error de red optimizando', { detalle: err?.message, stack: err?.stack });
+    }
+  });
+});
 
 const PALETA = ['#b5d8cc','#b5c8e8','#d4c8e8','#e8d4b5','#e8c8b5','#c8e8b5'];
 const PALETA_COLORES = ['#b5d8cc','#b5c8e8','#d4c8e8','#e8d4b5','#e8c8b5','#c8e8b5','#f5b5c0','#c0d4f5'];

@@ -57,10 +57,14 @@ if (empty($cursos)) {
 $cursoIds = array_column($cursos, 'id');
 $placeholders = implode(',', array_fill(0, count($cursoIds), '?'));
 
+// Asegurar columna por si el alumno entra antes que el admin (la
+// auto-migración vive en temas.php GET, que el alumno no llama).
+try { $pdo->exec('ALTER TABLE temas ADD COLUMN IF NOT EXISTS bloqueado_hasta DATETIME DEFAULT NULL'); } catch (PDOException $e) {}
+
 // Temas de los cursos del alumno. duracion_seg sale de la suma de
 // duraciones reales de los vídeos (materiales.duracion_seg) — fuente única.
 $stmtTemas = $pdo->prepare(
-    "SELECT t.id, t.curso_id, t.titulo, t.descripcion, t.orden,
+    "SELECT t.id, t.curso_id, t.titulo, t.descripcion, t.orden, t.bloqueado_hasta,
             COALESCE(SUM(m.duracion_seg), 0) AS duracion_seg
      FROM temas t
      LEFT JOIN materiales m ON m.tema_id = t.id
@@ -97,10 +101,23 @@ foreach ($materialesRows as $m) {
     $matPorTema[$m['tema_id']][] = $m;
 }
 
-// Agrupar temas por curso
+// Agrupar temas por curso.
+// Si el tema está bloqueado (bloqueado_hasta > NOW()) NO incluimos los
+// materiales en la respuesta: el cliente solo recibe el contador y nunca
+// llega a conocer los IDs que podría intentar pedir a video.php/OTP.
+$ahora = time();
 $temasPorCurso = [];
 foreach ($temasRows as $t) {
-    $t['materiales'] = $matPorTema[$t['id']] ?? [];
+    $bh = $t['bloqueado_hasta'] ?? null;
+    $bloqueado = $bh && strtotime($bh) > $ahora;
+    if ($bloqueado) {
+        $t['materiales'] = [];
+        // Conservamos duracion_seg para que la UI siga pudiendo mostrarla
+        // si lo desea, pero el contenido real no viaja.
+    } else {
+        $t['materiales']     = $matPorTema[$t['id']] ?? [];
+        $t['bloqueado_hasta'] = null;
+    }
     $temasPorCurso[$t['curso_id']][] = $t;
 }
 

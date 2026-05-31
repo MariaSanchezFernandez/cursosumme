@@ -1,0 +1,133 @@
+---
+/**
+ * PÁGINA: /cookies
+ * ----------------
+ * Política de cookies. CursosUmme solo emplea almacenamiento técnico
+ * estrictamente necesario (sessionStorage / localStorage de sesión),
+ * no usa analítica, publicidad ni cookies de terceros con fines de
+ * marketing — por eso no se muestra banner de consentimiento.
+ */
+import Plantilla from '../layouts/Plantilla.astro';
+import CabeceraPublica from '../components/CabeceraPublica.astro';
+import PiePagina from '../components/PiePagina.astro';
+import '../styles/global.css';
+
+const actualizado = '30 de mayo de 2026';
+---
+
+<Plantilla titulo="Política de cookies — Cursos Umme">
+  <CabeceraPublica activa="inicio" />
+
+  <main class="legal-pagina">
+    <article class="legal-inner">
+      <header class="legal-cabecera">
+        <p class="legal-eyebrow">Información legal</p>
+        <h1>Política de cookies</h1>
+        <p class="legal-fecha">Última actualización: {actualizado}</p>
+      </header>
+
+      <section>
+        <h2>1. ¿Qué son las cookies y el almacenamiento del navegador?</h2>
+        <p>
+          Las cookies son pequeños archivos que un sitio web guarda en tu
+          dispositivo cuando lo visitas. Tecnologías similares como
+          <em>localStorage</em> y <em>sessionStorage</em> permiten al navegador
+          almacenar información de forma local. Algunas son imprescindibles
+          para que la web funcione; otras se usan para analítica o publicidad.
+        </p>
+      </section>
+
+      <section>
+        <h2>2. Qué utilizamos en Cursos Umme</h2>
+        <p>
+          Cursos Umme <strong>no utiliza cookies de analítica, publicidad ni
+          rastreo</strong>. Solo empleamos almacenamiento técnico estrictamente
+          necesario para que puedas usar tu cuenta:
+        </p>
+        <div class="legal-tabla-wrap">
+        <table class="legal-tabla">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Tipo</th>
+              <th>Finalidad</th>
+              <th>Duración</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>umme_session</code></td>
+              <td>sessionStorage (técnica propia)</td>
+              <td>Mantener tu sesión iniciada mientras navegas por el área privada.</td>
+              <td>Hasta cerrar la pestaña.</td>
+            </tr>
+            <tr>
+              <td><code>umme_session</code></td>
+              <td>localStorage (técnica propia, solo si activas "Recordarme")</td>
+              <td>Recordar tu sesión entre visitas si marcas la casilla "Recordarme en este dispositivo".</td>
+              <td>15 días.</td>
+            </tr>
+            <tr>
+              <td>Cookies de Stripe</td>
+              <td>De terceros — solo durante el pago</td>
+              <td>Procesar el pago de forma segura y prevenir fraude. Las gestiona directamente Stripe en su propio dominio.</td>
+              <td>Las define Stripe (ver <a href="https://stripe.com/es/cookies-policy/legal" target="_blank" rel="noopener noreferrer">su política</a>).</td>
+            </tr>
+            <tr>
+              <td>Cookies del reproductor de vídeo</td>
+              <td>De terceros — solo al reproducir un vídeo</td>
+              <td>Permitir la reproducción cifrada (DRM) y proteger los vídeos contra copia. Las gestiona <a href="https://www.vdocipher.com/blog/privacy-policy/" target="_blank" rel="noopener noreferrer">VdoCipher</a>.</td>
+              <td>Las define VdoCipher.</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <section>
+        <h2>3. ¿Por qué no hay banner de consentimiento?</h2>
+        <p>
+          Conforme al artículo 22.2 de la LSSI-CE y la Guía sobre el uso de las
+          cookies de la AEPD, las cookies <strong>estrictamente necesarias</strong>
+          para prestar un servicio expresamente solicitado por el usuario
+          (mantener la sesión, procesar un pago, reproducir un vídeo que el
+          alumno ha decidido ver) <strong>no requieren consentimiento previo</strong>.
+        </p>
+        <p>
+          Si en el futuro incorporáramos cookies de analítica o marketing,
+          implementaríamos un banner de consentimiento con opciones de
+          "Aceptar" y "Rechazar" al mismo nivel, conforme a la normativa.
+        </p>
+      </section>
+
+      <section>
+        <h2>4. Cómo controlar las cookies desde tu navegador</h2>
+        <p>
+          Puedes borrar o bloquear las cookies y el almacenamiento local desde
+          la configuración de tu navegador:
+        </p>
+        <ul>
+          <li><a href="https://support.google.com/chrome/answer/95647" target="_blank" rel="noopener noreferrer">Google Chrome</a></li>
+          <li><a href="https://support.mozilla.org/es/kb/Borrar%20cookies" target="_blank" rel="noopener noreferrer">Mozilla Firefox</a></li>
+          <li><a href="https://support.apple.com/es-es/guide/safari/sfri11471/mac" target="_blank" rel="noopener noreferrer">Apple Safari</a></li>
+          <li><a href="https://support.microsoft.com/es-es/microsoft-edge/eliminar-las-cookies-en-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09" target="_blank" rel="noopener noreferrer">Microsoft Edge</a></li>
+        </ul>
+        <p>
+          Ten en cuenta que si bloqueas el almacenamiento técnico, no podrás
+          mantener la sesión iniciada y la plataforma no funcionará correctamente.
+        </p>
+      </section>
+
+      <section>
+        <h2>5. Cambios en esta política</h2>
+        <p>
+          Si modificamos las cookies que utilizamos, actualizaremos esta página
+          y cambiaremos la fecha de "Última actualización". Si los cambios afectan
+          a cookies no esenciales, te lo comunicaremos también mediante un banner.
+        </p>
+      </section>
+    </article>
+  </main>
+
+  <PiePagina />
+</Plantilla>

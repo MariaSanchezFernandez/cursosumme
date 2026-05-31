@@ -1,0 +1,187 @@
+---
+/**
+ * PÁGINA: /condiciones
+ * --------------------
+ * Condiciones Generales de Contratación (CGC) para la venta de cursos
+ * online. Incluye la cláusula de pérdida del derecho de desistimiento
+ * en contenido digital una vez que el alumno accede al curso, conforme
+ * al art. 103.m del TRLGDCU.
+ */
+import Plantilla from '../layouts/Plantilla.astro';
+import CabeceraPublica from '../components/CabeceraPublica.astro';
+import PiePagina from '../components/PiePagina.astro';
+import '../styles/global.css';
+
+const actualizado = '30 de mayo de 2026';
+---
+
+<Plantilla titulo="Condiciones de compra — Cursos Umme">
+  <CabeceraPublica activa="inicio" />
+
+  <main class="legal-pagina">
+    <article class="legal-inner">
+      <header class="legal-cabecera">
+        <p class="legal-eyebrow">Información legal</p>
+        <h1>Condiciones de compra</h1>
+        <p class="legal-fecha">Última actualización: {actualizado}</p>
+      </header>
+
+      <section>
+        <h2>1. Identificación del vendedor</h2>
+        <ul class="legal-lista-datos">
+          <li><strong>Titular:</strong> Emilio José Piote Bueno (trabajador autónomo)</li>
+          <li><strong>NIF:</strong> 26246974H</li>
+          <li><strong>Domicilio:</strong> Calle Cervantes nº 4, 1ºA · 23213 Santa Elena, Jaén (España)</li>
+          <li><strong>Email:</strong> <a href="mailto:info@cursosumme.es">info@cursosumme.es</a></li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>2. Objeto y aceptación</h2>
+        <p>
+          Las presentes Condiciones Generales de Contratación regulan la
+          adquisición de los cursos online ofrecidos en
+          <a href="https://cursosumme.es">cursosumme.es</a>. Al completar el
+          proceso de compra, el usuario declara haber leído y aceptado
+          íntegramente estas condiciones, así como el
+          <a href="/aviso-legal">aviso legal</a> y la
+          <a href="/privacidad">política de privacidad</a> del sitio.
+        </p>
+      </section>
+
+      <section>
+        <h2>3. Productos y precios</h2>
+        <p>
+          Los productos ofrecidos son cursos en formato digital que incluyen
+          vídeos, apuntes y materiales descargables. La descripción y el
+          contenido concreto de cada curso están disponibles en su ficha
+          dentro del catálogo.
+        </p>
+        <p>
+          <strong>Los precios mostrados están expresados en euros (€) y ya
+          incluyen los impuestos aplicables (IVA).</strong> No se aplican
+          gastos de envío puesto que el producto es íntegramente digital.
+        </p>
+        <p>
+          El titular se reserva el derecho a modificar los precios en
+          cualquier momento; los cambios se aplicarán únicamente a las
+          compras posteriores a su publicación.
+        </p>
+      </section>
+
+      <section>
+        <h2>4. Proceso de compra</h2>
+        <ol>
+          <li>El usuario elige el curso o pack y pulsa "Comprar".</li>
+          <li>Se le redirige a la pasarela segura de pago de Stripe, donde introduce los datos de su tarjeta.</li>
+          <li>Una vez confirmado el pago, recibe un correo electrónico con su usuario y contraseña para acceder a la plataforma.</li>
+          <li>El acceso al curso se activa de forma <strong>inmediata</strong> tras la confirmación del pago.</li>
+        </ol>
+      </section>
+
+      <section>
+        <h2>5. Forma de pago</h2>
+        <p>
+          El pago se realiza mediante tarjeta bancaria (crédito o débito)
+          a través de la pasarela de pago de Stripe Payments Europe Ltd.,
+          que cumple con los estándares de seguridad PCI-DSS.
+          <strong>Cursos Umme no almacena en ningún momento los datos
+          bancarios del usuario.</strong>
+        </p>
+      </section>
+
+      <section>
+        <h2>6. Facturación</h2>
+        <p>
+          Tras la compra, el usuario podrá solicitar la factura
+          correspondiente escribiendo a
+          <a href="mailto:info@cursosumme.es">info@cursosumme.es</a>
+          indicando los datos fiscales necesarios.
+        </p>
+      </section>
+
+      <section>
+        <h2>7. Entrega y acceso al servicio</h2>
+        <p>
+          Al tratarse de contenido digital, no hay envío físico. El acceso
+          al curso adquirido se otorga de forma inmediata tras confirmarse
+          el pago, mediante el envío al correo electrónico facilitado por
+          el usuario de las credenciales de acceso a la plataforma.
+        </p>
+        <p>
+          El usuario es responsable de la custodia de sus credenciales y
+          se compromete a no compartirlas con terceros. El acceso simultáneo
+          desde un máximo de 3 dispositivos está permitido para uso personal
+          exclusivo del alumno.
+        </p>
+      </section>
+
+      <section>
+        <h2>8. Derecho de desistimiento</h2>
+        <p>
+          Conforme al <strong>artículo 103.m del Real Decreto Legislativo
+          1/2007</strong> (Ley General para la Defensa de los Consumidores
+          y Usuarios), el derecho de desistimiento <strong>no será
+          aplicable</strong> a los contratos relativos al suministro de
+          contenido digital no suministrado en soporte material cuando la
+          ejecución haya comenzado con el previo consentimiento expreso del
+          consumidor y con el conocimiento de que en consecuencia pierde su
+          derecho de desistimiento.
+        </p>
+        <p>
+          Al adquirir un curso en Cursos Umme:
+        </p>
+        <ul>
+          <li>El usuario reconoce que el curso es contenido digital que se le entrega y al que accede de forma <strong>inmediata</strong> tras la confirmación del pago.</li>
+          <li>El usuario presta su <strong>consentimiento expreso</strong> a que la prestación comience de inmediato.</li>
+          <li>En consecuencia, el usuario <strong>renuncia expresamente al derecho de desistimiento</strong> y a la posibilidad de solicitar reembolso una vez efectuada la compra.</li>
+        </ul>
+        <p>
+          Si por causas técnicas imputables al titular del sitio no fuera
+          posible el acceso al curso adquirido en un plazo razonable, el
+          usuario tendrá derecho al reembolso íntegro de su compra.
+        </p>
+      </section>
+
+      <section>
+        <h2>9. Garantías y atención al cliente</h2>
+        <p>
+          El titular garantiza que los cursos ofrecidos se ajustan a la
+          descripción publicada en su ficha. Para cualquier incidencia
+          técnica, consulta o reclamación, el usuario puede contactar a
+          través de <a href="mailto:info@cursosumme.es">info@cursosumme.es</a>
+          o del <a href="/contacto">formulario de contacto</a>. Las
+          consultas serán atendidas en un plazo razonable.
+        </p>
+      </section>
+
+      <section>
+        <h2>10. Resolución de litigios</h2>
+        <p>
+          El usuario, en su condición de consumidor, puede acudir a la
+          plataforma europea de resolución de litigios en línea para
+          intentar resolver cualquier controversia derivada de una compra:
+          <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener noreferrer">https://ec.europa.eu/consumers/odr</a>.
+        </p>
+        <p>
+          Sin perjuicio de lo anterior, las presentes condiciones se rigen
+          por la legislación española y cualquier controversia se someterá
+          a los juzgados y tribunales del domicilio del consumidor, conforme
+          a la normativa de protección al consumidor.
+        </p>
+      </section>
+
+      <section>
+        <h2>11. Modificación de las condiciones</h2>
+        <p>
+          El titular se reserva el derecho a modificar estas condiciones en
+          cualquier momento. Las modificaciones se publicarán en esta misma
+          URL y se aplicarán únicamente a las compras posteriores a su
+          publicación.
+        </p>
+      </section>
+    </article>
+  </main>
+
+  <PiePagina />
+</Plantilla>

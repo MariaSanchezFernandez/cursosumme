@@ -1,0 +1,548 @@
+---
+/**
+ * PÁGINA: /contacto
+ * -----------------
+ * Formulario público de contacto con la decoración corporativa de
+ * nubes + globo + pájaros (reusando FondoLogin) y un toque de
+ * estrellas brillantes. POSTea a /api/contacto.php que envía el
+ * mensaje al email de la academia (info@cursosumme.es). Lleva
+ * honeypot anti-bot y validación en cliente + servidor.
+ */
+import Plantilla from '../layouts/Plantilla.astro';
+import CabeceraPublica from '../components/CabeceraPublica.astro';
+import PiePagina from '../components/PiePagina.astro';
+import '../styles/global.css';
+---
+
+<Plantilla titulo="Contacto — Cursos Umme">
+  <CabeceraPublica activa="contacto" />
+
+  <main class="contacto-pagina">
+    <div class="contacto-inner">
+
+      {/* Estrellas decorativas flotando alrededor del hero, repartidas
+          en 6 posiciones distintas con desfase de animación para que
+          cada una parpadee a su ritmo. */}
+      <svg class="estrella estrella-1" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 2l2.39 7.36H22l-6.18 4.49L18.21 22 12 17.5 5.79 22l2.39-8.15L2 9.36h7.61z"/>
+      </svg>
+      <svg class="estrella estrella-2" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 2l2.39 7.36H22l-6.18 4.49L18.21 22 12 17.5 5.79 22l2.39-8.15L2 9.36h7.61z"/>
+      </svg>
+      <svg class="estrella estrella-3" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 2l2.39 7.36H22l-6.18 4.49L18.21 22 12 17.5 5.79 22l2.39-8.15L2 9.36h7.61z"/>
+      </svg>
+      <svg class="estrella estrella-4" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 2l2.39 7.36H22l-6.18 4.49L18.21 22 12 17.5 5.79 22l2.39-8.15L2 9.36h7.61z"/>
+      </svg>
+      <svg class="estrella estrella-5" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 2l2.39 7.36H22l-6.18 4.49L18.21 22 12 17.5 5.79 22l2.39-8.15L2 9.36h7.61z"/>
+      </svg>
+      <svg class="estrella estrella-6" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 2l2.39 7.36H22l-6.18 4.49L18.21 22 12 17.5 5.79 22l2.39-8.15L2 9.36h7.61z"/>
+      </svg>
+
+      <header class="contacto-cabecera">
+        <span class="contacto-badge">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14" aria-hidden="true">
+            <path d="M12 2l2.39 7.36H22l-6.18 4.49L18.21 22 12 17.5 5.79 22l2.39-8.15L2 9.36h7.61z"/>
+          </svg>
+          Estamos a tu disposición
+        </span>
+        <h1>Cuéntanos cómo podemos <span class="contacto-h1-acento">ayudarte</span></h1>
+        <p class="contacto-sub">
+          Si tienes alguna duda sobre los cursos, sobre tu cuenta o sobre el
+          proceso de compra, escríbenos. Te responderemos lo antes posible.
+        </p>
+      </header>
+
+      <div class="contacto-grid">
+
+        <form id="form-contacto" class="contacto-form" novalidate>
+          <div class="contacto-campos">
+            <div class="contacto-campo">
+              <label for="contacto-nombre">Nombre *</label>
+              <input id="contacto-nombre" name="nombre" type="text" required maxlength="120" autocomplete="name" placeholder="Tu nombre" />
+            </div>
+
+            <div class="contacto-campo">
+              <label for="contacto-email">Email *</label>
+              <input id="contacto-email" name="email" type="email" required maxlength="180" autocomplete="email" placeholder="tucorreo@ejemplo.com" />
+            </div>
+
+            <div class="contacto-campo contacto-campo--full">
+              <label for="contacto-asunto">Asunto</label>
+              <input id="contacto-asunto" name="asunto" type="text" maxlength="160" placeholder="Sobre qué quieres preguntarnos" />
+            </div>
+
+            <div class="contacto-campo contacto-campo--full">
+              <label for="contacto-mensaje">Mensaje *</label>
+              <textarea id="contacto-mensaje" name="mensaje" rows="6" required minlength="10" maxlength="3000" placeholder="Cuéntanos con detalle…"></textarea>
+            </div>
+          </div>
+
+          {/* Honeypot: oculto a usuarios humanos, los bots lo rellenan */}
+          <div class="contacto-hp" aria-hidden="true">
+            <label for="contacto-hp">Si eres humano, deja este campo vacío</label>
+            <input id="contacto-hp" name="hp" type="text" tabindex="-1" autocomplete="off" />
+          </div>
+
+          <p class="contacto-aviso">
+            Al enviar el formulario aceptas nuestra
+            <a href="/privacidad">política de privacidad</a>. Solo usaremos
+            tus datos para responder a tu consulta.
+          </p>
+
+          <p id="contacto-error" class="contacto-error" style="display:none;"></p>
+
+          <button id="contacto-enviar" type="submit" class="cta cta--primary contacto-cta">
+            Enviar mensaje
+          </button>
+        </form>
+
+        <aside class="contacto-info">
+          <h2>Otras vías</h2>
+
+          <div class="contacto-info-item">
+            <div class="contacto-info-icono contacto-info-icono--mail" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+            </div>
+            <h3>Email directo</h3>
+            <p>
+              <a href="mailto:info@cursosumme.es">info@cursosumme.es</a>
+            </p>
+            <p class="contacto-info-nota">Respondemos en horario laboral en un plazo razonable.</p>
+          </div>
+
+          <div class="contacto-info-item">
+            <div class="contacto-info-icono contacto-info-icono--alumna" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+            </div>
+            <h3>¿Ya eres alumna?</h3>
+            <p>
+              Desde tu área privada tienes un canal de soporte directo
+              con prioridad sobre el formulario público.
+            </p>
+            <p>
+              <a href="/login" class="contacto-info-link">Acceder a mi cuenta →</a>
+            </p>
+          </div>
+        </aside>
+
+      </div>
+
+      <div id="contacto-ok" class="contacto-ok" style="display:none;">
+        <div class="contacto-ok-icono" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+        <h2>¡Mensaje enviado!</h2>
+        <p>Hemos recibido tu mensaje. Te responderemos al email indicado en cuanto podamos.</p>
+        <a href="/" class="cta cta--primary">Volver al inicio</a>
+      </div>
+
+    </div>
+  </main>
+
+  <PiePagina />
+</Plantilla>
+
+<style is:global>
+.contacto-pagina {
+  position: relative;
+  padding: 3.5rem 1.5rem 5rem;
+  /* Fondo predominantemente AZUL pastel (paleta corporativa: #b5c8e8)
+     con dos manchas radiales que aportan profundidad sin pesar. Cae
+     a casi blanco en el centro para que el formulario y la info
+     destaquen sobre el azul. */
+  background:
+    radial-gradient(circle at 50% 110%, color-mix(in srgb, #b5c8e8 50%, transparent), transparent 60%),
+    radial-gradient(circle at 50% -10%, color-mix(in srgb, #b5c8e8 35%, transparent), transparent 55%),
+    linear-gradient(180deg, color-mix(in srgb, #b5c8e8 28%, #ffffff) 0%, color-mix(in srgb, #b5c8e8 40%, #ffffff) 100%);
+  overflow: hidden;
+}
+.contacto-inner {
+  position: relative;
+  max-width: 1040px;
+  margin: 0 auto;
+}
+
+/* ── Estrellas decorativas ───────────────────────────────────
+   6 estrellas con tamaños y colores ligeramente distintos. Cada
+   una parpadea con un desfase para que el conjunto se sienta
+   vivo sin distraer. */
+.estrella {
+  position: absolute;
+  pointer-events: none;
+  /* Amarillo cálido y saturado sobre el azul de fondo — contraste
+     fuerte para que las estrellas brillen visualmente. */
+  fill: #FFD84A;
+  filter: drop-shadow(0 3px 8px rgba(255, 200, 50, 0.55));
+  animation: estrellaTwinkle 3.5s ease-in-out infinite;
+  z-index: 0;
+}
+.estrella-1 { width: 42px; top: -16px; left: 8%; animation-delay: 0s; }
+.estrella-2 { width: 28px; top: 36px; right: 14%; animation-delay: 0.7s; fill: #FFF59A; }
+.estrella-3 { width: 34px; top: 180px; left: -10px; animation-delay: 1.4s; }
+.estrella-4 { width: 22px; top: 220px; right: 5%; animation-delay: 2.1s; fill: #FFE066; }
+.estrella-5 { width: 30px; bottom: 80px; left: 6%; animation-delay: 0.3s; fill: #FFEC8B; }
+.estrella-6 { width: 24px; bottom: 140px; right: 9%; animation-delay: 1.8s; }
+@keyframes estrellaTwinkle {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.85; }
+  50%      { transform: scale(1.2) rotate(15deg); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .estrella { animation: none; }
+}
+
+/* ── Cabecera ──────────────────────────────────────────────── */
+.contacto-cabecera {
+  position: relative;
+  z-index: 2;
+  max-width: 720px;
+  margin: 0 auto 3rem;
+  text-align: center;
+}
+.contacto-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #fff;
+  border: 1px solid #FFD84A;
+  color: var(--color-text);
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 1.1rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+.contacto-badge svg { color: #FFC72A; }
+.contacto-cabecera h1 {
+  font-size: clamp(2rem, 4.5vw, 2.8rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0 0 0.9rem;
+  color: var(--color-text);
+}
+.contacto-h1-acento {
+  background: linear-gradient(
+    135deg,
+    var(--color-coral) 0%,
+    color-mix(in srgb, var(--color-coral) 60%, var(--color-primary)) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.contacto-sub {
+  font-size: 1.05rem;
+  line-height: 1.65;
+  color: var(--color-text);
+  margin: 0;
+}
+
+/* ── Grid: formulario + info lateral ─────────────────────── */
+.contacto-grid {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 2rem;
+}
+@media (max-width: 820px) {
+  .contacto-grid { grid-template-columns: 1fr; gap: 1.5rem; }
+}
+
+/* ── Formulario ─────────────────────────────────────────── */
+.contacto-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  background: #ffffff;
+  border-radius: var(--radius-md);
+  padding: 2rem 2rem 2.1rem;
+  border: 1px solid #eef0ef;
+  box-shadow: 0 30px 60px -25px rgba(0, 0, 0, 0.12);
+  /* Borde superior coloreado tipo tarjeta de curso, refuerza la
+     identidad visual sin gritar. */
+  position: relative;
+  overflow: hidden;
+}
+.contacto-form::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--color-coral) 0%,
+    var(--color-primary) 100%
+  );
+}
+.contacto-campos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem 1.1rem;
+}
+@media (max-width: 560px) {
+  .contacto-campos { grid-template-columns: 1fr; }
+}
+.contacto-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.contacto-campo--full { grid-column: 1 / -1; }
+.contacto-campo label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+.contacto-campo input,
+.contacto-campo textarea {
+  background: var(--color-light);
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 0.95rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: var(--color-text);
+  resize: vertical;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+.contacto-campo textarea { min-height: 140px; }
+.contacto-campo input:focus,
+.contacto-campo textarea:focus {
+  outline: none;
+  background: #ffffff;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 22%, transparent);
+}
+.contacto-campo input::placeholder,
+.contacto-campo textarea::placeholder {
+  color: color-mix(in srgb, var(--color-text-muted) 70%, transparent);
+}
+
+/* Honeypot fuera de pantalla y de lectores de pantalla */
+.contacto-hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.contacto-aviso {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  line-height: 1.55;
+  margin: 0;
+}
+.contacto-aviso a {
+  color: var(--color-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.contacto-error {
+  font-size: 0.85rem;
+  color: #c0392b;
+  margin: 0;
+  padding: 0.65rem 0.9rem;
+  background: color-mix(in srgb, var(--color-coral) 22%, #ffffff);
+  border: 1px solid color-mix(in srgb, var(--color-coral) 40%, transparent);
+  border-radius: var(--radius-sm);
+}
+.contacto-cta {
+  align-self: flex-start;
+  margin-top: 0.25rem;
+}
+@media (max-width: 480px) {
+  .contacto-cta { align-self: stretch; width: 100%; justify-content: center; }
+}
+
+/* ── Info lateral ───────────────────────────────────────── */
+.contacto-info {
+  background: #ffffff;
+  border: 1px solid #eef0ef;
+  border-radius: var(--radius-md);
+  padding: 1.85rem 1.85rem 1.5rem;
+  box-shadow: 0 30px 60px -25px rgba(0, 0, 0, 0.08);
+}
+.contacto-info h2 {
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--color-text-muted);
+  margin: 0 0 1.5rem;
+}
+.contacto-info-item {
+  padding: 1rem 0 1.25rem;
+  border-bottom: 1px dashed #eef0ef;
+  margin-bottom: 0.25rem;
+}
+.contacto-info-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+.contacto-info-icono {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.7rem;
+  color: var(--color-text);
+}
+.contacto-info-icono svg { width: 20px; height: 20px; }
+.contacto-info-icono--mail {
+  background: color-mix(in srgb, var(--color-coral) 35%, #ffffff);
+}
+.contacto-info-icono--alumna {
+  background: color-mix(in srgb, var(--color-primary) 45%, #ffffff);
+}
+.contacto-info-item h3 {
+  font-size: 1rem;
+  font-weight: 800;
+  margin: 0 0 0.4rem;
+  letter-spacing: -0.01em;
+}
+.contacto-info-item p {
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--color-text-muted);
+  margin: 0 0 0.35rem;
+}
+.contacto-info-item a {
+  color: var(--color-text);
+  text-decoration: none;
+  border-bottom: 1px solid #cfd9d4;
+  font-weight: 600;
+}
+.contacto-info-item a:hover { border-bottom-color: var(--color-primary); }
+.contacto-info-link {
+  display: inline-block;
+  margin-top: 0.5rem;
+  border-bottom: none !important;
+  padding: 0.35rem 0.8rem;
+  background: var(--color-light);
+  border-radius: 999px !important;
+  font-size: 0.8rem;
+  transition: background 0.15s;
+}
+.contacto-info-link:hover { background: color-mix(in srgb, var(--color-primary) 40%, #ffffff); }
+.contacto-info-nota { font-size: 0.82rem; }
+
+/* ── Confirmación tras enviar ────────────────────────────── */
+.contacto-ok {
+  position: relative;
+  z-index: 2;
+  max-width: 520px;
+  margin: 2rem auto 0;
+  text-align: center;
+  background: #fff;
+  border: 1px solid #eef0ef;
+  border-radius: var(--radius-md);
+  padding: 3rem 2.25rem 2.5rem;
+  box-shadow: 0 30px 60px -25px rgba(0,0,0,0.12);
+}
+.contacto-ok-icono {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-primary) 45%, #ffffff);
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+}
+.contacto-ok-icono svg { width: 38px; height: 38px; }
+.contacto-ok h2 {
+  font-size: clamp(1.5rem, 3vw, 1.9rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.75rem;
+}
+.contacto-ok p {
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--color-text-muted);
+  margin: 0 0 1.75rem;
+}
+
+@media (max-width: 480px) {
+  .estrella-1, .estrella-3, .estrella-5 { width: 20px; }
+  .estrella-2, .estrella-4, .estrella-6 { width: 16px; }
+}
+</style>
+
+<script>
+const form     = document.getElementById('form-contacto') as HTMLFormElement;
+const errorEl  = document.getElementById('contacto-error') as HTMLParagraphElement;
+const okEl     = document.getElementById('contacto-ok') as HTMLDivElement;
+const grid     = document.querySelector('.contacto-grid') as HTMLElement;
+const cabecera = document.querySelector('.contacto-cabecera') as HTMLElement;
+const boton    = document.getElementById('contacto-enviar') as HTMLButtonElement;
+
+function mostrarError(msg: string) {
+  errorEl.textContent = msg;
+  errorEl.style.display = 'block';
+}
+function ocultarError() { errorEl.style.display = 'none'; }
+
+form?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  ocultarError();
+
+  const datos = {
+    nombre:  (form.querySelector('#contacto-nombre')  as HTMLInputElement).value.trim(),
+    email:   (form.querySelector('#contacto-email')   as HTMLInputElement).value.trim(),
+    asunto:  (form.querySelector('#contacto-asunto')  as HTMLInputElement).value.trim(),
+    mensaje: (form.querySelector('#contacto-mensaje') as HTMLTextAreaElement).value.trim(),
+    hp:      (form.querySelector('#contacto-hp')      as HTMLInputElement).value,
+  };
+
+  if (!datos.nombre) return mostrarError('Indica tu nombre.');
+  if (!datos.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(datos.email)) {
+    return mostrarError('Indica un email válido.');
+  }
+  if (datos.mensaje.length < 10) {
+    return mostrarError('Cuéntanos un poco más en el mensaje (mínimo 10 caracteres).');
+  }
+
+  await window.botonCargando(boton, 'Enviando…', async () => {
+    try {
+      const res = await fetch('/api/contacto.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datos),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        mostrarError(json.mensaje || 'No hemos podido enviar tu mensaje. Inténtalo en unos minutos.');
+        return;
+      }
+      grid.style.display = 'none';
+      cabecera.style.display = 'none';
+      okEl.style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch {
+      mostrarError('No hemos podido conectar con el servidor. Revisa tu conexión.');
+    }
+  });
+});
+</script>

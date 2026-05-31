@@ -27,6 +27,7 @@ if ($metodo === 'GET') {
     // Migración automática: añadir columnas si no existen
     try { $pdo->exec('ALTER TABLE temas ADD COLUMN IF NOT EXISTS color VARCHAR(20) DEFAULT NULL'); } catch (PDOException $e) {}
     try { $pdo->exec('ALTER TABLE temas ADD COLUMN IF NOT EXISTS descripcion TEXT DEFAULT NULL'); } catch (PDOException $e) {}
+    try { $pdo->exec('ALTER TABLE temas ADD COLUMN IF NOT EXISTS bloqueado_hasta DATETIME DEFAULT NULL'); } catch (PDOException $e) {}
 
     $cursoId = isset($_GET['curso_id']) ? (int)$_GET['curso_id'] : 0;
     if (!$cursoId) {
@@ -37,7 +38,7 @@ if ($metodo === 'GET') {
     // duracion_seg = suma de duraciones reales de los vídeos del tema.
     // Fuente única; la columna t.duracion (texto) ya no se usa en cliente.
     $stmt = $pdo->prepare(
-        'SELECT t.id, t.titulo, t.descripcion, t.orden, t.color,
+        'SELECT t.id, t.titulo, t.descripcion, t.orden, t.color, t.bloqueado_hasta,
                 COUNT(m.id) AS num_materiales,
                 COALESCE(SUM(m.duracion_seg), 0) AS duracion_seg
          FROM temas t

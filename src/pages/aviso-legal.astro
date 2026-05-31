@@ -1,0 +1,153 @@
+---
+/**
+ * PÁGINA: /aviso-legal
+ * --------------------
+ * Aviso legal con los datos identificativos del titular del sitio,
+ * conforme al art. 10 de la Ley 34/2002 (LSSI-CE), y las condiciones
+ * generales de uso de la plataforma.
+ */
+import Plantilla from '../layouts/Plantilla.astro';
+import CabeceraPublica from '../components/CabeceraPublica.astro';
+import PiePagina from '../components/PiePagina.astro';
+import '../styles/global.css';
+
+const actualizado = '30 de mayo de 2026';
+---
+
+<Plantilla titulo="Aviso legal — Cursos Umme">
+  <CabeceraPublica activa="inicio" />
+
+  <main class="legal-pagina">
+    <article class="legal-inner">
+      <header class="legal-cabecera">
+        <p class="legal-eyebrow">Información legal</p>
+        <h1>Aviso legal</h1>
+        <p class="legal-fecha">Última actualización: {actualizado}</p>
+      </header>
+
+      <section>
+        <h2>1. Datos identificativos del titular</h2>
+        <p>
+          En cumplimiento del artículo 10 de la Ley 34/2002, de 11 de julio,
+          de Servicios de la Sociedad de la Información y de Comercio
+          Electrónico (LSSI-CE), se ponen a disposición de los usuarios los
+          datos identificativos del titular de este sitio web:
+        </p>
+        <ul class="legal-lista-datos">
+          <li><strong>Titular:</strong> Emilio José Piote Bueno (trabajador autónomo)</li>
+          <li><strong>NIF:</strong> 26246974H</li>
+          <li><strong>Domicilio:</strong> Calle Cervantes nº 4, 1ºA · 23213 Santa Elena, Jaén (España)</li>
+          <li><strong>Email de contacto:</strong> <a href="mailto:info@cursosumme.es">info@cursosumme.es</a></li>
+          <li><strong>Sitio web:</strong> <a href="https://cursosumme.es">cursosumme.es</a></li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>2. Objeto</h2>
+        <p>
+          El presente aviso legal regula el acceso, navegación y uso del sitio web
+          <a href="https://cursosumme.es">cursosumme.es</a>, así como las
+          responsabilidades derivadas del mismo. El acceso al sitio implica la
+          aceptación sin reservas del contenido de este aviso legal.
+        </p>
+      </section>
+
+      <section>
+        <h2>3. Servicio prestado</h2>
+        <p>
+          A través de este sitio web se ofrece una plataforma de formación
+          online orientada a la preparación de oposiciones de Pedagogía
+          Terapéutica, mediante la venta de cursos en formato vídeo, apuntes,
+          esquemas y materiales descargables complementarios.
+        </p>
+        <p>
+          Las condiciones específicas de venta de los cursos están reguladas
+          en las <a href="/condiciones">Condiciones de compra</a>.
+        </p>
+      </section>
+
+      <section>
+        <h2>4. Condiciones de uso</h2>
+        <p>El usuario se compromete a hacer un uso adecuado del sitio web, no empleándolo para realizar actividades ilícitas o contrarias a la buena fe y al ordenamiento legal. En particular, se compromete a:</p>
+        <ul>
+          <li>No introducir, almacenar o difundir contenido difamatorio, obsceno, amenazante, xenófobo o que de cualquier otra forma atente contra los derechos fundamentales.</li>
+          <li>No realizar actividades publicitarias o de explotación comercial sin autorización expresa del titular.</li>
+          <li>No introducir programas, virus, macros u otros elementos que puedan dañar el sitio o sus sistemas.</li>
+          <li>No suplantar la identidad de otros usuarios ni de terceros.</li>
+          <li>No utilizar los contenidos del sitio para fines distintos a los estrictamente personales y conforme a las licencias otorgadas.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>5. Propiedad intelectual e industrial</h2>
+        <p>
+          Todos los contenidos del sitio web —incluyendo, a título enunciativo
+          y no limitativo, textos, fotografías, gráficos, imágenes, iconos,
+          tecnología, software, vídeos, audios, código fuente, diseño y nombre
+          comercial— son propiedad de Emilio José Piote Bueno o de los
+          terceros que han autorizado su uso, y están protegidos por la
+          legislación nacional e internacional sobre propiedad intelectual e
+          industrial.
+        </p>
+        <p>
+          Queda <strong>expresamente prohibida</strong> la reproducción total
+          o parcial, la distribución, la comunicación pública, la
+          transformación o cualquier otra forma de explotación de los
+          contenidos sin la autorización expresa del titular. El uso de los
+          materiales adquiridos se limita al ámbito estrictamente personal del
+          alumno, no pudiendo ser cedidos, prestados o compartidos con
+          terceros.
+        </p>
+      </section>
+
+      <section>
+        <h2>6. Limitación de responsabilidad</h2>
+        <p>
+          El titular del sitio web realiza los mayores esfuerzos para
+          mantener el correcto funcionamiento de la plataforma, pero no
+          garantiza la disponibilidad permanente del servicio frente a
+          incidencias técnicas, mantenimientos programados o causas de
+          fuerza mayor.
+        </p>
+        <p>
+          El sitio web puede contener enlaces a páginas de terceros sobre
+          cuyo contenido el titular no se hace responsable, limitándose la
+          función del enlace a permitir el acceso a los mismos.
+        </p>
+      </section>
+
+      <section>
+        <h2>7. Protección de datos</h2>
+        <p>
+          El tratamiento de los datos personales facilitados por los
+          usuarios se rige por nuestra
+          <a href="/privacidad">Política de privacidad</a>, que forma parte
+          integral del presente aviso legal.
+        </p>
+      </section>
+
+      <section>
+        <h2>8. Modificaciones</h2>
+        <p>
+          El titular se reserva el derecho a modificar en cualquier momento
+          el contenido de este aviso legal. Las modificaciones serán
+          publicadas en esta misma URL y entrarán en vigor desde su
+          publicación.
+        </p>
+      </section>
+
+      <section>
+        <h2>9. Legislación aplicable y jurisdicción</h2>
+        <p>
+          Las presentes condiciones se rigen por la legislación española.
+          Para la resolución de cualquier controversia que pudiera derivarse
+          del acceso o uso del sitio web, las partes se someten a los
+          juzgados y tribunales del domicilio del consumidor, conforme a la
+          normativa española de protección de los consumidores y usuarios.
+        </p>
+      </section>
+    </article>
+  </main>
+
+  <PiePagina />
+</Plantilla>

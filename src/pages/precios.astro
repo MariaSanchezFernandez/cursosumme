@@ -33,20 +33,12 @@ import '../styles/global.css';
       <h1 class="catalogo-titulo">Elige el material que va con tu plaza</h1>
       <p class="catalogo-sub">
         Temarios actualizados a cada convocatoria, vídeo on-demand y
-        materiales descargables. Compra única, acceso hasta 1 año.
+        materiales descargables. Compra única, sin suscripciones.
       </p>
     </header>
 
     <div id="loading" class="estado-carga">Cargando cursos…</div>
     <div id="error" class="estado-error" style="display:none;"></div>
-
-    <section id="packs-section" class="catalogo-seccion" style="display:none;">
-      <header class="catalogo-seccion-header" id="packs">
-        <h2 class="catalogo-seccion-titulo">Packs completos</h2>
-        <p class="catalogo-seccion-sub">Más material por menos. Acceso a todos los cursos del pack en una sola compra.</p>
-      </header>
-      <div id="packs-grid" class="catalogo-grid catalogo-grid--packs"></div>
-    </section>
 
     <section id="cursos-section-wrap" class="catalogo-seccion" style="display:none;">
       <header class="catalogo-seccion-header">
@@ -54,6 +46,14 @@ import '../styles/global.css';
         <p class="catalogo-seccion-sub">Elige solo lo que necesitas. Acceso completo a cada curso por separado.</p>
       </header>
       <div id="cursos-section" class="catalogo-grid"></div>
+    </section>
+
+    <section id="packs-section" class="catalogo-seccion" style="display:none;">
+      <header class="catalogo-seccion-header" id="packs">
+        <h2 class="catalogo-seccion-titulo">Packs completos</h2>
+        <p class="catalogo-seccion-sub">Más material por menos. Acceso a todos los cursos del pack en una sola compra.</p>
+      </header>
+      <div id="packs-grid" class="catalogo-grid catalogo-grid--packs"></div>
     </section>
   </main>
 
@@ -65,8 +65,18 @@ import '../styles/global.css';
   max-width: 1180px;
   margin: 0 auto;
   padding: 3rem 1.5rem 5rem;
-  min-height: calc(100vh - 72px - 64px);
+  /* 100dvh tiene en cuenta la barra dinámica de iOS/Android.
+     Restamos solo la cabecera (72px desktop, 64px móvil) — el footer no
+     entra aquí porque vive fuera de .contenido y ya tiene su propio espacio. */
+  min-height: calc(100dvh - 72px);
 }
+@media (max-width: 720px) {
+  .contenido { min-height: calc(100dvh - 64px); }
+}
+/* En pantallas anchas dejamos respirar el catálogo para poder
+   meter 4 columnas sin que las tarjetas queden estrujadas. */
+@media (min-width: 1280px) { .contenido { max-width: 1440px; } }
+@media (min-width: 1600px) { .contenido { max-width: 1640px; } }
 
 /* ── Hero del catálogo ─────────────────────────────────────── */
 .catalogo-hero {
@@ -129,16 +139,41 @@ import '../styles/global.css';
 }
 
 /* ── Grid ──────────────────────────────────────────────────── */
+/* Flex en vez de grid: si una fila tiene menos tarjetas que columnas
+   (p. ej. 4 cursos con un layout de 3, o 2 packs en un layout de 3),
+   las tarjetas sobrantes quedan centradas en su fila en vez de
+   pegadas a la izquierda. Mantiene el "stretch" dentro de cada fila
+   gracias al align-items por defecto. */
 .catalogo-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 1.5rem;
 }
-.catalogo-grid--packs {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+/* Cada tarjeta toma una fracción exacta del ancho disponible por
+   breakpoint. Restamos los gaps de la fila al ancho antes de
+   dividir, así no se desbordan ni se quedan cortas. */
+.catalogo-grid > * { flex: 0 1 100%; }
+@media (min-width: 560px) {
+  .catalogo-grid > * { flex: 0 1 calc((100% - 1.5rem) / 2); }
 }
+@media (min-width: 860px) {
+  .catalogo-grid > * { flex: 0 1 calc((100% - 3rem) / 3); }
+}
+@media (min-width: 1280px) {
+  .catalogo-grid > * { flex: 0 1 calc((100% - 4.5rem) / 4); }
+}
+@media (min-width: 1600px) {
+  .catalogo-grid > * { flex: 0 1 calc((100% - 6rem) / 5); }
+}
+/* Packs: máximo 2 por fila en desktop/tablet, 3 en pantallas
+   muy anchas. Si hay un número impar, la última queda centrada. */
+.catalogo-grid--packs > * { flex: 0 1 calc((100% - 1.5rem) / 2); }
 @media (max-width: 720px) {
-  .catalogo-grid--packs { grid-template-columns: 1fr; }
+  .catalogo-grid--packs > * { flex: 0 1 100%; }
+}
+@media (min-width: 1280px) {
+  .catalogo-grid--packs > * { flex: 0 1 calc((100% - 3rem) / 3); }
 }
 
 /* ── Tarjeta de curso (sin imagen, altura uniforme) ───────── */
@@ -153,7 +188,11 @@ import '../styles/global.css';
   text-decoration: none;
   color: inherit;
   height: 100%;
-  min-height: 340px;
+  /* Altura mínima ajustada al contenido real (chip + título + 4
+     bullets + "Ver detalle" + pie con botón). El grid-auto-rows: 1fr
+     iguala todas las filas a la fila más alta, así que no necesitamos
+     reservar espacio extra "por si acaso". */
+  min-height: 360px;
   transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
               box-shadow 0.28s,
               border-color 0.2s;
@@ -284,8 +323,35 @@ import '../styles/global.css';
   color: var(--color-text);
   line-height: 1;
 }
-.tarjeta-curso--pack { min-height: 380px; }
 .tarjeta-curso--pack .tarjeta-curso-precio { font-size: 1.8rem; }
+
+/* Enlace visible "Ver detalle del curso" — secundario, alineado a la
+   derecha encima del pie. Posicionado por encima del overlay para que
+   el click vaya al link explícito (semántica clara). */
+.tarjeta-curso-ver {
+  position: relative;
+  z-index: 2;
+  align-self: flex-end;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  background: var(--color-light);
+  border: 1px solid #e3e6e5;
+  border-radius: 999px;
+  color: var(--color-text);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s, transform 0.18s;
+}
+.tarjeta-curso-ver:hover {
+  background: #fff;
+  border-color: var(--curso-color, var(--color-primary));
+  transform: translateX(2px);
+}
 
 .tarjeta-curso-cta {
   background: var(--color-coral);
@@ -361,9 +427,8 @@ function pintarTarjetaPack(pack: any, idx: number): HTMLElement {
       <span class="tarjeta-curso-chip tarjeta-curso-chip--pack">Pack completo</span>
       <h3 class="tarjeta-curso-titulo">${escapar(pack.nombre)}</h3>
       <ul class="tarjeta-curso-checklist">
-        <li>Todos los cursos del pack incluidos</li>
+        <li>Todos los cursos del pack</li>
         <li>Apuntes y materiales descargables</li>
-        <li>Acceso hasta 1 año</li>
         <li>Ahorra frente a comprarlos sueltos</li>
       </ul>
       <div class="tarjeta-curso-pie">
@@ -378,21 +443,32 @@ function pintarTarjetaPack(pack: any, idx: number): HTMLElement {
 function pintarTarjetaCurso(curso: any, idx: number): HTMLElement {
   const color = curso.color || PALETA[idx % PALETA.length];
   const numTemas = Number(curso.num_temas ?? 0);
+  const puntosRaw: string[] = Array.isArray(curso.puntos) ? curso.puntos : [];
   const card = document.createElement('article');
   card.className = 'tarjeta-curso';
   card.style.setProperty('--curso-color', color);
   card.style.animationDelay = `${idx * 0.06}s`;
+  // Lista compacta — máx 4 ideas por curso. El nº de temas va como
+  // primer punto de la lista (no como pill aparte) y luego los puntos
+  // personalizados extraídos de .desc-chips/.desc-card. Si un curso no
+  // tiene puntos en su descripción, la lista queda más cortita.
+  const items: string[] = [];
+  if (numTemas > 0) items.push(`${numTemas} ${numTemas === 1 ? 'tema' : 'temas'} en vídeo`);
+  for (const p of puntosRaw) {
+    if (items.length >= 4) break;
+    items.push(p);
+  }
+  const checklistHtml = items.length > 0
+    ? `<ul class="tarjeta-curso-checklist">${items.map((p) => `<li>${escapar(p)}</li>`).join('')}</ul>`
+    : '';
   card.innerHTML = `
     <div class="tarjeta-curso-acento"></div>
     <a href="/cursos/${curso.id}" class="tarjeta-curso-overlay" aria-label="Ver detalle de ${escapar(curso.titulo)}"></a>
     <div class="tarjeta-curso-body">
       ${curso.etiqueta ? `<span class="tarjeta-curso-chip">${escapar(curso.etiqueta)}</span>` : ''}
       <h3 class="tarjeta-curso-titulo">${escapar(curso.titulo)}</h3>
-      <ul class="tarjeta-curso-checklist">
-        ${numTemas > 0 ? `<li>${numTemas} tema${numTemas !== 1 ? 's' : ''} en vídeo</li>` : `<li>Vídeo on-demand</li>`}
-        <li>Apuntes y materiales descargables</li>
-        <li>Acceso hasta 1 año</li>
-      </ul>
+      ${checklistHtml}
+      <a href="/cursos/${curso.id}" class="tarjeta-curso-ver">Ver detalle del curso →</a>
       <div class="tarjeta-curso-pie">
         <span class="tarjeta-curso-precio">${fmtPrecio(curso.precio ?? 0)} €</span>
         <button class="tarjeta-curso-cta" data-tipo="curso" data-id="${curso.id}">Comprar →</button>
@@ -403,8 +479,11 @@ function pintarTarjetaCurso(curso: any, idx: number): HTMLElement {
 }
 
 function renderizar(dataPacks: any, dataCursos: any) {
-  const packs  = (dataPacks.packs   ?? []).filter((p: any) => p.precio);
-  const cursos = (dataCursos.cursos ?? []).filter((c: any) => c.precio);
+  // Orden ascendente por precio: más barato primero.
+  const porPrecio = (a: any, b: any) =>
+    parseFloat(String(a.precio ?? 0)) - parseFloat(String(b.precio ?? 0));
+  const packs  = (dataPacks.packs   ?? []).filter((p: any) => p.precio).sort(porPrecio);
+  const cursos = (dataCursos.cursos ?? []).filter((c: any) => c.precio).sort(porPrecio);
 
   if (packs.length > 0) {
     const sec  = document.getElementById('packs-section')!;

@@ -1,0 +1,414 @@
+/* ───────────────────────────────────────────────────────────
+   ESTILOS COMPARTIDOS: .cd-descripcion + .desc-*
+   ───────────────────────────────────────────────────────────
+   Reglas para renderizar la descripción HTML de un curso
+   (campo cursos.descripcion). Se usa en:
+     - /cursos/[id]            (web pública, detalle de curso)
+     - /admin/guia-formato     (admin, guía de uso del editor)
+
+   El editor mete contenedores .desc-* (impacto, card, temario,
+   stats, para-quien, bienvenida, chips, nota) que aquí se
+   estilizan. Si se modifica este archivo, ambas vistas se
+   actualizan a la vez.
+   ─────────────────────────────────────────────────────────── */
+
+.cd-descripcion {
+  font-size: 1.13rem;
+  line-height: 1.78;
+  color: #1f1f1f;
+  max-width: none;
+  margin: 0;
+  font-feature-settings: "kern" 1, "liga" 1;
+}
+.cd-descripcion > * + * { margin-top: 1.4rem; }
+
+.cd-descripcion p {
+  margin: 0;
+}
+.cd-descripcion p span { display: inline; }
+
+.cd-descripcion em {
+  font-style: italic;
+  color: #1f1f1f;
+}
+
+.cd-descripcion strong {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.cd-descripcion h2 {
+  font-size: 1.85rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--color-text);
+  margin-top: 3rem;
+  margin-bottom: 0.4rem;
+}
+.cd-descripcion h3 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  color: var(--color-text);
+  margin-top: 2.5rem;
+  margin-bottom: 0.3rem;
+}
+
+.cd-descripcion ul,
+.cd-descripcion ol {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.cd-descripcion li {
+  position: relative;
+  padding-left: 1.6rem;
+  line-height: 1.7;
+}
+.cd-descripcion li::before {
+  content: '';
+  position: absolute;
+  left: 0.25rem;
+  top: 0.78em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-text);
+}
+
+.cd-descripcion blockquote {
+  margin: 2.2rem 0;
+  padding: 0.2rem 0 0.2rem 1.5rem;
+  border-left: 4px solid var(--curso-color);
+  font-size: 1.3rem;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+  font-style: italic;
+}
+.cd-descripcion blockquote p { margin: 0; }
+
+/* ── Bloques custom del editor (aplanados, sin cajas) ──── */
+
+/* .desc-card: el editor lo usa para listas tipo "Qué aprenderás".
+   Eliminamos la caja: solo queda un h3 + lista, separados del
+   resto por un poco más de margen vertical. */
+.cd-descripcion .desc-card {
+  margin: 2.5rem 0;
+}
+.cd-descripcion .desc-card h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+/* .desc-temario: bloque pensado expresamente para listar el temario
+   del curso (10-20 bloques numerados). Cada item es una tarjeta con
+   un número grande a la izquierda y el título a la derecha. La
+   numeración la genera el CSS vía counter, así que el HTML solo
+   necesita el título plano dentro del <li>. */
+.cd-descripcion .desc-temario {
+  margin: 2.5rem 0;
+}
+.cd-descripcion .desc-temario > p {
+  margin: 0 0 1.1rem;
+  color: var(--color-text-muted);
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+.cd-descripcion .desc-temario > p:last-child {
+  margin: 1.25rem 0 0;
+}
+.cd-descripcion .desc-temario ol,
+.cd-descripcion .desc-temario ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  /* Todas las filas miden lo mismo (la fila más alta), así los items
+     con título de 2 líneas no dejan a sus compañeros de fila más
+     bajitos. Sin esto el grid queda "escalonado". */
+  grid-auto-rows: 1fr;
+  gap: 0.55rem 0.75rem;
+  counter-reset: temario;
+}
+.cd-descripcion .desc-temario li {
+  counter-increment: temario;
+  display: flex;
+  /* align-items: center para que el texto del título quede centrado
+     verticalmente cuando la card es más alta que su contenido
+     (porque otra card de la fila tiene 2 líneas). El badge se estira
+     a todo el alto vía align-self: stretch en ::before. */
+  align-items: center;
+  padding: 0 1rem 0 0;
+  background: #fff;
+  border: 1px solid #eef0ef;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  /* min-height dimensionado para 2 líneas siempre: ~26px por línea
+     × 2 + margen visual ≈ 68px. Con esto TODAS las cards tienen el
+     mismo alto (la de 2-líneas encaja; la de 1-línea se ve con texto
+     centrado y un poco de aire). grid-auto-rows: 1fr no era suficiente
+     porque el grid no tiene alto fijo y no propaga el alto máximo
+     entre filas. */
+  min-height: 68px;
+  height: 100%;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+.cd-descripcion .desc-temario li::before {
+  content: counter(temario, decimal-leading-zero);
+  flex-shrink: 0;
+  width: 50px;
+  /* align-self: stretch para que el badge mantenga su alto completo
+     aunque el padre tenga align-items: center (que afecta al texto). */
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Fondo tintado suave + número en color de marca oscurecido por
+     mezcla (no por filter, que descolocaba la legibilidad porque
+     aplicaba a TODO el badge a la vez). */
+  background: color-mix(in srgb, var(--curso-color, var(--color-primary)) 18%, #ffffff);
+  color: color-mix(in srgb, var(--curso-color, var(--color-primary)) 75%, #1c3530);
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+  margin-right: 0.85rem;
+  position: static;
+  border-radius: 0;
+  top: auto;
+  left: auto;
+}
+.cd-descripcion .desc-temario li:hover {
+  border-color: color-mix(in srgb, var(--curso-color, var(--color-primary)) 60%, transparent);
+  transform: translateX(2px);
+  box-shadow: 0 8px 18px -10px color-mix(in srgb, var(--curso-color, var(--color-primary)) 55%, rgba(0,0,0,0.08));
+}
+/* Items que llegan dentro de un wrapper (span/strong) — flex:1 para
+   que el texto ocupe todo el ancho disponible y se centre vertical. */
+.cd-descripcion .desc-temario li > * {
+  align-self: center;
+  flex: 1;
+}
+@media (max-width: 480px) {
+  .cd-descripcion .desc-temario ol,
+  .cd-descripcion .desc-temario ul {
+    grid-template-columns: 1fr;
+  }
+  .cd-descripcion .desc-temario li::before { width: 44px; font-size: 0.88rem; }
+}
+
+/* .desc-stats: cifras destacadas en grid. Sin cajas — solo
+   números enormes y label discreto, separados por una línea
+   sutil arriba y abajo. */
+.cd-descripcion .desc-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1.5rem 2rem;
+  margin: 2.5rem 0;
+  padding: 1.75rem 0;
+  border-top: 1px solid #eef0ef;
+  border-bottom: 1px solid #eef0ef;
+}
+.cd-descripcion .desc-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+}
+.cd-descripcion .desc-stat strong {
+  font-size: 2.4rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--color-text);
+}
+.cd-descripcion .desc-stat span {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* .desc-nota: barra lateral discreta a la izquierda, sin fondo. */
+.cd-descripcion .desc-nota {
+  margin: 2rem 0;
+  padding: 0.2rem 0 0.2rem 1.25rem;
+  border-left: 3px solid color-mix(in srgb, var(--curso-color) 70%, #ffffff);
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #2a2a2a;
+}
+.cd-descripcion .desc-nota p { margin: 0; }
+.cd-descripcion .desc-nota strong {
+  font-weight: 700;
+}
+
+/* .desc-bienvenida: bloque de bienvenida con etiqueta + contenido,
+   destacado con fondo suave del color del curso para cerrar la sección. */
+.cd-descripcion .desc-bienvenida {
+  margin: 3rem 0 0;
+  padding: 1.75rem 1.75rem 1.6rem;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--curso-color) 18%, #ffffff);
+  border: 1px solid color-mix(in srgb, var(--curso-color) 35%, transparent);
+}
+.cd-descripcion .desc-bienvenida-tag {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--color-text);
+  background: #fff;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  margin-bottom: 0.85rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+.cd-descripcion .desc-bienvenida-inner > * + * { margin-top: 0.8rem; }
+.cd-descripcion .desc-bienvenida-inner p { margin: 0; line-height: 1.65; }
+.cd-descripcion .desc-bienvenida br:only-child { display: none; }
+
+/* ── Ocultar bloques del editor sin contenido real ───────────
+   El RTE persiste estos contenedores aunque la usuaria los deje
+   en blanco; sin estas reglas se ven sus márgenes, bordes y fondos
+   como "huecos de diseño" entre párrafos. Cada regla pregunta
+   ":hay dentro algo que merezca renderizarse?", y si no, oculta
+   el bloque entero. */
+.cd-descripcion .desc-impacto:not(:has(:where(p, h2, h3, h4):not(:empty))) { display: none; }
+.cd-descripcion .desc-card:not(:has(:where(li, p):not(:empty))) { display: none; }
+.cd-descripcion .desc-chips:not(:has(li)) { display: none; }
+.cd-descripcion .desc-para-quien:not(:has(li)) { display: none; }
+.cd-descripcion .desc-si:not(:has(li)),
+.cd-descripcion .desc-no:not(:has(li)) { display: none; }
+.cd-descripcion .desc-stat:not(:has(:where(strong, span):not(:empty))) { display: none; }
+.cd-descripcion .desc-stats:not(:has(strong:not(:empty))) { display: none; }
+.cd-descripcion .desc-bienvenida:not(:has(.desc-bienvenida-inner > *:not(:empty))) { display: none; }
+
+/* .desc-impacto: frase potente destacada. Sin caja, solo tipografía
+   grande con barra lateral de color para llamar la atención. */
+.cd-descripcion .desc-impacto {
+  margin: 2.5rem 0;
+  padding: 0.4rem 0 0.4rem 1.5rem;
+  border-left: 4px solid var(--curso-color);
+  font-size: 1.35rem;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+}
+.cd-descripcion .desc-impacto p { margin: 0; }
+.cd-descripcion .desc-impacto em {
+  font-style: italic;
+  color: color-mix(in srgb, var(--color-text) 75%, transparent);
+}
+
+/* .desc-chips: pills/tags reales. Cada <li> es un chip con fondo del
+   color del curso. Si la lista está vacía, se oculta. */
+.cd-descripcion .desc-chips {
+  margin: 2rem 0;
+}
+.cd-descripcion .desc-chips ul {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+.cd-descripcion .desc-chips li {
+  padding: 0.5rem 0.95rem;
+  background: color-mix(in srgb, var(--curso-color) 22%, #ffffff);
+  border: 1px solid color-mix(in srgb, var(--curso-color) 40%, transparent);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+.cd-descripcion .desc-chips li::before { display: none; }
+
+/* .desc-para-quien: dos columnas "es para ti" / "no es para ti".
+   Tarjetas suaves diferenciadas con un símbolo (✓ / ✗) antes del título. */
+.cd-descripcion .desc-para-quien {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin: 2.5rem 0;
+}
+.cd-descripcion .desc-si,
+.cd-descripcion .desc-no {
+  padding: 1.4rem 1.5rem;
+  border-radius: var(--radius-md);
+  background: #fafafa;
+  border: 1px solid #eef0ef;
+}
+.cd-descripcion .desc-si {
+  background: color-mix(in srgb, #c8e8b5 30%, #ffffff);
+  border-color: color-mix(in srgb, #c8e8b5 60%, transparent);
+}
+.cd-descripcion .desc-no {
+  background: #f6f6f6;
+  border-color: #ececec;
+}
+.cd-descripcion .desc-si h3,
+.cd-descripcion .desc-no h3 {
+  font-size: 1.02rem;
+  font-weight: 800;
+  margin: 0 0 0.85rem;
+  padding-left: 1.85rem;
+  position: relative;
+  letter-spacing: -0.01em;
+}
+.cd-descripcion .desc-si h3::before,
+.cd-descripcion .desc-no h3::before {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.cd-descripcion .desc-si h3::before {
+  content: '✓';
+  background: #6fbf6f;
+  color: #fff;
+}
+.cd-descripcion .desc-no h3::before {
+  content: '✗';
+  background: #b8b8b8;
+  color: #fff;
+}
+.cd-descripcion .desc-si ul,
+.cd-descripcion .desc-no ul { gap: 0.55rem; }
+.cd-descripcion .desc-si li,
+.cd-descripcion .desc-no li {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  padding-left: 1.2rem;
+}
+.cd-descripcion .desc-si li::before {
+  background: #6fbf6f;
+  top: 0.7em;
+}
+.cd-descripcion .desc-no li::before {
+  background: #b8b8b8;
+  top: 0.7em;
+}
+@media (max-width: 640px) {
+  .cd-descripcion .desc-para-quien { grid-template-columns: 1fr; }
+}

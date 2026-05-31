@@ -18,3 +18,4 @@ Ver [../AGENTS.md](../AGENTS.md): documentar al inicio de cada archivo, leer ant
 @.claude/memory/reference-ionos.md
 @.claude/memory/feedback-backup-db.md
 @.claude/memory/project-auth-tokens.md
+@.claude/memory/feedback-lenguaje-neutro.md

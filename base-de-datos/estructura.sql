@@ -42,6 +42,11 @@ CREATE TABLE IF NOT EXISTS temas (
   CONSTRAINT fk_temas_curso FOREIGN KEY (curso_id) REFERENCES cursos(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Columnas añadidas en migraciones posteriores (también se autocrean en API)
+ALTER TABLE temas ADD COLUMN IF NOT EXISTS color           VARCHAR(20)  DEFAULT NULL;
+ALTER TABLE temas ADD COLUMN IF NOT EXISTS descripcion     TEXT         DEFAULT NULL;
+ALTER TABLE temas ADD COLUMN IF NOT EXISTS bloqueado_hasta DATETIME     DEFAULT NULL;
+
 
 -- -----------------------------------------------------------------
 -- Tabla: materiales

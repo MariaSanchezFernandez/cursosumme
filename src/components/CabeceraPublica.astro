@@ -15,16 +15,25 @@
  * hermano `#cabecera-nav` vía selector adyacente).
  */
 interface Props {
-  activa?: 'inicio' | 'cursos';
+  activa?: 'inicio' | 'cursos' | 'contacto';
 }
 const { activa = 'inicio' } = Astro.props;
 ---
 
 <header class="cabecera-publica">
   <a href="/" class="logo" aria-label="Cursos Umme, inicio">
-    <span class="logo-marca">Cursos</span>
-    <span class="logo-umme">Umme</span>
+    <img src="/logo.png" alt="Cursos Umme — Pedagogía Terapéutica" width="56" height="56" />
   </a>
+
+  <nav id="cabecera-nav" class="cabecera-nav" aria-label="Navegación principal">
+    <a href="/" class={activa === 'inicio' ? 'activo' : ''}>Inicio</a>
+    <a href="/precios" class={activa === 'cursos' ? 'activo' : ''}>Cursos</a>
+    <a href="/contacto" class={activa === 'contacto' ? 'activo' : ''}>Contacto</a>
+  </nav>
+
+  {/* "Acceder" siempre visible fuera del menú hamburguesa: en móvil
+       no hace falta abrir el drawer para entrar al área privada. */}
+  <a href="/login" class="btn-acceder-fijo">Acceder</a>
 
   <button
     id="btn-menu-publico"
@@ -36,12 +45,6 @@ const { activa = 'inicio' } = Astro.props;
   >
     <span></span><span></span><span></span>
   </button>
-
-  <nav id="cabecera-nav" class="cabecera-nav" aria-label="Navegación principal">
-    <a href="/" class={activa === 'inicio' ? 'activo' : ''}>Inicio</a>
-    <a href="/precios" class={activa === 'cursos' ? 'activo' : ''}>Cursos</a>
-    <a href="/login" class="btn-acceder">Acceder</a>
-  </nav>
 </header>
 
 <style is:global>
@@ -60,22 +63,18 @@ const { activa = 'inicio' } = Astro.props;
 }
 .logo {
   display: flex;
-  align-items: baseline;
-  gap: 0.3rem;
+  align-items: center;
   text-decoration: none;
+  flex-shrink: 0;
 }
-.logo-marca {
-  font-size: 1.1rem;
-  font-weight: 400;
-  letter-spacing: 0.04em;
-  color: var(--color-text-muted);
+.logo img {
+  height: 56px;
+  width: 56px;
+  display: block;
+  object-fit: contain;
+  transition: transform 0.2s ease;
 }
-.logo-umme {
-  font-size: 1.1rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  color: var(--color-text);
-}
+.logo:hover img { transform: scale(1.05); }
 .cabecera-nav {
   margin-left: auto;
   display: flex;
@@ -106,24 +105,28 @@ const { activa = 'inicio' } = Astro.props;
   background: var(--color-primary);
   border-radius: 2px;
 }
-.cabecera-nav .btn-acceder {
+/* "Acceder" fijo fuera del menú: visible siempre, desktop y móvil.
+   En desktop va a la derecha del nav; en móvil va a la izquierda del
+   botón hamburguesa para que esté a un click siempre. */
+.btn-acceder-fijo {
   background: var(--color-coral);
   color: var(--color-text);
   padding: 0.6rem 1.4rem;
   border-radius: var(--radius-sm);
   font-weight: 800;
+  font-size: 0.95rem;
+  text-decoration: none;
   transition: opacity 0.15s;
   min-height: 44px;
   display: inline-flex;
   align-items: center;
+  flex-shrink: 0;
 }
-.cabecera-nav .btn-acceder:hover { opacity: 0.88; }
-.cabecera-nav .btn-acceder::after { display: none; }
+.btn-acceder-fijo:hover { opacity: 0.88; }
 
 /* ── Hamburguesa (oculta en desktop) ────────────────────────── */
 .btn-menu-publico {
   display: none;
-  margin-left: auto;
   width: 44px;
   height: 44px;
   background: transparent;
@@ -154,11 +157,16 @@ const { activa = 'inicio' } = Astro.props;
 
 @media (max-width: 720px) {
   .cabecera-publica {
-    padding: 0 1.25rem;
+    padding: 0 1rem;
     height: 64px;
-    gap: 0.75rem;
+    gap: 0.6rem;
   }
   .btn-menu-publico { display: flex; }
+  .btn-acceder-fijo {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    margin-left: auto;
+  }
 
   .cabecera-nav {
     position: fixed;
@@ -177,7 +185,14 @@ const { activa = 'inicio' } = Astro.props;
     transition: max-height 0.25s ease, padding 0.25s ease;
     padding: 0 1.25rem;
   }
-  .btn-menu-publico[aria-expanded="true"] + #cabecera-nav {
+  /* La nav móvil queda fuera del flujo, así que el botón hamburguesa
+     y el botón "Acceder" se quedan juntos a la derecha del logo. */
+  .cabecera-publica > .cabecera-nav { order: 99; }
+  /* El JS al final de este componente añade .menu-abierto al header
+     cuando se pulsa la hamburguesa — usamos esa clase porque el HTML
+     ahora tiene el nav ANTES del botón y los selectores hermanos CSS
+     solo funcionan hacia delante. */
+  .cabecera-publica.menu-abierto #cabecera-nav {
     max-height: 320px;
     padding: 0.75rem 1.25rem 1.25rem;
   }
@@ -188,26 +203,26 @@ const { activa = 'inicio' } = Astro.props;
   }
   .cabecera-nav a:last-child { border-bottom: none; }
   .cabecera-nav a.activo::after { display: none; }
-  .cabecera-nav .btn-acceder {
-    margin-top: 0.6rem;
-    justify-content: center;
-    width: 100%;
-    padding: 0.85rem 1rem;
-  }
 }
 </style>
 
 <script>
-// Toggle de la hamburguesa: solo alterna aria-expanded; el CSS hace
-// el resto vía selector adyacente. Se cierra al pulsar un enlace y
-// al pasar a desktop.
+// Toggle de la hamburguesa: alterna aria-expanded en el botón y la
+// clase .menu-abierto en el header (el CSS solo abre el drawer si esa
+// clase está presente, porque los selectores hermanos no llegan al
+// nav que ahora está antes que el botón en el HTML).
+const header  = document.querySelector('.cabecera-publica');
 const btnMenu = document.getElementById('btn-menu-publico');
 const navMenu = document.getElementById('cabecera-nav');
-if (btnMenu && navMenu) {
-  const cerrar = () => btnMenu.setAttribute('aria-expanded', 'false');
+if (header && btnMenu && navMenu) {
+  const cerrar = () => {
+    btnMenu.setAttribute('aria-expanded', 'false');
+    header.classList.remove('menu-abierto');
+  };
   btnMenu.addEventListener('click', () => {
     const abierto = btnMenu.getAttribute('aria-expanded') === 'true';
     btnMenu.setAttribute('aria-expanded', abierto ? 'false' : 'true');
+    header.classList.toggle('menu-abierto', !abierto);
   });
   navMenu.querySelectorAll('a').forEach((a) => a.addEventListener('click', cerrar));
   window.addEventListener('resize', () => { if (window.innerWidth > 720) cerrar(); });

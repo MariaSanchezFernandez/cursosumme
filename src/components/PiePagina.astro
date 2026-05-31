@@ -1,10 +1,55 @@
 ---
+/**
+ * COMPONENTE: PiePagina
+ * ---------------------
+ * Footer público con la información identificativa exigida por la
+ * LSSI-CE (art. 10) y los enlaces a las páginas legales obligatorias
+ * para una web de comercio electrónico en España: aviso legal,
+ * privacidad (RGPD), cookies, condiciones de compra (CGC) y enlace
+ * al sistema europeo de resolución de litigios online.
+ *
+ * Los datos del titular (nombre, NIF, domicilio fiscal) están
+ * marcados como [PENDIENTE] hasta que María los facilite.
+ */
 import '../styles/PiePagina.css';
 
 const anio = new Date().getFullYear();
 ---
 
 <footer class="footer">
-  <span class="footer-logo">Cursos <strong>Umme</strong></span>
-  <span class="footer-copy">&copy; {anio} Cursos Umme. Todos los derechos reservados.</span>
+  <div class="footer-inner">
+
+    <div class="footer-col footer-col--titular">
+      <a href="/" class="footer-logo" aria-label="Cursos Umme, inicio">
+        <img src="/logo.png" alt="Cursos Umme — Pedagogía Terapéutica" width="56" height="56" />
+      </a>
+      <p class="footer-titular-linea">
+        Plataforma online de preparación de oposiciones de Pedagogía Terapéutica.
+      </p>
+      <p class="footer-titular-linea">
+        <a href="mailto:info@cursosumme.es">info@cursosumme.es</a>
+      </p>
+      <!-- Los datos identificativos LSSI (nombre, NIF, domicilio) viven
+           en /aviso-legal, accesible desde el enlace del footer. La
+           LSSI permite esta ubicación siempre que el enlace al aviso
+           legal sea visible desde cualquier página. -->
+    </div>
+
+    <nav class="footer-col footer-col--legal" aria-label="Información legal">
+      <h2 class="footer-titulo">Legal y soporte</h2>
+      <a href="/contacto">Contacto</a>
+      <a href="/aviso-legal">Aviso legal</a>
+      <a href="/privacidad">Política de privacidad</a>
+      <a href="/cookies">Política de cookies</a>
+      <a href="/condiciones">Condiciones de compra</a>
+      <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener noreferrer">
+        Resolución de litigios online
+      </a>
+    </nav>
+
+  </div>
+
+  <div class="footer-copy">
+    &copy; {anio} Cursos Umme · Todos los derechos reservados.
+  </div>
 </footer>

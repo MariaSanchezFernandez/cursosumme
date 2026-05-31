@@ -62,6 +62,22 @@ import '../styles/global.css';
         </div>
       </div>
 
+      <!-- Stats de progreso -->
+      <div class="pf-stats" id="pfStats" style="display:none;">
+        <div class="pf-stat">
+          <span class="pf-stat-num" id="pfStatCursos">—</span>
+          <span class="pf-stat-lbl">cursos</span>
+        </div>
+        <div class="pf-stat">
+          <span class="pf-stat-num" id="pfStatTemas">—</span>
+          <span class="pf-stat-lbl">temas completados</span>
+        </div>
+        <div class="pf-stat">
+          <span class="pf-stat-num" id="pfStatTiempo">—</span>
+          <span class="pf-stat-lbl">de estudio</span>
+        </div>
+      </div>
+
       <hr class="pf-divider" />
 
       <!-- Cambiar contraseña -->
@@ -166,6 +182,58 @@ document.getElementById('pfEmail')!.textContent  = s.email  || '—';
   else if (dias <= 30) { el.style.color = '#7a5500'; }
 
   document.getElementById('pfAccesoWrap')!.style.display = 'block';
+})();
+
+// ── Stats de progreso ─────────────────────────────────
+// Calcula cursos, temas completados y minutos estudiados
+// combinando /api/mis-cursos.php + /api/progreso.php.
+(async () => {
+  if (s.rol === 'admin' || !s.userId) return;
+  try {
+    const [resC, resP] = await Promise.all([
+      fetch(`/api/mis-cursos.php?usuario_id=${s.userId}`),
+      fetch(`/api/progreso.php?usuario_id=${s.userId}`),
+    ]);
+    const dataC = await resC.json();
+    const dataP = await resP.json();
+    if (!dataC.ok || !dataP.ok) return;
+
+    const cursos: any[] = dataC.cursos || [];
+    const vistos  = new Set<number>((dataP.vistos ?? []).map((n: any) => Number(n)));
+    const matVistos = new Set<number>((dataP.materiales_vistos ?? []).map((n: any) => Number(n)));
+
+    const numCursos = cursos.length;
+    let numTemas = 0;
+    let segTotales = 0;
+    for (const c of cursos) {
+      for (const t of (c.temas ?? [])) {
+        if (vistos.has(Number(t.id))) numTemas++;
+        for (const m of (t.materiales ?? [])) {
+          if (m.tipo === 'video' && matVistos.has(Number(m.id))) {
+            segTotales += Number(m.duracion_seg) || 0;
+          }
+        }
+      }
+    }
+
+    const formatearTiempo = (seg: number): string => {
+      if (seg < 60) return '<1 min';
+      const min = Math.floor(seg / 60);
+      if (min < 60) return `${min} min`;
+      const h = Math.floor(min / 60);
+      const m = min % 60;
+      return m ? `${h}h ${m}min` : `${h}h`;
+    };
+
+    document.getElementById('pfStatCursos')!.textContent = String(numCursos);
+    document.getElementById('pfStatTemas')!.textContent  = String(numTemas);
+    document.getElementById('pfStatTiempo')!.textContent = formatearTiempo(segTotales);
+    document.getElementById('pfStats')!.style.display = 'grid';
+  } catch (err: any) {
+    (window as any).logAppError?.('perfil_stats', 'Fallo cargando stats de perfil', {
+      detalle: err?.message, stack: err?.stack,
+    });
+  }
 })();
 
 // Salir (limpia también la sesión persistente "Recordarme")
@@ -366,25 +434,26 @@ btnPwd.addEventListener('click', async () => {
 
 .pf-avatar {
   position: relative;
-  width: 90px;
-  height: 90px;
+  width: 120px;
+  height: 120px;
   border-radius: 50%;
   background: var(--color-primary);
   border: 3px solid var(--color-primary);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--color-primary) 22%, transparent);
   overflow: hidden;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
-  transition: opacity 0.15s;
+  transition: opacity 0.15s, transform 0.15s;
 }
-.pf-avatar:hover { opacity: 0.9; }
+.pf-avatar:hover { opacity: 0.92; transform: translateY(-1px); }
 .pf-avatar:hover .pf-avatar-overlay { opacity: 1; }
 
 .pf-avatar svg:first-child {
-  width: 50px;
-  height: 50px;
+  width: 66px;
+  height: 66px;
 }
 
 .pf-avatar img {
@@ -444,6 +513,41 @@ btnPwd.addEventListener('click', async () => {
   border: none;
   border-top: 1px solid #e8eeec;
   margin: 0;
+}
+
+/* ── Stats ── */
+.pf-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem;
+}
+.pf-stat {
+  background: color-mix(in srgb, var(--color-primary) 6%, white);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 14%, transparent);
+  border-radius: 12px;
+  padding: 0.85rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  text-align: center;
+}
+.pf-stat-num {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.pf-stat-lbl {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+@media (max-width: 480px) {
+  .pf-stat-num { font-size: 1.3rem; }
+  .pf-stat-lbl { font-size: 0.62rem; }
 }
 
 /* ── Sección contraseña ── */
@@ -550,12 +654,35 @@ btnPwd.addEventListener('click', async () => {
 }
 
 @media (max-width: 640px) {
-  .pf-header { padding: 0 1rem; }
+  /* En móvil el logo desaparece y queremos que los dos botones se
+     comporten como objetivos táctiles de verdad (mínimo 44px) y se
+     repartan el ancho con holgura sin quedar pegados a los bordes. */
+  .pf-header {
+    padding: 0 0.75rem;
+    gap: 0.5rem;
+  }
   .pf-logo { display: none; }
+  .pf-volver,
+  .pf-salir {
+    min-height: 40px;
+    padding: 0.55rem 0.9rem;
+    font-size: 0.82rem;
+  }
+  .pf-volver svg,
+  .pf-salir svg { width: 16px; height: 16px; }
+
   .pf-main { padding: 1.5rem 0.75rem 3rem; }
   .pf-card { padding: 1.5rem 1.25rem; }
   .pf-datos { grid-template-columns: 1fr; gap: 1rem; }
   .pf-form { gap: 0.85rem; }
   .pf-btn-guardar { width: 100%; }
+}
+
+/* Pantallas muy estrechas (≤360px, plegables / iPhone SE 1ª gen):
+   colapsamos los textos a icono+sigla para que los dos botones quepan
+   con respiro sin desbordar el header. */
+@media (max-width: 360px) {
+  .pf-volver,
+  .pf-salir { padding: 0.55rem 0.7rem; font-size: 0.78rem; gap: 0.3rem; }
 }
 </style>

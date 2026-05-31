@@ -12,7 +12,7 @@
 import '../styles/SidebarAdmin.css';
 
 interface Props {
-  paginaActual: 'dashboard' | 'alumnos' | 'cursos' | 'tickets' | 'perfil' | 'logs' | 'errores';
+  paginaActual: 'dashboard' | 'alumnos' | 'cursos' | 'tickets' | 'perfil' | 'logs' | 'errores' | 'guia-formato';
 }
 
 const { paginaActual } = Astro.props;
@@ -25,6 +25,7 @@ const { paginaActual } = Astro.props;
 <aside class="sidebar" id="sidebarAdmin">
   <div class="sidebar-logo">
     <a href="/admin">
+      <img class="logo-img" src="/logo.png" alt="Cursos Umme" width="36" height="36" />
       <span class="logo-marca">Cursos</span>
       <span class="logo-umme">Umme</span>
     </a>
@@ -76,6 +77,15 @@ const { paginaActual } = Astro.props;
           </svg>
           Soporte
           <span id="adminTicketsBadge" style="display:none; position:absolute; top:6px; right:10px; width:8px; height:8px; background:#e53; border-radius:50%; border:1.5px solid #fff;"></span>
+        </a>
+      </li>
+      <li>
+        <a href="/admin/guia-formato" class={paginaActual === 'guia-formato' ? 'activo' : ''}>
+          <svg viewBox="0 0 16 16" fill="none">
+            <path d="M3 2h7l3 3v9H3V2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+            <path d="M10 2v3h3M5.5 8h5M5.5 10.5h5M5.5 6h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+          Guía de formato
         </a>
       </li>
       <li>

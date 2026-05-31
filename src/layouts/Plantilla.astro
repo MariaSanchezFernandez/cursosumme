@@ -16,10 +16,33 @@ const { titulo = 'Cursos Umme' } = Astro.props;
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
+    <link rel="icon" type="image/png" href="/flaticon.png" />
     <title>{titulo}</title>
     <script data-cfasync="false" data-no-defer="1" src="https://player.vdocipher.com/v2/player.js"></script>
   </head>
   <body>
+    <!-- 0) Anular la restauración automática del scroll del navegador.
+         Chrome (y otros) recuerdan en qué scrollY estabas la última vez
+         que visitaste cada URL y te dejan ahí al volver. En esta app eso
+         hacía que /inicio (y otras páginas largas) abrieran con el footer
+         a la vista, dando la sensación de "página rota". Forzamos siempre
+         scroll arriba en cargas nuevas y en restauraciones del bfcache. -->
+    <script is:inline>
+    (function () {
+      try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch (e) {}
+      // Evita el flash de scroll a mitad cuando Chrome ya empezó a restaurar
+      // antes de que este script corra: forzamos top en cuanto carga el DOM y
+      // de nuevo tras la primera pintura para ganar a cualquier reflow.
+      function arriba() { try { window.scrollTo(0, 0); } catch (e) {} }
+      arriba();
+      document.addEventListener('DOMContentLoaded', arriba, { once: true });
+      window.addEventListener('pageshow', function (e) {
+        // pageshow.persisted = true → la página viene del bfcache (back/forward)
+        if (e.persisted) arriba();
+      });
+    })();
+    </script>
+
     <!-- 1) Hidratar sesión "Recordarme" PRIMERO: copiar localStorage → sessionStorage si vigente.
          Tiene que ir antes del interceptor para que el primer fetch ya lleve el X-Token. -->
     <script is:inline>

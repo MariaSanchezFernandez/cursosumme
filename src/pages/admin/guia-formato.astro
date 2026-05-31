@@ -1,0 +1,568 @@
+---
+/**
+ * PÁGINA ADMIN: Guía de formato de descripciones (/admin/guia-formato)
+ * --------------------------------------------------------------------
+ * Documentación interna de las clases CSS `.desc-*` que el editor HTML
+ * admite en las descripciones de curso. Cada bloque tiene un propósito
+ * concreto: si se usa el equivocado, el render queda mal (ejemplo
+ * típico: meter el temario dentro de `.desc-no` y verlo como "lo que
+ * NO está incluido" con cruces grises).
+ *
+ * La idea es que María (o quien edite) consulte esta página cuando
+ * tenga dudas sobre qué clase usar y vea ejemplos visuales reales.
+ */
+import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
+// Estilos de .cd-descripcion + .desc-* (compartidos con /cursos/[id])
+// para que los ejemplos en vivo de esta guía se rendericen igual que
+// en la web pública.
+import '../../styles/CursoDescripcion.css';
+---
+
+<PlantillaAdmin titulo="Guía de formato" paginaActual="guia-formato">
+
+  <main class="gf-pagina">
+    <div class="gf-inner">
+
+      <header class="gf-cabecera">
+        <h1>Guía de formato de descripciones</h1>
+        <p class="gf-sub">
+          Cómo usar las clases <code>.desc-*</code> del editor HTML para que
+          las descripciones de los cursos se vean coherentes en la web pública
+          y en el área privada. Si tienes dudas mientras editas un curso,
+          ven aquí y copia el patrón que necesites.
+        </p>
+      </header>
+
+      <!-- ÍNDICE ─────────────────────────────────────────────── -->
+      <nav class="gf-indice">
+        <strong>Bloques disponibles</strong>
+        <ul>
+          <li><a href="#parrafos">Párrafos sueltos</a></li>
+          <li><a href="#impacto">Frase de impacto</a> — <code>.desc-impacto</code></li>
+          <li><a href="#chips">Chips</a> — <code>.desc-chips</code></li>
+          <li><a href="#card">Tarjeta "Qué aprenderás"</a> — <code>.desc-card</code></li>
+          <li><a href="#temario">Temario numerado</a> — <code>.desc-temario</code></li>
+          <li><a href="#stats">Estadísticas</a> — <code>.desc-stats</code></li>
+          <li><a href="#para-quien">¿Para quién?</a> — <code>.desc-para-quien</code></li>
+          <li><a href="#bienvenida">Bienvenida / Bonus</a> — <code>.desc-bienvenida</code></li>
+        </ul>
+        <p class="gf-nota gf-nota--top">
+          ⚠ Solo se permiten clases que empiecen por <code>desc-</code>. Cualquier
+          otra clase la elimina el saneador antes de guardar.
+        </p>
+      </nav>
+
+      <!-- REGLAS GLOBALES ──────────────────────────────────── -->
+      <section class="gf-seccion gf-reglas">
+        <h2>Reglas no escritas que importan</h2>
+        <ul class="gf-checklist">
+          <li>
+            <strong>Cada clase para lo suyo.</strong> Si pones el temario en
+            <code>.desc-no</code>, se renderiza como "esto NO está en el curso"
+            con cruces grises. <em>Caso real: el curso de Aula Ordinaria/Específica
+            tuvo este bug antes de crear <code>.desc-temario</code>.</em>
+          </li>
+          <li>
+            <strong>Bloques vacíos se ocultan en la web pública</strong>
+            (con regla CSS <code>:not(:has(…))</code>) pero <strong>siguen ahí</strong>
+            en la BD ocupando peso. Bórralos del editor cuando no los uses.
+          </li>
+          <li>
+            <strong>Nada de <code>&lt;br&gt;</code> sueltos para separar bloques.</strong>
+            Usa los contenedores que tienen su propio margen vertical.
+          </li>
+          <li>
+            <strong>Nada de <code>&lt;span&gt;&amp;nbsp;&lt;/span&gt;</code></strong>
+            que mete el editor automáticamente: si los ves, bórralos del HTML.
+          </li>
+          <li>
+            <strong>Los items del temario van sin "Bloque N —" delante.</strong>
+            El número lo pinta CSS. Solo el título limpio en cada <code>&lt;li&gt;</code>.
+          </li>
+          <li>
+            <strong>El editor te deja escribir en cualquier sitio:</strong>
+            siempre mira en HTML antes de guardar para confirmar que cada bloque
+            está donde toca.
+          </li>
+        </ul>
+      </section>
+
+      <!-- 1. PÁRRAFOS ──────────────────────────────────────── -->
+      <section id="parrafos" class="gf-seccion">
+        <h2>Párrafos sueltos</h2>
+        <p>Texto normal del cuerpo. Van como <code>&lt;p&gt;</code> directos, sin contenedor.</p>
+        <div class="gf-ejemplo">
+          <div class="gf-ejemplo-render cd-descripcion">
+            <p>Si has llegado a este curso es porque quieres preparar tu programación con criterio.</p>
+            <p>Este no es un curso para rellenar apartados — es para tomar decisiones pedagógicas conscientes.</p>
+          </div>
+          <pre class="gf-ejemplo-codigo"><code>&lt;p&gt;Si has llegado a este curso es porque…&lt;/p&gt;
+&lt;p&gt;Este no es un curso para rellenar…&lt;/p&gt;</code></pre>
+        </div>
+      </section>
+
+      <!-- 2. IMPACTO ──────────────────────────────────────── -->
+      <section id="impacto" class="gf-seccion">
+        <h2><code>.desc-impacto</code> — Frase potente destacada</h2>
+        <p>
+          Para una frase corta que quieras destacar. Se pinta con una barra
+          lateral del color del curso y tipografía algo mayor. <strong>Una sola
+          por descripción</strong>, idealmente al principio o tras la intro.
+        </p>
+        <div class="gf-ejemplo">
+          <div class="gf-ejemplo-render cd-descripcion">
+            <div class="desc-impacto">
+              <p>Paso a paso, con calma y con criterio. <em>Una programación de 10 está a tu alcance.</em></p>
+            </div>
+          </div>
+          <pre class="gf-ejemplo-codigo"><code>&lt;div class="desc-impacto"&gt;
+  &lt;p&gt;Paso a paso, con calma y con criterio.
+     &lt;em&gt;Una programación de 10 está a tu alcance.&lt;/em&gt;&lt;/p&gt;
+&lt;/div&gt;</code></pre>
+        </div>
+      </section>
+
+      <!-- 3. CHIPS ────────────────────────────────────────── -->
+      <section id="chips" class="gf-seccion">
+        <h2><code>.desc-chips</code> — Etiquetas/features cortas</h2>
+        <p>
+          Lista de palabras o conceptos clave — se renderizan como pills/badges
+          del color del curso. <strong>Items muy cortos</strong> (1-3 palabras
+          cada uno, máx 4 ítems). Estos chips se usan también en el listado de
+          cursos para mostrar puntos clave de cada curso.
+        </p>
+        <div class="gf-ejemplo">
+          <div class="gf-ejemplo-render cd-descripcion">
+            <div class="desc-chips">
+              <ul>
+                <li>Vídeo on-demand</li>
+                <li>Materiales descargables</li>
+                <li>Defensa oral</li>
+                <li>Casos prácticos</li>
+              </ul>
+            </div>
+          </div>
+          <pre class="gf-ejemplo-codigo"><code>&lt;div class="desc-chips"&gt;
+  &lt;ul&gt;
+    &lt;li&gt;Vídeo on-demand&lt;/li&gt;
+    &lt;li&gt;Materiales descargables&lt;/li&gt;
+    &lt;li&gt;Defensa oral&lt;/li&gt;
+    &lt;li&gt;Casos prácticos&lt;/li&gt;
+  &lt;/ul&gt;
+&lt;/div&gt;</code></pre>
+        </div>
+      </section>
+
+      <!-- 4. CARD ──────────────────────────────────────────── -->
+      <section id="card" class="gf-seccion">
+        <h2><code>.desc-card</code> — Lista tipo "Qué aprenderás"</h2>
+        <p>
+          Lista con checks. Para enumerar 3-6 cosas concretas que se llevan
+          del curso. Los items aparecen también en las tarjetas del catálogo
+          (max 4 puntos por tarjeta).
+        </p>
+        <div class="gf-ejemplo">
+          <div class="gf-ejemplo-render cd-descripcion">
+            <div class="desc-card">
+              <ul>
+                <li>Estructurar tu programación con coherencia interna</li>
+                <li>Diseñar una secuencia didáctica realista</li>
+                <li>Argumentar metodológicamente cada decisión</li>
+                <li>Preparar la defensa oral con seguridad</li>
+              </ul>
+            </div>
+          </div>
+          <pre class="gf-ejemplo-codigo"><code>&lt;div class="desc-card"&gt;
+  &lt;ul&gt;
+    &lt;li&gt;Estructurar tu programación…&lt;/li&gt;
+    &lt;li&gt;Diseñar una secuencia didáctica…&lt;/li&gt;
+    ...
+  &lt;/ul&gt;
+&lt;/div&gt;</code></pre>
+        </div>
+      </section>
+
+      <!-- 5. TEMARIO ──────────────────────────────────────── -->
+      <section id="temario" class="gf-seccion gf-seccion--destacada">
+        <h2><code>.desc-temario</code> — Temario numerado del curso</h2>
+        <p>
+          <strong>Para listar los 10-20 bloques del curso.</strong> Cada item se
+          pinta como una tarjeta con su número (01, 02, 03…) generado
+          automáticamente por CSS — <strong>NO escribas "Bloque N —" en cada
+          <code>&lt;li&gt;</code></strong>, solo el título limpio.
+        </p>
+        <p>
+          Usa <code>&lt;ol&gt;</code> (lista ordenada) en lugar de
+          <code>&lt;ul&gt;</code> — ambas funcionan, pero <code>&lt;ol&gt;</code>
+          es semánticamente lo correcto para un temario secuenciado.
+        </p>
+        <p>
+          Puedes incluir un <code>&lt;p&gt;</code> arriba (intro de la lista) y
+          otro <code>&lt;p&gt;</code> abajo (cierre).
+        </p>
+        <div class="gf-ejemplo">
+          <div class="gf-ejemplo-render cd-descripcion">
+            <div class="desc-temario">
+              <p>14 bloques que te guiarán paso a paso hasta el documento final.</p>
+              <ol>
+                <li>Antes de empezar: decisiones que lo cambian todo</li>
+                <li>Portada, introducción y justificación</li>
+                <li>Contextualización: localidad, centro y aulas</li>
+                <li>Tu alumnado: descripción con rigor y sensibilidad</li>
+                <li>Entramado curricular: el núcleo de tu intervención</li>
+                <li>Metodología: el corazón pedagógico</li>
+              </ol>
+              <p>Tienes todo lo que necesitas, ahora vamos a demostrarlo.</p>
+            </div>
+          </div>
+          <pre class="gf-ejemplo-codigo"><code>&lt;div class="desc-temario"&gt;
+  &lt;p&gt;14 bloques que te guiarán…&lt;/p&gt;
+  &lt;ol&gt;
+    &lt;li&gt;Antes de empezar: decisiones que lo cambian todo&lt;/li&gt;
+    &lt;li&gt;Portada, introducción y justificación&lt;/li&gt;
+    ...
+  &lt;/ol&gt;
+  &lt;p&gt;Tienes todo lo que necesitas…&lt;/p&gt;
+&lt;/div&gt;</code></pre>
+        </div>
+        <p class="gf-nota">
+          🚨 <strong>Error típico:</strong> meter el temario dentro de
+          <code>&lt;div class="desc-para-quien"&gt;&lt;div class="desc-no"&gt;</code>.
+          Se pinta como "esto NO está en el curso" con cruces grises. Si te pasa:
+          mueve el contenido a <code>.desc-temario</code>.
+        </p>
+      </section>
+
+      <!-- 6. STATS ────────────────────────────────────────── -->
+      <section id="stats" class="gf-seccion">
+        <h2><code>.desc-stats</code> — Cifras destacadas</h2>
+        <p>
+          Para mostrar 3-4 números/datos llamativos en grid. Cada item es un
+          <code>&lt;div class="desc-stat"&gt;</code> con un dato grande
+          (<code>&lt;strong&gt;</code>) y una etiqueta corta debajo
+          (<code>&lt;span&gt;</code>).
+        </p>
+        <div class="gf-ejemplo">
+          <div class="gf-ejemplo-render cd-descripcion">
+            <div class="desc-stats">
+              <div class="desc-stat"><strong>32</strong><span>Vídeos</span></div>
+              <div class="desc-stat"><strong>9</strong><span>Bloques</span></div>
+              <div class="desc-stat"><strong>+ PDF</strong><span>Descargables</span></div>
+              <div class="desc-stat"><strong>NEAE</strong><span>Guía incluida</span></div>
+            </div>
+          </div>
+          <pre class="gf-ejemplo-codigo"><code>&lt;div class="desc-stats"&gt;
+  &lt;div class="desc-stat"&gt;
+    &lt;strong&gt;32&lt;/strong&gt;&lt;span&gt;Vídeos&lt;/span&gt;
+  &lt;/div&gt;
+  &lt;div class="desc-stat"&gt;
+    &lt;strong&gt;9&lt;/strong&gt;&lt;span&gt;Bloques&lt;/span&gt;
+  &lt;/div&gt;
+  ...
+&lt;/div&gt;</code></pre>
+        </div>
+        <p class="gf-nota">
+          💡 Usa <strong>siempre <code>&lt;span&gt;</code></strong> para la
+          etiqueta. Si pones texto suelto (sin span) queda pegado al número
+          sin separación visual.
+        </p>
+      </section>
+
+      <!-- 7. PARA QUIÉN ───────────────────────────────────── -->
+      <section id="para-quien" class="gf-seccion">
+        <h2><code>.desc-para-quien</code> — ¿Para quién es y para quién NO?</h2>
+        <p>
+          Bloque doble con dos columnas: a la izquierda <code>.desc-si</code>
+          (tarjeta verde con ✓ — "este curso es para ti si…") y a la derecha
+          <code>.desc-no</code> (tarjeta gris con ✗ — "este curso NO es para
+          ti si…").
+        </p>
+        <p>
+          <strong>⚠ NO uses <code>.desc-no</code> para ninguna otra cosa.</strong>
+          Si solo quieres una lista de items positivos, usa <code>.desc-card</code>
+          o <code>.desc-temario</code>.
+        </p>
+        <div class="gf-ejemplo">
+          <div class="gf-ejemplo-render cd-descripcion">
+            <div class="desc-para-quien">
+              <div class="desc-si">
+                <h3>Para ti SÍ es</h3>
+                <ul>
+                  <li>Preparas la oposición de PT</li>
+                  <li>Quieres una programación con criterio</li>
+                  <li>Necesitas materiales reales y aplicables</li>
+                </ul>
+              </div>
+              <div class="desc-no">
+                <h3>NO es para ti si</h3>
+                <ul>
+                  <li>Buscas una plantilla genérica</li>
+                  <li>No vas a invertir tiempo en personalizarla</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <pre class="gf-ejemplo-codigo"><code>&lt;div class="desc-para-quien"&gt;
+  &lt;div class="desc-si"&gt;
+    &lt;h3&gt;Para ti SÍ es&lt;/h3&gt;
+    &lt;ul&gt;&lt;li&gt;…&lt;/li&gt;&lt;/ul&gt;
+  &lt;/div&gt;
+  &lt;div class="desc-no"&gt;
+    &lt;h3&gt;NO es para ti si&lt;/h3&gt;
+    &lt;ul&gt;&lt;li&gt;…&lt;/li&gt;&lt;/ul&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+        </div>
+      </section>
+
+      <!-- 8. BIENVENIDA ───────────────────────────────────── -->
+      <section id="bienvenida" class="gf-seccion">
+        <h2><code>.desc-bienvenida</code> — Mensaje de cierre / bonus</h2>
+        <p>
+          Bloque destacado con fondo suave del color del curso. Pensado para
+          el cierre de la descripción: un mensaje de bienvenida, un bonus
+          incluido o cualquier llamada final.
+        </p>
+        <div class="gf-ejemplo">
+          <div class="gf-ejemplo-render cd-descripcion">
+            <div class="desc-bienvenida">
+              <div class="desc-bienvenida-inner">
+                <p><strong>+ BONUS CON PROGRAMACIÓN Y DEFENSA</strong></p>
+                <p>Al inscribirte te llevas también la programación de muestra completa.</p>
+              </div>
+            </div>
+          </div>
+          <pre class="gf-ejemplo-codigo"><code>&lt;div class="desc-bienvenida"&gt;
+  &lt;div class="desc-bienvenida-inner"&gt;
+    &lt;p&gt;&lt;strong&gt;+ BONUS CON PROGRAMACIÓN Y DEFENSA&lt;/strong&gt;&lt;/p&gt;
+    &lt;p&gt;Al inscribirte te llevas también…&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+        </div>
+        <p class="gf-nota">
+          ⚠ Si dejas el <code>.desc-bienvenida-inner</code> vacío, en la web
+          pública se oculta (regla CSS), pero <strong>el contenedor sigue ahí
+          en la BD</strong>. Bórralo del editor cuando no lo uses.
+        </p>
+      </section>
+
+      <!-- ORDEN RECOMENDADO ───────────────────────────────── -->
+      <section class="gf-seccion">
+        <h2>Orden recomendado de los bloques</h2>
+        <ol class="gf-orden">
+          <li>2-3 <code>&lt;p&gt;</code> de introducción al curso</li>
+          <li><code>.desc-impacto</code> con la frase clave</li>
+          <li><code>.desc-chips</code> con las features cortas</li>
+          <li><code>.desc-temario</code> con los bloques numerados</li>
+          <li><code>.desc-stats</code> con las cifras del curso</li>
+          <li><code>.desc-para-quien</code> opcional</li>
+          <li><code>.desc-bienvenida</code> con el bonus o mensaje de cierre</li>
+        </ol>
+        <p>No es obligatorio usar todos los bloques. Mejor pocos bien usados que muchos mal.</p>
+      </section>
+
+    </div>
+  </main>
+
+</PlantillaAdmin>
+
+<style is:global>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;800&display=swap');
+
+.gf-pagina {
+  padding: 2rem 2rem 4rem;
+  background: #fafafa;
+}
+.gf-inner {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.gf-cabecera {
+  margin-bottom: 2rem;
+}
+.gf-cabecera h1 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  margin: 0 0 0.75rem;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+.gf-sub {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+  margin: 0;
+  max-width: 760px;
+}
+.gf-sub code,
+.gf-pagina code {
+  background: #eef0ef;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.88em;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  color: #1a1a1a;
+}
+
+/* Índice de bloques */
+.gf-indice {
+  background: #fff;
+  border: 1px solid #ebebeb;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+.gf-indice strong {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-text-muted);
+  margin-bottom: 0.75rem;
+}
+.gf-indice ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.4rem 1rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.gf-indice li {
+  font-size: 0.9rem;
+}
+.gf-indice a {
+  color: var(--color-text);
+  text-decoration: none;
+  border-bottom: 1px dashed #cfd9d4;
+}
+.gf-indice a:hover { border-bottom-color: var(--color-primary); }
+
+/* Sección */
+.gf-seccion {
+  background: #fff;
+  border: 1px solid #ebebeb;
+  border-radius: 12px;
+  padding: 1.75rem 1.75rem 1.5rem;
+  margin-bottom: 1.5rem;
+  scroll-margin-top: 1rem;
+}
+.gf-seccion--destacada {
+  border-color: color-mix(in srgb, var(--color-coral) 50%, transparent);
+  background: color-mix(in srgb, var(--color-coral) 5%, #ffffff);
+}
+.gf-seccion h2 {
+  font-size: 1.1rem;
+  font-weight: 800;
+  margin: 0 0 0.75rem;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+}
+.gf-seccion h2 code {
+  font-size: 0.92em;
+}
+.gf-seccion p {
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: var(--color-text);
+  margin: 0 0 0.85rem;
+}
+.gf-seccion ul,
+.gf-seccion ol {
+  padding-left: 1.25rem;
+  margin: 0 0 0.85rem;
+}
+.gf-seccion li {
+  font-size: 0.92rem;
+  line-height: 1.65;
+  margin-bottom: 0.4rem;
+}
+
+.gf-checklist {
+  list-style: none;
+  padding: 0;
+}
+.gf-checklist > li {
+  padding: 0.75rem 0.85rem 0.75rem 2.3rem;
+  background: #fafafa;
+  border-radius: 8px;
+  position: relative;
+  margin-bottom: 0.6rem;
+}
+.gf-checklist > li::before {
+  content: '✓';
+  position: absolute;
+  left: 0.85rem;
+  top: 0.7rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  background: var(--color-primary);
+  border-radius: 50%;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gf-orden {
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 1rem 1rem 1rem 2.4rem;
+}
+.gf-orden li { color: var(--color-text); }
+
+/* Ejemplos: render + código lado a lado en desktop, apilados en móvil */
+.gf-ejemplo {
+  margin-top: 1.25rem;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 1rem;
+}
+@media (max-width: 860px) {
+  .gf-ejemplo { grid-template-columns: 1fr; }
+}
+.gf-ejemplo-render {
+  background: #fff;
+  border: 1px dashed #cfd9d4;
+  border-radius: 10px;
+  padding: 1.25rem;
+  --curso-color: var(--color-primary);
+  --color-text: #1a1a1a;
+}
+.gf-ejemplo-codigo {
+  background: #1f2933;
+  color: #d8e0e8;
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  overflow-x: auto;
+  margin: 0;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+.gf-ejemplo-codigo code {
+  background: none;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+}
+
+.gf-nota {
+  background: color-mix(in srgb, var(--color-coral) 14%, #ffffff);
+  border-left: 3px solid var(--color-coral);
+  padding: 0.85rem 1rem;
+  margin: 1rem 0 0;
+  border-radius: 0 6px 6px 0;
+  font-size: 0.88rem !important;
+  line-height: 1.55;
+}
+.gf-nota--top {
+  margin-top: 1rem;
+  border-left-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 14%, #ffffff);
+}
+</style>

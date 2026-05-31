@@ -64,6 +64,10 @@ if ($rol === 'admin') {
     );
     $stmt->execute([':mid' => $materialId]);
 } else {
+    // Excluye temas cuyo bloqueo aún no ha expirado. La condición
+    // (t.bloqueado_hasta IS NULL OR t.bloqueado_hasta <= NOW()) hace que
+    // los temas bloqueados no devuelvan resultados y por tanto el alumno
+    // recibe 403 aunque conociera el material_id.
     $stmt = $pdo->prepare(
         "SELECT m.vdocipher_video_id
          FROM materiales m
@@ -71,7 +75,8 @@ if ($rol === 'admin') {
          INNER JOIN usuarios_cursos uc ON uc.curso_id = t.curso_id
          INNER JOIN cursos c ON c.id = t.curso_id
          WHERE m.id = :mid AND m.tipo = 'video'
-           AND uc.usuario_id = :uid AND c.activo = 1"
+           AND uc.usuario_id = :uid AND c.activo = 1
+           AND (t.bloqueado_hasta IS NULL OR t.bloqueado_hasta <= NOW())"
     );
     $stmt->execute([':mid' => $materialId, ':uid' => $usuarioId]);
 }

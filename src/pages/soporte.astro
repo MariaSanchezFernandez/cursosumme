@@ -10,6 +10,25 @@ import PiePagina from '../components/PiePagina.astro';
   <main class="sp-main">
     <div class="sp-container">
 
+      <!-- Aviso: la web está en marcha y queremos feedback -->
+      <div class="sp-aviso-prod">
+        <div class="sp-aviso-icono">
+          <svg viewBox="0 0 20 20" fill="none" width="20" height="20" aria-hidden="true">
+            <path d="M10 2.5L17 17H3L10 2.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            <path d="M10 8v3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            <circle cx="10" cy="14" r="0.9" fill="currentColor"/>
+          </svg>
+        </div>
+        <div>
+          <p class="sp-aviso-titulo">La web está recién estrenada</p>
+          <p class="sp-aviso-texto">
+            Si encuentras cualquier cosa que no funciona como esperas — un botón que no responde, un vídeo
+            que no carga, un texto raro, lo que sea —, <strong>cuéntanoslo por aquí</strong>. Nos ayuda
+            mucho saberlo para arreglarlo cuanto antes.
+          </p>
+        </div>
+      </div>
+
       <!-- Cabecera de sección -->
       <div class="sp-header">
         <div>
@@ -414,6 +433,39 @@ cargarTickets();
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 1.75rem;
+}
+
+/* Aviso "web recién estrenada" */
+.sp-aviso-prod {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+  background: #eef6ff;
+  border: 1px solid #c9def5;
+  border-left: 4px solid #4a8fd0;
+  border-radius: 10px;
+  padding: 0.9rem 1.1rem;
+  margin: 0 0 1.5rem;
+  color: #3b5a7a;
+}
+.sp-aviso-icono {
+  flex-shrink: 0;
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  background: #d8e8f7;
+  color: #3b5a7a;
+  border-radius: 50%;
+}
+.sp-aviso-titulo {
+  margin: 0 0 0.2rem;
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: #2a4566;
+}
+.sp-aviso-texto {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
 }
 
 .sp-titulo {

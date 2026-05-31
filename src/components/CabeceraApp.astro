@@ -4,6 +4,7 @@ import '../styles/CabeceraApp.css';
 
 <header class="header">
   <a class="logo" href="/inicio">
+    <img class="logo-img" src="/logo.png" alt="Cursos Umme" width="44" height="44" />
     <span class="logo-marca">Cursos</span>
     <span class="logo-umme">Umme</span>
   </a>
@@ -103,8 +104,29 @@ import '../styles/CabeceraApp.css';
   }
   comprobarTickets();
 
-  // Abrir selector de archivo al clicar el avatar
-  avatarBtn.addEventListener('click', () => fileInput.click());
+  // Click en el avatar:
+  //  - En desktop abre el selector de archivo para cambiar la foto (atajo).
+  //  - En móvil (<=640) la usuaria no tiene otro acceso a /perfil porque
+  //    el nombre y demás controles se colapsan a iconos, así que el avatar
+  //    pasa a ser su atajo al perfil. La foto se sigue pudiendo cambiar
+  //    desde dentro de /perfil, con el avatar grande de esa página.
+  const esMovil = () => window.matchMedia('(max-width: 640px)').matches;
+  avatarBtn.addEventListener('click', () => {
+    if (esMovil()) window.location.href = '/perfil';
+    else fileInput.click();
+  });
+  // Refleja el destino correcto en el cursor / title según el viewport
+  function ajustarHintAvatar() {
+    if (esMovil()) {
+      avatarBtn.title = 'Mi perfil';
+      avatarBtn.setAttribute('aria-label', 'Ir a mi perfil');
+    } else {
+      avatarBtn.title = 'Cambiar foto de perfil';
+      avatarBtn.setAttribute('aria-label', 'Cambiar foto de perfil');
+    }
+  }
+  ajustarHintAvatar();
+  window.addEventListener('resize', ajustarHintAvatar);
 
   fileInput.addEventListener('change', async () => {
     const archivo = fileInput.files?.[0];

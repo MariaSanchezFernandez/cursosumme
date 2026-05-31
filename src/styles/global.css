@@ -47,7 +47,217 @@ body {
   font-weight: 400;
   color: var(--color-text);
   background-color: var(--color-light);
+  /* Sticky footer: el body siempre llena el viewport y el <main>
+     directo crece. Así el footer queda abajo del todo en páginas
+     cortas (pago-ok, pago-ko, errores) en lugar de subir al medio. */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  /* Defensa anti-overflow horizontal global: si algún ancestro
+     (cabecera con texto largo, tarjeta con dimensión inesperada,
+     tabla con celdas anchas…) acaba excediendo el ancho del viewport,
+     impedimos que aparezca scroll lateral en toda la página. El
+     contenido que se salga queda recortado en lugar de empujar el
+     resto a la derecha. */
+  overflow-x: clip;
 }
+body > main { flex: 1 0 auto; }
+
+/* ───────────────────────────────────────────────────────────────
+   Estados de pago (/pago-ok y /pago-ko)
+   Comparten tarjeta centrada con icono, h1, mensaje y CTA. Las dos
+   páginas reutilizan estas clases; las variantes específicas de
+   cada estado (icono OK turquesa, spinner, etc.) viven en sus
+   propios <style is:global> dentro de cada página.
+   ─────────────────────────────────────────────────────────────── */
+.pago-estado {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 1.5rem;
+  background:
+    radial-gradient(circle at 20% 20%, color-mix(in srgb, var(--color-coral) 22%, transparent), transparent 55%),
+    radial-gradient(circle at 80% 80%, color-mix(in srgb, var(--color-primary) 22%, transparent), transparent 55%),
+    #ffffff;
+}
+.pago-estado-inner {
+  max-width: 520px;
+  width: 100%;
+  text-align: center;
+  background: #ffffff;
+  border: 1px solid #eef0ef;
+  border-radius: var(--radius-md);
+  padding: 3rem 2.25rem 2.5rem;
+  box-shadow: 0 20px 50px -20px rgba(0,0,0,0.10);
+}
+.pago-estado-icono {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-coral) 30%, #ffffff);
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+}
+.pago-estado-icono svg { width: 38px; height: 38px; }
+.pago-estado h1 {
+  font-size: clamp(1.5rem, 3vw, 1.9rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.75rem;
+  color: var(--color-text);
+}
+.pago-estado-msg {
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--color-text-muted);
+  margin: 0 0 2rem;
+}
+.pago-estado-cta {
+  display: flex;
+  justify-content: center;
+}
+@media (max-width: 480px) {
+  .pago-estado { padding: 2.5rem 1.25rem; }
+  .pago-estado-inner { padding: 2rem 1.5rem 1.75rem; }
+}
+
+/* ───────────────────────────────────────────────────────────────
+   Páginas legales (/aviso-legal, /privacidad, /cookies, /condiciones)
+   Maquetación común: contenedor centrado con tipografía legible,
+   secciones bien separadas y tablas estilizadas para listas de
+   cookies/finalidades. Sin alardes — es contenido textual largo
+   que la gente lee solo cuando lo necesita.
+   ─────────────────────────────────────────────────────────────── */
+.legal-pagina {
+  padding: 3rem 1.5rem 5rem;
+  background: #fff;
+}
+.legal-inner {
+  max-width: 780px;
+  margin: 0 auto;
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: var(--color-text);
+}
+.legal-cabecera {
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid #eef0ef;
+}
+.legal-eyebrow {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--color-text-muted);
+  margin: 0 0 0.65rem;
+}
+.legal-cabecera h1 {
+  font-size: clamp(1.8rem, 3.5vw, 2.3rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin: 0 0 0.65rem;
+}
+.legal-fecha {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+.legal-inner section { margin-bottom: 2.25rem; }
+.legal-inner h2 {
+  font-size: 1.2rem;
+  font-weight: 800;
+  margin: 0 0 0.85rem;
+  letter-spacing: -0.01em;
+}
+.legal-inner p { margin: 0 0 0.85rem; }
+.legal-inner ul {
+  margin: 0 0 0.85rem;
+  padding-left: 1.4rem;
+}
+.legal-inner li { margin-bottom: 0.35rem; }
+.legal-inner a {
+  color: var(--color-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.legal-inner a:hover { color: var(--color-primary); }
+.legal-inner code {
+  background: var(--color-light);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.85em;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+.legal-lista-datos {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  background: var(--color-light);
+  border-radius: var(--radius-md);
+  padding: 1.1rem 1.25rem;
+}
+.legal-lista-datos li {
+  margin: 0;
+  padding: 0.35rem 0;
+}
+/* Wrapper de las tablas legales. Dos roles:
+   1) En móvil, aísla el scroll horizontal de la tabla para que la
+      página no se desplace lateralmente.
+   2) En desktop, saca la tabla del contenedor estrecho de texto
+      (.legal-inner = 780px) usando márgenes negativos para que
+      pueda mostrar 3-4 columnas sin estrujarse. El resto del
+      contenido legal sigue en 780px. */
+.legal-tabla-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 1rem 0;
+}
+@media (min-width: 1100px) {
+  .legal-tabla-wrap {
+    margin-left: -150px;
+    margin-right: -150px;
+  }
+}
+@media (min-width: 1300px) {
+  .legal-tabla-wrap {
+    margin-left: -220px;
+    margin-right: -220px;
+  }
+}
+.legal-tabla {
+  width: 100%;
+  min-width: 520px;
+  border-collapse: collapse;
+  margin: 0;
+  font-size: 0.9rem;
+}
+.legal-tabla th,
+.legal-tabla td {
+  text-align: left;
+  padding: 0.75rem 0.85rem;
+  border-bottom: 1px solid #eef0ef;
+  vertical-align: top;
+}
+.legal-tabla thead th {
+  background: var(--color-light);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text);
+}
+.legal-pendiente {
+  background: color-mix(in srgb, var(--color-coral) 18%, #ffffff);
+  border: 1px solid color-mix(in srgb, var(--color-coral) 35%, transparent);
+  border-radius: var(--radius-md);
+  padding: 1.5rem 1.75rem;
+}
+.legal-pendiente p:last-child { margin-bottom: 0; }
 
 /* ───────────────────────────────────────────────────────────────
    Botones de llamada a la acción reutilizables (.cta)

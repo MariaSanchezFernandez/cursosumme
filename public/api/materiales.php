@@ -51,6 +51,17 @@ if ($metodo === 'GET') {
         echo json_encode(['ok' => false, 'mensaje' => 'Falta tema_id']);
         exit;
     }
+    // Si el tema está bloqueado y el usuario no es admin, no listamos
+    // sus materiales: el alumno solo debe ver la cuenta atrás.
+    if ($user['rol'] !== 'admin') {
+        $stmtBh = $pdo->prepare('SELECT bloqueado_hasta FROM temas WHERE id = :id');
+        $stmtBh->execute([':id' => $temaId]);
+        $bh = $stmtBh->fetchColumn();
+        if ($bh && strtotime($bh) > time()) {
+            echo json_encode(['ok' => true, 'materiales' => [], 'bloqueado_hasta' => $bh]);
+            exit;
+        }
+    }
     $stmt = $pdo->prepare(
         'SELECT id, tipo, nombre, ruta, tamano_kb, duracion_seg, vdocipher_video_id, vdo_status, subido_en
          FROM materiales WHERE tema_id = :tema_id ORDER BY orden ASC, subido_en ASC'

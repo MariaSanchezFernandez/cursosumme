@@ -57,7 +57,40 @@ import '../styles/index.css';
   </script>
 
   <FondoLogin />
+  <a href="/" class="login-volver" aria-label="Volver a Cursos Umme">
+    <span aria-hidden="true">←</span> Volver a Cursos Umme
+  </a>
   <main class="login-page">
     <TarjetaLogin />
   </main>
 </Plantilla>
+
+<style>
+.login-volver {
+  position: absolute;
+  top: 1.25rem;
+  left: 1.5rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.9rem;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text);
+  text-decoration: none;
+  transition: background 0.15s, transform 0.15s, border-color 0.15s;
+}
+.login-volver:hover {
+  background: #fff;
+  border-color: var(--color-primary);
+  transform: translateX(-2px);
+}
+@media (max-width: 480px) {
+  .login-volver { top: 0.85rem; left: 0.85rem; padding: 0.4rem 0.75rem; font-size: 0.78rem; }
+}
+</style>

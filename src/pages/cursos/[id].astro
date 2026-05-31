@@ -23,6 +23,8 @@ import Plantilla from '../../layouts/Plantilla.astro';
 import CabeceraPublica from '../../components/CabeceraPublica.astro';
 import PiePagina from '../../components/PiePagina.astro';
 import { formatearDuracion } from '../../utils/duracion';
+// Estilos de .cd-descripcion + .desc-* — compartidos con /admin/guia-formato.
+import '../../styles/CursoDescripcion.css';
 
 interface CursoBasico {
   id: number;
@@ -122,10 +124,6 @@ const tituloPag = `${curso.titulo} — Cursos Umme`;
                 <span>{curso.nivel}</span>
               </li>
             )}
-            <li>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-              <span>Acceso hasta <strong>1 año</strong></span>
-            </li>
           </ul>
 
           <div class="cd-compra">
@@ -198,7 +196,7 @@ const tituloPag = `${curso.titulo} — Cursos Umme`;
         >
           Comprar acceso →
         </button>
-        <p class="cd-cierre-pie">Pago único · Sin suscripción · Acceso inmediato tras el pago</p>
+        <p class="cd-cierre-pie">Pago único · Sin suscripción · Acceso inmediato tras el pago · Acceso hasta finalización de convocatoria</p>
       </div>
     </section>
 
@@ -206,7 +204,7 @@ const tituloPag = `${curso.titulo} — Cursos Umme`;
     <aside class="cd-licencia">
       <p>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-        Contenido creado por <strong>Una Maestra Muy Especial</strong>, ofrecido en Cursos Umme bajo licencia.
+        Materiales didácticos de <strong>Una Maestra Muy Especial</strong>, ofrecidos en Cursos Umme bajo licencia.
       </p>
     </aside>
   </main>
@@ -461,165 +459,9 @@ const tituloPag = `${curso.titulo} — Cursos Umme`;
   margin: 0;
 }
 
-/* ── Descripción HTML del curso (estilo editorial Medium/Substack)
-   Tipografía generosa, mucho aire, sin cajas con borde ni fondos.
-   Los bloques custom del editor (.desc-card, .desc-stats, .desc-nota,
-   .desc-bienvenida) se aplanan: títulos clásicos, números grandes,
-   barras laterales en lugar de fondos. La columna mantiene medida
-   de lectura cómoda (~720px) centrada para no cansar la vista.
-   ─────────────────────────────────────────────────────────── */
-.cd-descripcion {
-  font-size: 1.13rem;
-  line-height: 1.78;
-  color: #1f1f1f;
-  max-width: 720px;
-  margin: 0 auto;
-  font-feature-settings: "kern" 1, "liga" 1;
-}
-.cd-descripcion > * + * { margin-top: 1.4rem; }
-
-.cd-descripcion p {
-  margin: 0;
-}
-.cd-descripcion p span { display: inline; }
-
-.cd-descripcion em {
-  font-style: italic;
-  color: #1f1f1f;
-}
-
-.cd-descripcion strong {
-  font-weight: 700;
-  color: var(--color-text);
-}
-
-.cd-descripcion h2 {
-  font-size: 1.85rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
-  color: var(--color-text);
-  margin-top: 3rem;
-  margin-bottom: 0.4rem;
-}
-.cd-descripcion h3 {
-  font-size: 1.35rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  line-height: 1.3;
-  color: var(--color-text);
-  margin-top: 2.5rem;
-  margin-bottom: 0.3rem;
-}
-
-.cd-descripcion ul,
-.cd-descripcion ol {
-  margin: 0;
-  padding-left: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-}
-.cd-descripcion li {
-  position: relative;
-  padding-left: 1.6rem;
-  line-height: 1.7;
-}
-.cd-descripcion li::before {
-  content: '';
-  position: absolute;
-  left: 0.25rem;
-  top: 0.78em;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--color-text);
-}
-
-.cd-descripcion blockquote {
-  margin: 2.2rem 0;
-  padding: 0.2rem 0 0.2rem 1.5rem;
-  border-left: 4px solid var(--curso-color);
-  font-size: 1.3rem;
-  font-weight: 500;
-  line-height: 1.5;
-  letter-spacing: -0.01em;
-  color: var(--color-text);
-  font-style: italic;
-}
-.cd-descripcion blockquote p { margin: 0; }
-
-/* ── Bloques custom del editor (aplanados, sin cajas) ──── */
-
-/* .desc-card: el editor lo usa para listas tipo "Qué aprenderás".
-   Eliminamos la caja: solo queda un h3 + lista, separados del
-   resto por un poco más de margen vertical. */
-.cd-descripcion .desc-card {
-  margin: 2.5rem 0;
-}
-.cd-descripcion .desc-card h3 {
-  margin-top: 0;
-  margin-bottom: 1rem;
-}
-
-/* .desc-stats: cifras destacadas en grid. Sin cajas — solo
-   números enormes y label discreto, separados por una línea
-   sutil arriba y abajo. */
-.cd-descripcion .desc-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 1.5rem 2rem;
-  margin: 2.5rem 0;
-  padding: 1.75rem 0;
-  border-top: 1px solid #eef0ef;
-  border-bottom: 1px solid #eef0ef;
-}
-.cd-descripcion .desc-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.2rem;
-}
-.cd-descripcion .desc-stat strong {
-  font-size: 2.4rem;
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: -0.03em;
-  color: var(--color-text);
-}
-.cd-descripcion .desc-stat span {
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: var(--color-text-muted);
-  text-transform: none;
-  letter-spacing: 0;
-}
-
-/* .desc-nota: barra lateral discreta a la izquierda, sin fondo. */
-.cd-descripcion .desc-nota {
-  margin: 2rem 0;
-  padding: 0.2rem 0 0.2rem 1.25rem;
-  border-left: 3px solid color-mix(in srgb, var(--curso-color) 70%, #ffffff);
-  font-size: 1rem;
-  line-height: 1.7;
-  color: #2a2a2a;
-}
-.cd-descripcion .desc-nota p { margin: 0; }
-.cd-descripcion .desc-nota strong {
-  font-weight: 700;
-}
-
-/* .desc-bienvenida: en la mayoría de cursos viene vacía o casi.
-   Si tiene contenido, se ve como otro bloque limpio. */
-.cd-descripcion .desc-bienvenida {
-  margin: 2rem 0;
-}
-.cd-descripcion .desc-bienvenida:empty,
-.cd-descripcion .desc-bienvenida .desc-bienvenida-inner:empty {
-  display: none;
-}
-.cd-descripcion .desc-bienvenida br:only-child { display: none; }
+/* Los estilos de .cd-descripcion + .desc-* viven en
+   src/styles/CursoDescripcion.css (importado al frontmatter) para
+   poder reutilizarse desde /admin/guia-formato. */
 
 .cd-vacia {
   color: var(--color-text-muted);

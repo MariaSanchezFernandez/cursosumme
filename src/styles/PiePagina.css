@@ -1,33 +1,92 @@
+/* Footer público — datos identificativos LSSI + enlaces legales. */
 .footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.25rem var(--space-4);
   border-top: 1px solid #e8eeec;
   background: #fff;
+  padding: 2.5rem var(--space-4) 1.5rem;
+}
+
+.footer-inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 2.5rem;
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid #f1f4f3;
+}
+
+.footer-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.footer-titulo {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-text);
+  margin: 0 0 0.5rem;
 }
 
 .footer-logo {
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
+  display: inline-block;
+  margin-bottom: 0.75rem;
+  transition: transform 0.2s ease;
 }
+.footer-logo img {
+  height: 56px;
+  width: 56px;
+  display: block;
+  object-fit: contain;
+}
+.footer-logo:hover { transform: scale(1.05); }
 
-.footer-logo strong {
-  font-weight: 800;
+.footer-titular-nombre {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+.footer-titular-linea {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  line-height: 1.55;
+  margin: 0;
+}
+.footer-titular-linea a {
+  color: var(--color-text);
+  text-decoration: none;
+  border-bottom: 1px solid #cfd9d4;
+}
+.footer-titular-linea a:hover { border-bottom-color: var(--color-primary); }
+
+.footer-col--legal a,
+.footer-col--web a {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.footer-col--legal a:hover,
+.footer-col--web a:hover {
   color: var(--color-text);
 }
 
 .footer-copy {
-  font-size: 0.75rem;
+  max-width: 1180px;
+  margin: 1.25rem auto 0;
+  font-size: 0.72rem;
   color: #bbb;
+  text-align: center;
 }
 
-@media (max-width: 640px) {
-  .footer {
-    padding: 0.9rem var(--space-2);
-    flex-direction: column;
-    gap: 0.35rem;
-    text-align: center;
+@media (max-width: 720px) {
+  .footer { padding: 2rem var(--space-2) 1.25rem; }
+  .footer-inner {
+    grid-template-columns: 1fr;
+    gap: 1.75rem;
+    padding-bottom: 1.25rem;
   }
-  .footer-logo, .footer-copy { font-size: 0.72rem; }
 }

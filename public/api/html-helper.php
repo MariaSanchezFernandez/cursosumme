@@ -108,3 +108,101 @@ function limpiarHtml(?string $html): string {
 
     return trim($result);
 }
+
+/**
+ * Extrae un resumen plano (sin HTML) del primer párrafo útil de una
+ * descripción HTML. Pensado para tarjetas de listado donde cada curso
+ * necesita un teaser propio en lugar de las características genéricas
+ * repetidas.
+ *
+ * - Busca el primer <p> con contenido real (descarta vacíos / sólo
+ *   espacios) y, si no encuentra ninguno, cae a strip_tags del bloque.
+ * - Normaliza espacios y entidades. Corta en la última palabra antes
+ *   de `$max` caracteres y añade ellipsis si recorta.
+ */
+function extraerResumen(?string $html, int $max = 180): string {
+    if (!$html) return '';
+    $texto = '';
+    if (preg_match_all('/<p[^>]*>(.*?)<\/p>/is', $html, $matches)) {
+        foreach ($matches[1] as $p) {
+            $plano = trim(preg_replace('/\s+/u', ' ', strip_tags($p)));
+            if ($plano !== '' && mb_strlen($plano) > 20) { $texto = $plano; break; }
+        }
+    }
+    if ($texto === '') {
+        $texto = trim(preg_replace('/\s+/u', ' ', strip_tags($html)));
+    }
+    $texto = html_entity_decode($texto, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    if (mb_strlen($texto) > $max) {
+        $recorte = mb_substr($texto, 0, $max);
+        $espacio = mb_strrpos($recorte, ' ');
+        if ($espacio !== false && $espacio > $max - 40) {
+            $recorte = mb_substr($recorte, 0, $espacio);
+        }
+        $texto = rtrim($recorte, ".,;:—-") . '…';
+    }
+    return $texto;
+}
+
+/**
+ * Extrae una lista de puntos clave (máx N) de una descripción HTML.
+ * Pensado para las tarjetas de listado: cada curso necesita su propia
+ * lista de bullets, no las mismas características genéricas repetidas.
+ *
+ * Selección por orden de afinidad con la intención del editor:
+ *   1. .desc-chips li     — lista corta de etiquetas/features
+ *   2. .desc-card li      — lista "qué aprenderás" o similar
+ *   3. .desc-si li        — solo la parte positiva del bloque "para quién"
+ *   4. cualquier <li> que NO esté dentro de .desc-no ni .desc-para-quien
+ *
+ * Cada item se devuelve como texto plano, ≤90 chars, recortado en palabra.
+ */
+function extraerPuntos(?string $html, int $max = 4): array {
+    if (!$html || !trim($html)) return [];
+
+    $doc = new DOMDocument('1.0', 'UTF-8');
+    libxml_use_internal_errors(true);
+    $doc->loadHTML(
+        '<?xml encoding="UTF-8"><!DOCTYPE html><html><body><div id="root">'
+        . $html .
+        '</div></body></html>',
+        LIBXML_NOWARNING | LIBXML_NOERROR
+    );
+    libxml_clear_errors();
+
+    $root = $doc->getElementById('root');
+    if (!$root) return [];
+    $xpath = new DOMXPath($doc);
+
+    $consultas = [
+        ".//div[contains(concat(' ',normalize-space(@class),' '),' desc-chips ')]//li",
+        ".//div[contains(concat(' ',normalize-space(@class),' '),' desc-card ')]//li",
+        ".//div[contains(concat(' ',normalize-space(@class),' '),' desc-si ')]//li",
+        ".//li[not(ancestor::div[contains(concat(' ',normalize-space(@class),' '),' desc-no ')])"
+            . " and not(ancestor::div[contains(concat(' ',normalize-space(@class),' '),' desc-para-quien ')])]",
+    ];
+
+    foreach ($consultas as $q) {
+        $nodes = $xpath->query($q, $root);
+        if (!$nodes || $nodes->length === 0) continue;
+        $puntos = [];
+        $vistos = [];
+        foreach ($nodes as $li) {
+            $t = trim(preg_replace('/\s+/u', ' ', $li->textContent ?? ''));
+            if ($t === '') continue;
+            // Estricto: ≤4 palabras por item para que la lista quede
+            // visual y compacta. Los items más largos se descartan; el
+            // editor debe meter chips cortos en .desc-chips si quiere
+            // que el curso aparezca aquí.
+            $palabras = preg_split('/\s+/u', $t, -1, PREG_SPLIT_NO_EMPTY);
+            if (!$palabras || count($palabras) > 4) continue;
+            $key = mb_strtolower($t);
+            if (isset($vistos[$key])) continue;
+            $vistos[$key] = true;
+            $puntos[] = $t;
+            if (count($puntos) >= $max) break;
+        }
+        if (!empty($puntos)) return $puntos;
+    }
+    return [];
+}

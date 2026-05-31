@@ -185,18 +185,91 @@ try {
         }
     }
 
+    // 6. Desglose de reutilización: por cada vdocipher_video_id en BD,
+    //    cuántos materiales lo referencian. >1 = reutilizado.
+    $usosPorVdoId = [];
+    foreach ($mats as $m) {
+        $vid = $m['vdocipher_video_id'];
+        if (!$vid) continue;
+        $usosPorVdoId[$vid][] = [
+            'curso' => $m['curso_titulo'], 'tema' => $m['tema_titulo'],
+            'mat_id' => (int)$m['mat_id'], 'nombre' => $m['nombre'],
+        ];
+    }
+    $reutilizados = [];
+    $sumExtras = 0;
+    foreach ($usosPorVdoId as $vid => $usos) {
+        if (count($usos) > 1) {
+            $sumExtras += count($usos) - 1;
+            $reutilizados[] = [
+                'video_id' => $vid,
+                'nombre_origen' => $usos[0]['nombre'],
+                'veces' => count($usos),
+                'usos' => $usos,
+            ];
+        }
+    }
+    // Huérfanos en VdoCipher (no referenciados por ningún material)
+    $refSet = array_flip(array_keys($usosPorVdoId));
+    $huerfanos = [];
+    foreach ($vdo as $id => $v) {
+        if (!isset($refSet[$id])) {
+            $huerfanos[] = ['video_id' => $id, 'title' => $v['title'] ?? '', 'length' => (int)($v['length'] ?? 0)];
+        }
+    }
+
+    // 7. Colisiones por nombre: mismo nombre, pero apuntando a más de un
+    //    vdocipher_video_id distinto. Son uploads diferentes (no reuses)
+    //    aunque visualmente parezcan el mismo vídeo.
+    $porNombre = [];
+    foreach ($mats as $m) {
+        $porNombre[$m['nombre']][] = $m;
+    }
+    $colisionesNombre = [];
+    foreach ($porNombre as $nombre => $lista) {
+        $idsDistintos = array_values(array_unique(array_map(fn($x) => $x['vdocipher_video_id'], $lista)));
+        if (count($idsDistintos) > 1) {
+            $copias = [];
+            foreach ($idsDistintos as $vid) {
+                $usos = array_values(array_filter($lista, fn($x) => $x['vdocipher_video_id'] === $vid));
+                $durVdo = isset($vdo[$vid]) ? (int)($vdo[$vid]['length'] ?? 0) : null;
+                $copias[] = [
+                    'video_id'    => $vid,
+                    'usos_count'  => count($usos),
+                    'dur_bd_seg'  => (int)($usos[0]['duracion_seg'] ?? 0),
+                    'dur_vdo_seg' => $durVdo,
+                    'temas'       => array_map(fn($u) => $u['curso_titulo'] . ' / ' . $u['tema_titulo'], $usos),
+                ];
+            }
+            // Anotamos si las duraciones son similares (±2s) o no
+            $duraciones = array_column($copias, 'dur_bd_seg');
+            $colisionesNombre[] = [
+                'nombre'        => $nombre,
+                'copias'        => count($idsDistintos),
+                'mismo_dur'     => (max($duraciones) - min($duraciones)) <= 2,
+                'detalle'       => $copias,
+            ];
+        }
+    }
+
     echo json_encode([
         'ok' => true,
         'totales' => [
-            'materiales_video' => count($mats),
-            'videos_en_vdo'    => count($vdo),
-            'temas'            => count($sumTemaApi),
-            'cursos'           => count($sumCursoApi),
+            'materiales_video'           => count($mats),
+            'videos_en_vdo'              => count($vdo),
+            'distintos_vdo_id_en_bd'     => count($usosPorVdoId),
+            'vdo_huerfanos_sin_referencia' => count($huerfanos),
+            'materiales_referencias_extra' => $sumExtras,
+            'temas'                      => count($sumTemaApi),
+            'cursos'                     => count($sumCursoApi),
         ],
         'discrepancias_material_vs_vdocipher' => $discrepanciasMat,
         'discrepancias_sum_tema'              => $discrepanciasTema,
         'discrepancias_sum_curso'             => $discrepanciasCurso,
         'resumen_cursos'                      => $resumenCursos,
+        'reutilizados'                        => $reutilizados,
+        'huerfanos_en_vdocipher'              => $huerfanos,
+        'colisiones_nombre'                   => $colisionesNombre,
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {
     error_log('verificar-duraciones: ' . $e->getMessage());

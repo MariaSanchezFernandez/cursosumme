@@ -8,7 +8,7 @@ import Modal from '../components/Modal.astro';
 
 interface Props {
   titulo: string;
-  paginaActual: 'dashboard' | 'alumnos' | 'cursos' | 'tickets' | 'perfil' | 'logs' | 'errores';
+  paginaActual: 'dashboard' | 'alumnos' | 'cursos' | 'tickets' | 'perfil' | 'logs' | 'errores' | 'guia-formato';
 }
 
 const { titulo, paginaActual } = Astro.props;
@@ -18,9 +18,22 @@ const { titulo, paginaActual } = Astro.props;
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/png" href="/flaticon.png" />
     <title>{titulo} — Cursos Umme Admin</title>
   </head>
   <body>
+    <!-- 0) Anular restauración automática del scroll: idéntico al de Plantilla.
+         Garantiza que toda página admin abra arriba del todo. -->
+    <script is:inline>
+    (function () {
+      try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch (e) {}
+      function arriba() { try { window.scrollTo(0, 0); } catch (e) {} }
+      arriba();
+      document.addEventListener('DOMContentLoaded', arriba, { once: true });
+      window.addEventListener('pageshow', function (e) { if (e.persisted) arriba(); });
+    })();
+    </script>
+
     <!-- 1) Hidratar sesión "Recordarme" PRIMERO: copiar localStorage → sessionStorage si vigente.
          Tiene que ir antes del interceptor para que el primer fetch ya lleve el X-Token. -->
     <script is:inline>

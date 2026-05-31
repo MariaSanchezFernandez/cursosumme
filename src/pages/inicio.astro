@@ -186,6 +186,10 @@ const introDesc        = document.getElementById('introDescripcion')!;
 const introTemaLista   = document.getElementById('introTemaLista')!;
 const introCursoTitulo = document.getElementById('introCursoTitulo')!;
 const introStats       = document.getElementById('introStats')!;
+const panelTemaBloqueado = document.getElementById('panelTemaBloqueado') as HTMLElement;
+const lockTemaTitulo     = document.getElementById('lockTemaTitulo')!;
+const lockFecha          = document.getElementById('lockFecha')!;
+const lockContador       = document.getElementById('lockContador')!;
 
 let todosCursos: any[] = [];
 let visitedIds: Set<number>        = new Set();
@@ -564,7 +568,7 @@ function renderCursos(cursos: any[]) {
       article.className = 'curso';
       article.dataset.cursoId = String(curso.id);
       article.innerHTML = `
-        ${curso.imagen ? `<div class="curso-fila-img"><img src="${curso.imagen}" alt="" /></div>` : ''}
+        ${curso.imagen ? `<div class="curso-fila-img"><img src="${curso.imagen}" alt="" loading="lazy" decoding="async" width="120" height="120" /></div>` : ''}
         <button class="curso-fila">
           ${!curso.imagen ? `<div class="curso-acento" style="background:${color}"></div>` : ''}
           <div class="curso-info">
@@ -633,6 +637,83 @@ function duracionTemaTexto(t: any): string {
   return '';
 }
 
+// ── Bloqueo temporal de un tema ──────────────────────────────
+// El servidor manda `bloqueado_hasta` como "YYYY-MM-DD HH:MM:SS" en
+// hora del servidor (Europa/Madrid). Lo interpretamos como hora local
+// porque servidor y alumna están en la misma franja horaria — IONOS
+// usa Europe/Madrid por defecto.
+function temaBloqueado(t: any): boolean {
+  if (!t || !t.bloqueado_hasta) return false;
+  const d = new Date(String(t.bloqueado_hasta).replace(' ', 'T'));
+  return !isNaN(d.getTime()) && d.getTime() > Date.now();
+}
+function formatearFechaBloqueo(iso: string): string {
+  const d = new Date(String(iso).replace(' ', 'T'));
+  if (isNaN(d.getTime())) return iso;
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mi = String(d.getMinutes()).padStart(2, '0');
+  return `${dd}/${mm} ${hh}:${mi}`;
+}
+function formatearFechaBloqueoLarga(iso: string): string {
+  const d = new Date(String(iso).replace(' ', 'T'));
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleString('es-ES', {
+    weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit',
+  });
+}
+
+let lockTimerId: number | null = null;
+function detenerContadorBloqueo() {
+  if (lockTimerId !== null) { clearInterval(lockTimerId); lockTimerId = null; }
+}
+function mostrarPanelBloqueado(tema: any) {
+  detenerContadorBloqueo();
+  panelTemaBloqueado.style.display = 'flex';
+  // Ocultar tabs y video
+  panelContenido.querySelectorAll<HTMLElement>('.tabs, .tab-panel').forEach(el => {
+    el.style.display = 'none';
+  });
+  lockTemaTitulo.textContent = tema.titulo;
+  lockFecha.textContent = formatearFechaBloqueoLarga(tema.bloqueado_hasta);
+
+  const objetivo = new Date(String(tema.bloqueado_hasta).replace(' ', 'T')).getTime();
+  const pintar = () => {
+    const restante = objetivo - Date.now();
+    if (restante <= 0) {
+      detenerContadorBloqueo();
+      // Al expirar, recargamos la página para reconstruir el sidebar
+      // con los materiales que el servidor ya devuelve.
+      window.location.reload();
+      return;
+    }
+    const seg  = Math.floor(restante / 1000);
+    const dias = Math.floor(seg / 86400);
+    const hor  = Math.floor((seg % 86400) / 3600);
+    const min  = Math.floor((seg % 3600) / 60);
+    const sec  = seg % 60;
+    const setU = (u: string, v: number) => {
+      const el = lockContador.querySelector<HTMLElement>(`[data-unit="${u}"]`);
+      if (el) el.textContent = String(v).padStart(2, '0');
+    };
+    setU('dias', dias);
+    setU('horas', hor);
+    setU('minutos', min);
+    setU('segundos', sec);
+  };
+  pintar();
+  lockTimerId = window.setInterval(pintar, 1000);
+}
+function ocultarPanelBloqueado() {
+  detenerContadorBloqueo();
+  panelTemaBloqueado.style.display = 'none';
+  panelContenido.querySelectorAll<HTMLElement>('.tabs').forEach(el => { el.style.display = ''; });
+  // Solo restauramos el tab-panel activo
+  const activo = panelContenido.querySelector<HTMLElement>('.tab-panel.activo');
+  if (activo) activo.style.display = '';
+}
+
 // ── Abrir panel de detalle ────────────────────────────────────
 function abrirCurso(curso: any, articleEl: HTMLElement) {
   cursoActivo = curso;
@@ -682,6 +763,7 @@ function abrirCurso(curso: any, articleEl: HTMLElement) {
     panelContenido.style.display = 'none';
     fadeInPanel(panelIntro);
     ocultarReproductores();
+    ocultarPanelBloqueado();
     temaActualId = null;
   });
   listaTemas.appendChild(liPresentacion);
@@ -694,29 +776,34 @@ function abrirCurso(curso: any, articleEl: HTMLElement) {
     const videoIds = (tema.materiales ?? []).filter((m: any) => m.tipo === 'video').map((m: any) => Number(m.id));
     const vistosDelTema = videoIds.filter((id: number) => watchedMaterials.has(id)).length;
     const esParcial = !yaVisto && vistosDelTema > 0;
+    const bloqueado = temaBloqueado(tema);
     li.innerHTML = `
-      <button class="tema-btn">
+      <button class="tema-btn${bloqueado ? ' bloqueado' : ''}">
         <span class="tema-icono" style="--curso-color:${color}">
           <svg viewBox="0 0 16 16" fill="none" width="14" height="14" style="display:block">
-            <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3"/>
-            ${yaVisto
-              ? '<path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>'
-              : esParcial
-                ? '<path d="M5 8h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>'
-                : tieneVideo
-                  ? '<polygon points="6.5,5 11.5,8 6.5,11" fill="currentColor"/>'
-                  : '<line x1="5" y1="8" x2="11" y2="8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>'}
+            ${bloqueado
+              ? '<rect x="3.5" y="7.5" width="9" height="6" rx="1" stroke="currentColor" stroke-width="1.3"/><path d="M5 7.5V5.5a3 3 0 016 0v2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>'
+              : `<circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.3"/>
+                 ${yaVisto
+                   ? '<path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>'
+                   : esParcial
+                     ? '<path d="M5 8h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>'
+                     : tieneVideo
+                       ? '<polygon points="6.5,5 11.5,8 6.5,11" fill="currentColor"/>'
+                       : '<line x1="5" y1="8" x2="11" y2="8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>'}`}
           </svg>
         </span>
         <span class="tema-info">
           <span class="tema-texto">${idx + 1}. ${tema.titulo}</span>
-          ${(() => { const d = duracionTemaTexto(tema); return d ? `<span class="tema-dur">${d}</span>` : ''; })()}
+          ${bloqueado
+            ? `<span class="tema-lock-hasta">Desbloqueo: ${formatearFechaBloqueo(tema.bloqueado_hasta)}</span>`
+            : (() => { const d = duracionTemaTexto(tema); return d ? `<span class="tema-dur">${d}</span>` : ''; })()}
         </span>
       </button>
     `;
     const btn = li.querySelector('.tema-btn')!;
-    if (yaVisto) btn.classList.add('completado');
-    else if (esParcial) btn.classList.add('parcial');
+    if (!bloqueado && yaVisto) btn.classList.add('completado');
+    else if (!bloqueado && esParcial) btn.classList.add('parcial');
     btn.addEventListener('click', () => seleccionarTema(tema, li));
     listaTemas.appendChild(li);
   });
@@ -755,20 +842,28 @@ function abrirCurso(curso: any, articleEl: HTMLElement) {
     const li  = document.createElement('li');
     const btn = document.createElement('button');
     btn.className = 'intro-tema-item';
+    const bloqueado  = temaBloqueado(tema);
     const tieneVideo = tema.materiales?.some((m: any) => m.tipo === 'video');
     const dur = duracionTemaTexto(tema);
+    if (bloqueado) btn.classList.add('bloqueado');
     btn.innerHTML = `
       <span class="intro-tema-icono">
-        ${tieneVideo
-          ? `<svg viewBox="0 0 16 16" fill="none" width="15" height="15"><polygon points="5,3 13,8 5,13" fill="currentColor"/></svg>`
-          : `<svg viewBox="0 0 16 16" fill="none" width="15" height="15"><path d="M4 2h6l4 4v8a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="currentColor" stroke-width="1.4"/><path d="M10 2v4h4" stroke="currentColor" stroke-width="1.4"/></svg>`
+        ${bloqueado
+          ? `<svg viewBox="0 0 16 16" fill="none" width="15" height="15"><rect x="3.5" y="7" width="9" height="6.5" rx="1" stroke="currentColor" stroke-width="1.4"/><path d="M5 7V5a3 3 0 016 0v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`
+          : tieneVideo
+            ? `<svg viewBox="0 0 16 16" fill="none" width="15" height="15"><polygon points="5,3 13,8 5,13" fill="currentColor"/></svg>`
+            : `<svg viewBox="0 0 16 16" fill="none" width="15" height="15"><path d="M4 2h6l4 4v8a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="currentColor" stroke-width="1.4"/><path d="M10 2v4h4" stroke="currentColor" stroke-width="1.4"/></svg>`
         }
       </span>
       <span class="intro-tema-info">
         <span class="intro-tema-titulo">${idx + 1}. ${tema.titulo}</span>
-        ${tema.descripcion?.trim() ? `<span class="intro-tema-desc">${stripHtml(tema.descripcion.trim(), 120)}</span>` : ''}
+        ${bloqueado
+          ? `<span class="intro-tema-desc intro-tema-lock">Desbloqueo: ${formatearFechaBloqueo(tema.bloqueado_hasta)}</span>`
+          : (tema.descripcion?.trim() ? `<span class="intro-tema-desc">${stripHtml(tema.descripcion.trim(), 120)}</span>` : '')}
       </span>
-      ${dur ? `<span class="intro-tema-dur">${dur}</span>` : ''}
+      ${bloqueado
+        ? `<span class="intro-tema-dur intro-tema-lock-pill">Bloqueado</span>`
+        : (dur ? `<span class="intro-tema-dur">${dur}</span>` : '')}
     `;
     btn.addEventListener('click', () => {
       const liSidebar = listaTemas.querySelectorAll<HTMLElement>('.tema-item:not(.tema-item-presentacion)')[idx];
@@ -782,12 +877,19 @@ function abrirCurso(curso: any, articleEl: HTMLElement) {
   panelSubtemas.style.flex    = '0 0 0';
   panelSubtemas.style.opacity = '0';
   panelContenido.style.display = 'none';
+  ocultarPanelBloqueado();
   fadeInPanel(panelIntro);
 
   document.querySelectorAll('.curso').forEach(c => c.classList.remove('activo'));
   articleEl.classList.add('activo');
-  vista.classList.add('con-detalle');
+  vista.classList.add('con-detalle', 'lista-oculta');
+  btnToggleLista.title = 'Mostrar panel de cursos';
   document.body.classList.add('detalle-abierto');
+  // Al pasar a modo "viendo curso" el body colapsa a altura fija (100vh−56);
+  // si la usuaria estaba scrolleada dentro de la lista, el scroll viejo deja
+  // la página visualmente al final (footer asomando, contenido fuera de pantalla).
+  // Forzamos top para que abra siempre en la intro del curso.
+  window.scrollTo(0, 0);
 }
 
 // ── Ocultar todos los reproductores ──────────────────────────
@@ -847,6 +949,18 @@ async function seleccionarTema(tema: any, liEl: HTMLElement) {
 
   listaTemas.querySelectorAll('.tema-btn').forEach(b => b.classList.remove('activo'));
   liEl.querySelector('.tema-btn')!.classList.add('activo');
+
+  // Si el tema está bloqueado, mostrar cuenta atrás y salir.
+  // El servidor ya no nos manda los materiales — defensa en cliente
+  // + defensa en servidor (video.php / vdocipher-otp.php rechazan).
+  if (temaBloqueado(tema)) {
+    ocultarReproductores();
+    temaActualId = tema.id ?? null;
+    mostrarPanelBloqueado(tema);
+    return;
+  }
+  ocultarPanelBloqueado();
+
   leccionTit.textContent  = tema.titulo;
   leccionDesc.innerHTML = normalizarRte(tema.descripcion || '');
   temaActualId = tema.id ?? null;
@@ -935,12 +1049,15 @@ btnVolver.addEventListener('click', () => {
   document.body.classList.remove('detalle-abierto');
   document.querySelectorAll('.curso').forEach(c => c.classList.remove('activo'));
   ocultarReproductores();
+  ocultarPanelBloqueado();
   videoPlaceholder.style.display = 'flex';
   videoTitulo.textContent        = 'Selecciona un tema';
   panelSubtemas.style.flex    = '0 0 0';
   panelSubtemas.style.opacity = '0';
   panelIntro.style.display       = 'none';
   panelContenido.style.display   = 'none';
+  // Vuelve a la lista de cursos siempre en la cabecera, no a media página
+  window.scrollTo(0, 0);
 });
 
 // ── Filtros ───────────────────────────────────────────────────

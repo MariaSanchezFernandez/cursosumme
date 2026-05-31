@@ -1,24 +1,45 @@
 ---
+/**
+ * PÁGINA: /pago-ko
+ * ----------------
+ * Aterrizaje tras cancelar el pago en Stripe Checkout. Mensaje amable,
+ * sin tono de error, con la cabecera y el pie corporativos para que la
+ * usuaria no sienta que cayó en un sitio distinto. Llama de vuelta al
+ * catálogo y, como secundario, a soporte por si fue un fallo real.
+ */
 import Plantilla from '../layouts/Plantilla.astro';
+import CabeceraPublica from '../components/CabeceraPublica.astro';
+import PiePagina from '../components/PiePagina.astro';
 import '../styles/global.css';
 ---
 
-<Plantilla>
-  <main style="min-height:80vh;display:flex;align-items:center;justify-content:center;padding:2rem;">
-    <div style="max-width:480px;width:100%;text-align:center;">
-      <div style="width:72px;height:72px;background:#fef2f2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;">
-        <svg viewBox="0 0 24 24" fill="none" width="36" height="36">
-          <circle cx="12" cy="12" r="10" fill="#dc2626"/>
-          <path d="M15 9l-6 6M9 9l6 6" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+<Plantilla titulo="Pago cancelado — Cursos Umme">
+  <CabeceraPublica activa="cursos" />
+
+  <main class="pago-estado">
+    <div class="pago-estado-inner">
+      <div class="pago-estado-icono" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="15" y1="9" x2="9" y2="15"/>
+          <line x1="9" y1="9" x2="15" y2="15"/>
         </svg>
       </div>
-      <h1 style="font-size:1.5rem;font-weight:800;color:#1a3a28;margin:0 0 0.75rem;">Pago cancelado</h1>
-      <p style="color:#555;font-size:0.95rem;line-height:1.7;margin:0 0 2rem;">
-        No se ha realizado ningún cargo. Puedes volver a intentarlo cuando quieras.
+
+      <h1>Pago cancelado</h1>
+      <p class="pago-estado-msg">
+        No se ha realizado ningún cargo. Tu cesta sigue ahí cuando estés lista — los cursos te esperan.
       </p>
-      <a href="/precios" style="display:inline-block;background:#2e7d55;color:#fff;text-decoration:none;padding:0.75rem 2rem;border-radius:8px;font-weight:700;font-size:0.9rem;">
-        Volver a los cursos →
-      </a>
+
+      <div class="pago-estado-cta">
+        <a href="/precios" class="cta cta--primary">Volver a los cursos →</a>
+      </div>
     </div>
   </main>
+
+  <PiePagina />
 </Plantilla>
+
+<!-- Estilos base .pago-estado-* viven en src/styles/global.css para
+     compartirse con /pago-ok sin duplicar. -->
+

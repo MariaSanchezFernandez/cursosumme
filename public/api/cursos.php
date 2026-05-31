@@ -48,11 +48,18 @@ if ($metodo === 'GET') {
                 echo json_encode(['ok' => false, 'mensaje' => 'Curso no disponible']);
                 exit;
             }
-            // Títulos de temas (sin contenido), ordenados como en el panel admin.
+            // Títulos de temas + duración real calculada como suma de
+            // materiales.duracion_seg (mismo cálculo que el panel admin).
+            // El campo temas.duracion es texto libre y no es fiable —
+            // por eso usamos siempre el sumatorio de los vídeos.
             $stmtT = $pdo->prepare(
-                'SELECT id, titulo, duracion
-                 FROM temas WHERE curso_id = :id
-                 ORDER BY COALESCE(orden, id) ASC'
+                'SELECT t.id, t.titulo,
+                        COALESCE(SUM(m.duracion_seg), 0) AS duracion_seg
+                 FROM temas t
+                 LEFT JOIN materiales m ON m.tema_id = t.id
+                 WHERE t.curso_id = :id
+                 GROUP BY t.id
+                 ORDER BY COALESCE(t.orden, t.id) ASC'
             );
             $stmtT->execute([':id' => $id]);
             $curso['temas'] = $stmtT->fetchAll();
@@ -60,16 +67,33 @@ if ($metodo === 'GET') {
             exit;
         }
 
+        // Lista pública para /precios y carrusel de home. Incluye:
+        //  - resumen: primer párrafo de la descripción (texto plano, ~180 chars)
+        //    para que cada tarjeta muestre algo personalizado, no las mismas
+        //    características genéricas repetidas en todos los cursos.
+        //  - duracion_seg: suma real de duraciones de materiales del curso.
         $stmt = $pdo->query(
-            'SELECT c.id, c.titulo, c.etiqueta, c.color, c.imagen, c.precio, c.stripe_price_id,
-                    COUNT(t.id) AS num_temas
+            'SELECT c.id, c.titulo, c.descripcion, c.etiqueta, c.color, c.imagen,
+                    c.precio, c.stripe_price_id,
+                    COUNT(t.id) AS num_temas,
+                    (SELECT COALESCE(SUM(m.duracion_seg), 0)
+                     FROM materiales m
+                     INNER JOIN temas tt ON tt.id = m.tema_id
+                     WHERE tt.curso_id = c.id) AS duracion_seg
              FROM cursos c
              LEFT JOIN temas t ON t.curso_id = c.id
              WHERE c.activo = 1 AND c.precio IS NOT NULL
              GROUP BY c.id
              ORDER BY c.etiqueta, c.creado_en DESC'
         );
-        echo json_encode(['ok' => true, 'cursos' => $stmt->fetchAll()]);
+        $cursos = $stmt->fetchAll();
+        foreach ($cursos as &$c) {
+            $c['puntos']  = extraerPuntos($c['descripcion'] ?? '', 4);
+            $c['resumen'] = extraerResumen($c['descripcion'] ?? '', 180);
+            unset($c['descripcion']);
+        }
+        unset($c);
+        echo json_encode(['ok' => true, 'cursos' => $cursos]);
         exit;
     }
 
