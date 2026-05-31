@@ -27,7 +27,6 @@ if ($metodo === 'GET') {
     // Migración automática: añadir columnas si no existen
     try { $pdo->exec('ALTER TABLE temas ADD COLUMN IF NOT EXISTS color VARCHAR(20) DEFAULT NULL'); } catch (PDOException $e) {}
     try { $pdo->exec('ALTER TABLE temas ADD COLUMN IF NOT EXISTS descripcion TEXT DEFAULT NULL'); } catch (PDOException $e) {}
-    try { $pdo->exec('ALTER TABLE temas ADD COLUMN IF NOT EXISTS bloqueado_hasta DATETIME DEFAULT NULL'); } catch (PDOException $e) {}
 
     $cursoId = isset($_GET['curso_id']) ? (int)$_GET['curso_id'] : 0;
     if (!$cursoId) {
@@ -35,10 +34,19 @@ if ($metodo === 'GET') {
         echo json_encode(['ok' => false, 'mensaje' => 'Falta curso_id']);
         exit;
     }
+    // bloqueado_hasta = subquery per-alumna. Solo devuelve valor si:
+    //   - quien pide es alumno
+    //   - está marcado como es_alumna_rocio = 1
+    //   - tiene una fila propia en temas_bloqueos_alumno para este tema
+    // En cualquier otro caso (admin, alumna no de Rocío, sin bloqueo) → NULL.
     // duracion_seg = suma de duraciones reales de los vídeos del tema.
-    // Fuente única; la columna t.duracion (texto) ya no se usa en cliente.
     $stmt = $pdo->prepare(
-        'SELECT t.id, t.titulo, t.descripcion, t.orden, t.color, t.bloqueado_hasta,
+        'SELECT t.id, t.titulo, t.descripcion, t.orden, t.color,
+                (SELECT b.bloqueado_hasta
+                   FROM temas_bloqueos_alumno b
+                   INNER JOIN usuarios u ON u.id = b.usuario_id
+                  WHERE b.tema_id = t.id AND b.usuario_id = :uid AND u.es_alumna_rocio = 1
+                  LIMIT 1) AS bloqueado_hasta,
                 COUNT(m.id) AS num_materiales,
                 COALESCE(SUM(m.duracion_seg), 0) AS duracion_seg
          FROM temas t
@@ -47,7 +55,7 @@ if ($metodo === 'GET') {
          GROUP BY t.id
          ORDER BY t.orden ASC, t.id ASC'
     );
-    $stmt->execute([':curso_id' => $cursoId]);
+    $stmt->execute([':curso_id' => $cursoId, ':uid' => (int)$user['id']]);
     echo json_encode(['ok' => true, 'temas' => $stmt->fetchAll()]);
     exit;
 }

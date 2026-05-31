@@ -314,13 +314,6 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
   border-radius: 20px; background: #f0f4f2;
   color: #6a8a7d; font-weight: 600;
 }
-.tema-lock-pill {
-  font-size: 0.7rem; padding: 0.18rem 0.65rem;
-  border-radius: 20px; background: #fff3e8;
-  color: #b56b1f; font-weight: 700;
-  display: inline-flex; align-items: center; gap: 0.3rem;
-  white-space: nowrap;
-}
 .tema-acciones { display: flex; gap: 0.35rem; }
 .btn-tema-accion {
   width: 32px; height: 32px; border-radius: 7px;
@@ -330,9 +323,6 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
 }
 .btn-tema-accion:hover          { background: var(--color-light); border-color: var(--color-primary); color: var(--color-text); }
 .btn-tema-accion.danger:hover   { background: #fdf0f0; border-color: #f5c6c6; color: #c33; }
-.btn-tema-accion.bloqueado      { background: #fff3e8; border-color: #f3c891; color: #b56b1f; }
-.btn-tema-accion.bloqueado:hover{ background: #ffe6cd; border-color: #e09a4a; color: #8a4f12; }
-.tema-card.bloqueado            { background: #fffaf4; }
 
 /* ── Panel edición inline (fuera del grid) ── */
 .tema-editar-panel {
@@ -986,14 +976,7 @@ async function crearTemaCard(tema: any): Promise<HTMLElement> {
       <span class="tema-titulo-txt">${tema.titulo}</span>
     </div>
     <span class="tema-dur-pill" style="${durLabel ? '' : 'display:none;'}">${durLabel}</span>
-    <span class="tema-lock-pill" style="display:none;" title=""></span>
     <div class="tema-acciones">
-      <button class="btn-tema-accion btn-bloquear-tema" title="Bloquear tema">
-        <svg viewBox="0 0 14 14" fill="none" width="15" height="15">
-          <rect x="3" y="6.5" width="8" height="5.5" rx="1" stroke="currentColor" stroke-width="1.3"/>
-          <path d="M4.5 6.5V4.5a2.5 2.5 0 015 0v2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-        </svg>
-      </button>
       <button class="btn-tema-accion btn-editar-tema" title="Editar tema">
         <svg viewBox="0 0 14 14" fill="none" width="15" height="15">
           <path d="M9.5 2.5l2 2-7 7H2.5v-2l7-7z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
@@ -1222,155 +1205,6 @@ async function crearTemaCard(tema: any): Promise<HTMLElement> {
         if (!quedanDirty) mostrarGuardadoEnBarra(); else refrescarBarraEstado();
       }
     });
-  });
-
-  // ── Bloquear / desbloquear tema ───────────────────────────
-  // El estado se refleja en la cabecera con un pill naranja y en la
-  // card con clase .bloqueado. La defensa real está en el servidor:
-  // mis-cursos.php oculta los materiales, y video.php / vdocipher-otp.php
-  // niegan acceso aunque la alumna conociera el material_id.
-  const lockPill = cabecera.querySelector<HTMLElement>('.tema-lock-pill')!;
-  const btnLock  = cabecera.querySelector<HTMLButtonElement>('.btn-bloquear-tema')!;
-
-  function fmtFechaCorta(iso: string): string {
-    const d = new Date(iso.replace(' ', 'T'));
-    if (isNaN(d.getTime())) return iso;
-    const dd = String(d.getDate()).padStart(2, '0');
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const hh = String(d.getHours()).padStart(2, '0');
-    const mi = String(d.getMinutes()).padStart(2, '0');
-    return `${dd}/${mm} ${hh}:${mi}`;
-  }
-
-  function pintarLock(bloqueadoHasta: string | null) {
-    tema.bloqueado_hasta = bloqueadoHasta;
-    const futuro = bloqueadoHasta && new Date(bloqueadoHasta.replace(' ', 'T')).getTime() > Date.now();
-    if (futuro) {
-      lockPill.style.display = 'inline-flex';
-      lockPill.innerHTML = `
-        <svg viewBox="0 0 14 14" fill="none" width="11" height="11">
-          <rect x="3" y="6.5" width="8" height="5.5" rx="1" stroke="currentColor" stroke-width="1.3"/>
-          <path d="M4.5 6.5V4.5a2.5 2.5 0 015 0v2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-        </svg>
-        Hasta ${fmtFechaCorta(bloqueadoHasta!)}
-      `;
-      lockPill.title = `Tema bloqueado hasta ${bloqueadoHasta}`;
-      btnLock.classList.add('bloqueado');
-      btnLock.title = 'Tema bloqueado — pulsa para desbloquear';
-      card.classList.add('bloqueado');
-    } else {
-      lockPill.style.display = 'none';
-      btnLock.classList.remove('bloqueado');
-      btnLock.title = 'Bloquear tema';
-      card.classList.remove('bloqueado');
-    }
-  }
-  pintarLock(tema.bloqueado_hasta || null);
-
-  // Devuelve "YYYY-MM-DDTHH:MM" para el input datetime-local
-  function fechaInputDefecto(): string {
-    if (tema.bloqueado_hasta) {
-      const d = new Date(tema.bloqueado_hasta.replace(' ', 'T'));
-      if (!isNaN(d.getTime())) {
-        return d.getFullYear() + '-' +
-          String(d.getMonth() + 1).padStart(2, '0') + '-' +
-          String(d.getDate()).padStart(2, '0') + 'T' +
-          String(d.getHours()).padStart(2, '0') + ':' +
-          String(d.getMinutes()).padStart(2, '0');
-      }
-    }
-    // Por defecto: dentro de 1 hora
-    const d = new Date(Date.now() + 60 * 60 * 1000);
-    return d.getFullYear() + '-' +
-      String(d.getMonth() + 1).padStart(2, '0') + '-' +
-      String(d.getDate()).padStart(2, '0') + 'T' +
-      String(d.getHours()).padStart(2, '0') + ':' +
-      String(d.getMinutes()).padStart(2, '0');
-  }
-
-  async function pedirFechaYBloquear() {
-    const datos = await window.pedirDato({
-      titulo: tema.bloqueado_hasta ? 'Cambiar fecha de desbloqueo' : 'Bloquear tema',
-      campos: [{
-        nombre: 'fecha',
-        etiqueta: 'Desbloquear el',
-        tipo: 'datetime-local',
-        valor: fechaInputDefecto(),
-      }],
-      textoConfirmar: 'Bloquear',
-    });
-    if (!datos || !datos.fecha) return;
-    try {
-      const res  = await fetch('/api/tema-bloqueo.php', {
-        method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ id: tema.id, bloqueado_hasta: datos.fecha }),
-      });
-      // Intento parsear JSON; si el servidor devuelve HTML (5xx puro)
-      // capturamos el cuerpo crudo para tener algo que enseñar/loguear.
-      const texto = await res.text();
-      let data: any = null;
-      try { data = JSON.parse(texto); } catch (_) { /* no era JSON */ }
-      if (data && data.ok) {
-        pintarLock(data.bloqueado_hasta);
-        mostrarMsg('✓ Tema bloqueado.', 'ok');
-      } else {
-        const msg = (data && data.mensaje) || `Error al bloquear (HTTP ${res.status})`;
-        mostrarMsg(msg, 'error');
-        (window as any).logAppError?.('bloquear_tema', 'Servidor rechazó bloquear tema', {
-          detalle: msg + ' · respuesta=' + texto.slice(0, 300),
-          tema_id: tema.id,
-          fecha: datos.fecha,
-        });
-      }
-    } catch (err: any) {
-      mostrarMsg('Error de red al bloquear el tema.', 'error');
-      (window as any).logAppError?.('bloquear_tema', 'Error de red bloqueando tema', {
-        detalle: err?.message, stack: err?.stack, tema_id: tema.id, fecha: datos.fecha,
-      });
-    }
-  }
-
-  async function desbloquearAhora() {
-    try {
-      const res  = await fetch('/api/tema-bloqueo.php', {
-        method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ id: tema.id, bloqueado_hasta: null }),
-      });
-      const texto = await res.text();
-      let data: any = null;
-      try { data = JSON.parse(texto); } catch (_) { /* no era JSON */ }
-      if (data && data.ok) {
-        pintarLock(null);
-        mostrarMsg('✓ Tema desbloqueado.', 'ok');
-      } else {
-        const msg = (data && data.mensaje) || `Error al desbloquear (HTTP ${res.status})`;
-        mostrarMsg(msg, 'error');
-        (window as any).logAppError?.('desbloquear_tema', 'Servidor rechazó desbloquear tema', {
-          detalle: msg + ' · respuesta=' + texto.slice(0, 300), tema_id: tema.id,
-        });
-      }
-    } catch (err: any) {
-      mostrarMsg('Error de red al desbloquear el tema.', 'error');
-      (window as any).logAppError?.('desbloquear_tema', 'Error de red desbloqueando tema', {
-        detalle: err?.message, stack: err?.stack, tema_id: tema.id,
-      });
-    }
-  }
-
-  btnLock.addEventListener('click', async (e) => {
-    e.stopPropagation();
-    const yaBloqueado = !!tema.bloqueado_hasta &&
-      new Date(String(tema.bloqueado_hasta).replace(' ', 'T')).getTime() > Date.now();
-    if (yaBloqueado) {
-      const ok = await window.confirmar({
-        titulo: 'Tema bloqueado',
-        mensaje: `Bloqueado hasta ${fmtFechaCorta(tema.bloqueado_hasta!)}. ¿Desbloquear ahora?\n\nSi quieres cambiar la fecha, primero desbloquéalo y vuelve a bloquearlo.`,
-        textoConfirmar: 'Desbloquear ahora',
-      });
-      if (ok) await desbloquearAhora();
-    } else {
-      await pedirFechaYBloquear();
-    }
   });
 
   // ── Eliminar tema ─────────────────────────────────────────

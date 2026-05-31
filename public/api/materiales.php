@@ -51,11 +51,18 @@ if ($metodo === 'GET') {
         echo json_encode(['ok' => false, 'mensaje' => 'Falta tema_id']);
         exit;
     }
-    // Si el tema está bloqueado y el usuario no es admin, no listamos
-    // sus materiales: el alumno solo debe ver la cuenta atrás.
+    // Bloqueo per-alumna: solo aplica a alumnos marcados como es_alumna_rocio=1.
+    // Si esta alumna tiene este tema con bloqueado_hasta en el futuro, devuelve
+    // 0 materiales y la fecha para que el frontend pinte la cuenta atrás.
     if ($user['rol'] !== 'admin') {
-        $stmtBh = $pdo->prepare('SELECT bloqueado_hasta FROM temas WHERE id = :id');
-        $stmtBh->execute([':id' => $temaId]);
+        $stmtBh = $pdo->prepare(
+            'SELECT b.bloqueado_hasta
+             FROM temas_bloqueos_alumno b
+             INNER JOIN usuarios u ON u.id = b.usuario_id
+             WHERE b.usuario_id = :uid AND b.tema_id = :tid AND u.es_alumna_rocio = 1
+             LIMIT 1'
+        );
+        $stmtBh->execute([':uid' => (int)$user['id'], ':tid' => $temaId]);
         $bh = $stmtBh->fetchColumn();
         if ($bh && strtotime($bh) > time()) {
             echo json_encode(['ok' => true, 'materiales' => [], 'bloqueado_hasta' => $bh]);

@@ -24,6 +24,7 @@ $metodo = $_SERVER['REQUEST_METHOD'];
 if ($metodo === 'GET') {
     $stmt = $pdo->query(
         'SELECT u.id, u.nombre, u.apellidos, u.email, u.fecha_alta, u.fecha_baja, u.activo, u.foto_perfil,
+                u.es_alumna_rocio,
                 SUM(CASE WHEN c.activo = 1 THEN 1 ELSE 0 END) AS num_cursos
          FROM usuarios u
          LEFT JOIN usuarios_cursos uc ON uc.usuario_id = u.id
@@ -68,9 +69,11 @@ if ($metodo === 'POST') {
         ? $body['fecha_baja']
         : date('Y-m-d', strtotime($fechaAlta . ' +1 year'));
 
+    $esRocio = !empty($body['es_alumna_rocio']) ? 1 : 0;
+
     $stmt = $pdo->prepare(
-        'INSERT INTO usuarios (nombre, apellidos, email, contrasena, rol, fecha_alta, fecha_baja)
-         VALUES (:nombre, :apellidos, :email, :contrasena, \'alumno\', :fecha_alta, :fecha_baja)'
+        'INSERT INTO usuarios (nombre, apellidos, email, contrasena, rol, fecha_alta, fecha_baja, es_alumna_rocio)
+         VALUES (:nombre, :apellidos, :email, :contrasena, \'alumno\', :fecha_alta, :fecha_baja, :es_rocio)'
     );
     $stmt->execute([
         ':nombre'    => trim($body['nombre']),
@@ -79,6 +82,7 @@ if ($metodo === 'POST') {
         ':contrasena'=> $hashDefault,
         ':fecha_alta'=> $fechaAlta,
         ':fecha_baja'=> $fechaBaja,
+        ':es_rocio'  => $esRocio,
     ]);
     $nuevoId = $pdo->lastInsertId();
 
@@ -120,6 +124,12 @@ if ($metodo === 'PUT') {
             ':fecha_baja' => !empty($body['fecha_baja']) ? $body['fecha_baja'] : null,
             ':id'         => $uid,
         ]);
+    }
+
+    // Actualizar flag "alumna de Rocío" si se proporciona
+    if (array_key_exists('es_alumna_rocio', $body)) {
+        $pdo->prepare('UPDATE usuarios SET es_alumna_rocio = :v WHERE id = :id')
+            ->execute([':v' => !empty($body['es_alumna_rocio']) ? 1 : 0, ':id' => $uid]);
     }
 
     // Actualizar cursos si se proporcionan

@@ -76,10 +76,28 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
     </div>
   </div>
 
+  <!-- Tipo de alumna: marca de "Alumna de Rocío" -->
+  <div id="rocio-wrap" style="display:none; margin-bottom:1.75rem;">
+    <p class="seccion-titulo" style="margin-bottom:0.75rem;">Tipo de alumna</p>
+    <label style="display:flex; align-items:center; gap:0.55rem; cursor:pointer; padding:0.7rem 0.85rem; background:#f7faf9; border:1px solid #e8eeec; border-radius:7px; font-size:0.88rem; color:#333;">
+      <input type="checkbox" id="inp-es-rocio" style="width:16px; height:16px; cursor:pointer;" />
+      <span><strong>Alumna de Rocío</strong> <span style="color:#888; font-weight:400;">— habilita el bloqueo de temas uno a uno para esta alumna</span></span>
+    </label>
+  </div>
+
   <!-- Progreso del alumno -->
   <div id="progreso-wrap" style="display:none; margin-bottom:2rem;">
     <p class="seccion-titulo" style="margin-bottom:0.75rem;">Progreso del alumno</p>
     <div id="progreso-lista"></div>
+  </div>
+
+  <!-- Bloqueos de temas (sólo visible si es Alumna de Rocío) -->
+  <div id="bloqueos-wrap" style="display:none; margin-bottom:2rem;">
+    <p class="seccion-titulo" style="margin-bottom:0.4rem;">Bloqueos de temas</p>
+    <p style="font-size:0.78rem; color:#888; margin:0 0 0.85rem;">
+      Configura hasta cuándo cada tema permanece bloqueado para esta alumna. Al pasar la fecha se desbloquea automáticamente. Si dejas un tema sin fecha, la alumna lo verá disponible.
+    </p>
+    <div id="bloqueos-lista"></div>
   </div>
 
   <p class="seccion-titulo">Cursos asignados</p>
@@ -251,6 +269,33 @@ async function cargar() {
   inpBaja.addEventListener('change', actualizarBadge);
 
   accesoWrap.style.display = 'block';
+
+  // ── "Alumna de Rocío": habilita el bloqueo de temas individualmente ─
+  const rocioWrap     = document.getElementById('rocio-wrap') as HTMLElement;
+  const inpEsRocio    = document.getElementById('inp-es-rocio') as HTMLInputElement;
+  const bloqueosWrap  = document.getElementById('bloqueos-wrap') as HTMLElement;
+  inpEsRocio.checked  = Number(alumno.es_alumna_rocio) === 1;
+  rocioWrap.style.display = 'block';
+  if (inpEsRocio.checked) bloqueosWrap.style.display = 'block';
+
+  inpEsRocio.addEventListener('change', async () => {
+    const valor = inpEsRocio.checked ? 1 : 0;
+    inpEsRocio.disabled = true;
+    const res = await fetch('/api/alumnos.php', {
+      method:  'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ id: alumnoId, es_alumna_rocio: valor }),
+    });
+    const data = await res.json();
+    inpEsRocio.disabled = false;
+    if (!data.ok) {
+      inpEsRocio.checked = !inpEsRocio.checked;
+      mostrarMsg(data.mensaje || 'No se pudo guardar.', 'error');
+      return;
+    }
+    mostrarMsg(valor ? '✓ Marcada como Alumna de Rocío.' : '✓ Marca de Alumna de Rocío retirada.', 'ok');
+    bloqueosWrap.style.display = valor ? 'block' : 'none';
+  });
 
   // ── Cambiar contraseña del alumno ─────────────────────────
   const pwdWrap     = document.getElementById('pwd-wrap') as HTMLElement;
@@ -427,6 +472,89 @@ async function cargar() {
         <div style="display:flex; flex-wrap:wrap; gap:0;">${temasList}</div>
       `;
       progresoLista.appendChild(card);
+    });
+  }
+
+  // ── Bloqueos de temas por alumna ──────────────────────────
+  // Se construye siempre (incluso si la alumna no está marcada como
+  // "de Rocío") para que al activar el checkbox la sección aparezca
+  // ya poblada sin necesidad de recargar la página.
+  const bloqueosLista = document.getElementById('bloqueos-lista')!;
+  const resBloqueos   = await fetch(`/api/bloqueo-tema-alumno.php?usuario_id=${alumnoId}`);
+  const dataBloqueos  = await resBloqueos.json();
+  const bloqueoPorTema = new Map<number, string>();
+  ((dataBloqueos.bloqueos ?? []) as any[]).forEach((b) => bloqueoPorTema.set(Number(b.tema_id), b.bloqueado_hasta));
+
+  bloqueosLista.innerHTML = '';
+  if (cursosConProgreso.length === 0) {
+    bloqueosLista.innerHTML = '<p style="font-size:0.85rem; color:#888; margin:0;">Esta alumna no tiene cursos asignados todavía.</p>';
+  } else {
+    cursosConProgreso.forEach((curso: any) => {
+      const temas = curso.temas ?? [];
+      if (temas.length === 0) return;
+      const color = curso.color || curso.pack_color || PALETA[Number(curso.id) % PALETA.length];
+      const card  = document.createElement('div');
+      card.style.cssText = 'background:#fff; border:1px solid #e8eeec; border-radius:12px; padding:0.85rem 1rem; margin-bottom:0.75rem;';
+      const header = document.createElement('div');
+      header.style.cssText = 'display:flex; align-items:center; gap:0.55rem; margin-bottom:0.65rem;';
+      header.innerHTML = `
+        <span style="width:10px; height:10px; border-radius:50%; background:${color}; flex-shrink:0;"></span>
+        <span style="font-size:0.85rem; font-weight:700; color:var(--color-text);">${curso.titulo}</span>
+      `;
+      card.appendChild(header);
+
+      temas.forEach((t: any) => {
+        const actual = bloqueoPorTema.get(Number(t.id)) || '';
+        const row = document.createElement('div');
+        row.style.cssText = 'display:grid; grid-template-columns: 1fr auto auto auto; align-items:center; gap:0.45rem; padding:0.45rem 0; border-top:1px solid #f0f3f2;';
+        row.innerHTML = `
+          <span style="font-size:0.82rem; color:#333;">${t.titulo}</span>
+          <input type="datetime-local" class="form-input bloqueo-input" style="height:34px; font-size:0.78rem; padding:0 0.5rem;" />
+          <button class="btn-admin bloqueo-guardar" style="height:34px; font-size:0.74rem;">Guardar</button>
+          <button class="btn-admin bloqueo-quitar"  style="height:34px; font-size:0.74rem; color:#c33; border-color:#f5c6c6;">Quitar</button>
+        `;
+        const inp        = row.querySelector('.bloqueo-input')  as HTMLInputElement;
+        const btnG       = row.querySelector('.bloqueo-guardar') as HTMLButtonElement;
+        const btnQ       = row.querySelector('.bloqueo-quitar')  as HTMLButtonElement;
+        inp.value = actual;
+        btnQ.disabled = !actual;
+
+        btnG.addEventListener('click', async () => {
+          if (!inp.value) { mostrarMsg('Selecciona una fecha futura para bloquear este tema.', 'error'); return; }
+          btnG.disabled = true; const prevTxt = btnG.textContent; btnG.textContent = 'Guardando…';
+          const res  = await fetch('/api/bloqueo-tema-alumno.php', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ usuario_id: alumnoId, tema_id: t.id, bloqueado_hasta: inp.value }),
+          });
+          const data = await res.json();
+          btnG.disabled = false; btnG.textContent = prevTxt;
+          if (!data.ok) { mostrarMsg(data.mensaje || 'No se pudo guardar el bloqueo.', 'error'); return; }
+          mostrarMsg(`✓ Tema "${t.titulo}" bloqueado.`, 'ok');
+          btnQ.disabled = false;
+        });
+
+        btnQ.addEventListener('click', async () => {
+          btnQ.disabled = true;
+          const res  = await fetch('/api/bloqueo-tema-alumno.php', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ usuario_id: alumnoId, tema_id: t.id, bloqueado_hasta: null }),
+          });
+          const data = await res.json();
+          if (!data.ok) {
+            btnQ.disabled = false;
+            mostrarMsg(data.mensaje || 'No se pudo retirar el bloqueo.', 'error');
+            return;
+          }
+          inp.value = '';
+          mostrarMsg(`✓ Bloqueo retirado de "${t.titulo}".`, 'ok');
+        });
+
+        card.appendChild(row);
+      });
+
+      bloqueosLista.appendChild(card);
     });
   }
 

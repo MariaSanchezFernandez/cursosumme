@@ -52,6 +52,14 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
           </div>
         </div>
 
+        <!-- Alumna de Rocío: si está marcado, esta alumna puede tener temas bloqueados individualmente desde su ficha. Si no, ve todos los temas siempre. -->
+        <div class="form-grupo" style="margin-top:0.5rem; padding:0.7rem 0.85rem; background:#f7faf9; border:1px solid #e8eeec; border-radius:7px;">
+          <label style="display:flex; align-items:center; gap:0.55rem; cursor:pointer; font-size:0.88rem; color:#333; margin:0;">
+            <input type="checkbox" id="esAlumnaRocio" name="esAlumnaRocio" style="width:16px; height:16px; cursor:pointer;" />
+            <span><strong>Alumna de Rocío</strong> <span style="color:#888; font-weight:400;">— habilita el bloqueo de temas uno a uno desde la ficha de la alumna</span></span>
+          </label>
+        </div>
+
         <!-- Cursos / packs -->
         <div class="form-grupo" style="margin-top:0.5rem;">
           <label class="form-label">Asignar cursos</label>
@@ -316,12 +324,13 @@ form.addEventListener('submit', async (e) => {
   msgError.style.display = 'none';
 
   const datos = {
-    nombre:     (document.getElementById('nombre')    as HTMLInputElement).value.trim(),
-    apellidos:  (document.getElementById('apellidos') as HTMLInputElement).value.trim(),
-    email:      (document.getElementById('email')     as HTMLInputElement).value.trim().toLowerCase(),
-    fecha_alta: (document.getElementById('fechaAlta') as HTMLInputElement).value,
-    fecha_baja: (document.getElementById('fechaBaja') as HTMLInputElement).value,
-    cursos:     Array.from(cursosSeleccionados),
+    nombre:           (document.getElementById('nombre')         as HTMLInputElement).value.trim(),
+    apellidos:        (document.getElementById('apellidos')      as HTMLInputElement).value.trim(),
+    email:            (document.getElementById('email')          as HTMLInputElement).value.trim().toLowerCase(),
+    fecha_alta:       (document.getElementById('fechaAlta')      as HTMLInputElement).value,
+    fecha_baja:       (document.getElementById('fechaBaja')      as HTMLInputElement).value,
+    es_alumna_rocio:  (document.getElementById('esAlumnaRocio')  as HTMLInputElement).checked ? 1 : 0,
+    cursos:           Array.from(cursosSeleccionados),
   };
 
   await window.botonCargando(btnCrear, 'Creando…', async () => {
