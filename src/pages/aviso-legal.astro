@@ -2,16 +2,20 @@
 /**
  * PÁGINA: /aviso-legal
  * --------------------
- * Aviso legal con los datos identificativos del titular del sitio,
- * conforme al art. 10 de la Ley 34/2002 (LSSI-CE), y las condiciones
- * generales de uso de la plataforma.
+ * Aviso legal y términos de uso del sitio web cursosumme.es.
+ * Incluye los datos identificativos del titular del sitio conforme
+ * al art. 10 de la Ley 34/2002 (LSSI-CE) y las condiciones generales
+ * de uso de la plataforma. Estructura adaptada al estándar usado por
+ * referencias del sector (titular, finalidad, usuarios, uso del sitio,
+ * propiedad intelectual, responsabilidad, enlaces, exclusión,
+ * reclamaciones, datos/contratación, jurisdicción).
  */
 import Plantilla from '../layouts/Plantilla.astro';
 import CabeceraPublica from '../components/CabeceraPublica.astro';
 import PiePagina from '../components/PiePagina.astro';
 import '../styles/global.css';
 
-const actualizado = '30 de mayo de 2026';
+const actualizado = '31 de mayo de 2026';
 ---
 
 <Plantilla titulo="Aviso legal — Cursos Umme">
@@ -21,129 +25,332 @@ const actualizado = '30 de mayo de 2026';
     <article class="legal-inner">
       <header class="legal-cabecera">
         <p class="legal-eyebrow">Información legal</p>
-        <h1>Aviso legal</h1>
+        <h1>Aviso legal y términos de uso</h1>
         <p class="legal-fecha">Última actualización: {actualizado}</p>
       </header>
 
+      <p>
+        En cumplimiento de lo dispuesto en el artículo 10 de la Ley 34/2002,
+        de 11 de julio, de Servicios de la Sociedad de la Información y del
+        Comercio Electrónico (LSSI-CE), se informa a los usuarios de los
+        siguientes datos:
+      </p>
+
       <section>
-        <h2>1. Datos identificativos del titular</h2>
-        <p>
-          En cumplimiento del artículo 10 de la Ley 34/2002, de 11 de julio,
-          de Servicios de la Sociedad de la Información y de Comercio
-          Electrónico (LSSI-CE), se ponen a disposición de los usuarios los
-          datos identificativos del titular de este sitio web:
-        </p>
+        <h2>1. Datos identificativos del responsable</h2>
+        <p>La presente página web es titularidad de:</p>
         <ul class="legal-lista-datos">
-          <li><strong>Titular:</strong> Emilio José Piote Bueno (trabajador autónomo)</li>
+          <li><strong>Titular:</strong> Emilio José Piote Bueno, profesional autónomo dado de alta en el Régimen Especial de Trabajadores Autónomos.</li>
           <li><strong>NIF:</strong> 26246974H</li>
-          <li><strong>Domicilio:</strong> Calle Cervantes nº 4, 1ºA · 23213 Santa Elena, Jaén (España)</li>
-          <li><strong>Email de contacto:</strong> <a href="mailto:info@cursosumme.es">info@cursosumme.es</a></li>
+          <li><strong>Domicilio profesional:</strong> Calle Cervantes nº 4, 1ºA · 23213 Santa Elena, Jaén (España)</li>
+          <li><strong>Correo electrónico de contacto:</strong> <a href="mailto:info@cursosumme.es">info@cursosumme.es</a></li>
           <li><strong>Sitio web:</strong> <a href="https://cursosumme.es">cursosumme.es</a></li>
         </ul>
-      </section>
-
-      <section>
-        <h2>2. Objeto</h2>
         <p>
-          El presente aviso legal regula el acceso, navegación y uso del sitio web
-          <a href="https://cursosumme.es">cursosumme.es</a>, así como las
-          responsabilidades derivadas del mismo. El acceso al sitio implica la
-          aceptación sin reservas del contenido de este aviso legal.
+          La actividad de Emilio José Piote Bueno, titular del proyecto
+          <strong>Cursos Umme</strong>, consiste en la prestación de servicios
+          de formación online especializados en la preparación de oposiciones
+          al cuerpo de maestros, en la especialidad de Pedagogía Terapéutica.
+          Dichos servicios incluyen, entre otros, la venta de cursos en
+          formato vídeo, la entrega de apuntes, esquemas, supuestos prácticos,
+          audios y materiales descargables complementarios, así como la
+          atención y tutorización del alumnado y la difusión de contenidos
+          informativos y de orientación opositora a través del sitio web.
         </p>
       </section>
 
       <section>
-        <h2>3. Servicio prestado</h2>
+        <h2>2. Finalidad del sitio web</h2>
         <p>
-          A través de este sitio web se ofrece una plataforma de formación
-          online orientada a la preparación de oposiciones de Pedagogía
-          Terapéutica, mediante la venta de cursos en formato vídeo, apuntes,
-          esquemas y materiales descargables complementarios.
+          El sitio web <a href="https://cursosumme.es">https://cursosumme.es</a>
+          (en adelante, LA WEB) tiene como finalidad:
         </p>
-        <p>
-          Las condiciones específicas de venta de los cursos están reguladas
-          en las <a href="/condiciones">Condiciones de compra</a>.
-        </p>
-      </section>
-
-      <section>
-        <h2>4. Condiciones de uso</h2>
-        <p>El usuario se compromete a hacer un uso adecuado del sitio web, no empleándolo para realizar actividades ilícitas o contrarias a la buena fe y al ordenamiento legal. En particular, se compromete a:</p>
         <ul>
-          <li>No introducir, almacenar o difundir contenido difamatorio, obsceno, amenazante, xenófobo o que de cualquier otra forma atente contra los derechos fundamentales.</li>
-          <li>No realizar actividades publicitarias o de explotación comercial sin autorización expresa del titular.</li>
-          <li>No introducir programas, virus, macros u otros elementos que puedan dañar el sitio o sus sistemas.</li>
-          <li>No suplantar la identidad de otros usuarios ni de terceros.</li>
-          <li>No utilizar los contenidos del sitio para fines distintos a los estrictamente personales y conforme a las licencias otorgadas.</li>
+          <li>La comercialización de cursos de formación online para la preparación de oposiciones de Pedagogía Terapéutica y otras especialidades del cuerpo de maestros.</li>
+          <li>La difusión de contenidos informativos, recursos didácticos y orientación opositora relacionados con dichas oposiciones.</li>
+          <li>La gestión del área privada del alumnado, donde se aloja el acceso a los cursos contratados, los materiales descargables, el sistema de soporte y el seguimiento del progreso formativo.</li>
+          <li>La atención y respuesta a consultas planteadas por los usuarios a través del correo electrónico, formulario de contacto, sistema interno de soporte y demás medios de contacto habilitados.</li>
         </ul>
+      </section>
+
+      <section>
+        <h2>3. Usuarios</h2>
+        <p>
+          El acceso y/o uso de LA WEB atribuye la condición de USUARIO, quien
+          acepta, desde dicho acceso y/o uso, las presentes condiciones de uso.
+        </p>
+        <p>
+          El mero acceso a LA WEB no implica el inicio de una relación
+          laboral, comercial o contractual entre el USUARIO y el titular,
+          salvo que se indique expresamente lo contrario mediante la
+          aceptación de condiciones específicas, como las Condiciones
+          Generales de Contratación aplicables a la compra de cursos o las
+          cláusulas particulares de cualquier servicio adicional contratado.
+        </p>
+        <p>Se diferencian dos categorías de USUARIO:</p>
+        <ul>
+          <li><strong>Usuario visitante:</strong> persona que accede a las áreas públicas del sitio web sin necesidad de registrarse, con el objeto de consultar información sobre los cursos, contenidos del blog, condiciones de contratación o cualquier otro contenido de libre acceso.</li>
+          <li><strong>Usuario registrado o alumno:</strong> persona que, tras haber contratado un curso, dispone de credenciales personales de acceso al área privada de la plataforma, donde se aloja el contenido formativo adquirido. Las credenciales de acceso son personales e intransferibles y el USUARIO se compromete a custodiarlas adecuadamente, siendo el único responsable de las consecuencias derivadas de un uso indebido o de su cesión a terceros.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>4. Uso del sitio web</h2>
+
+        <h3>4.1 Uso del sitio web</h3>
+        <p>
+          LA WEB proporciona el acceso a artículos, informaciones, servicios
+          y contenidos titularidad del responsable o de terceros licenciantes.
+        </p>
+        <p>
+          El USUARIO se compromete a hacer un uso adecuado y diligente de los
+          contenidos y servicios ofrecidos y, con carácter enunciativo pero
+          no limitativo, a no emplearlos para:
+        </p>
+        <ol type="a">
+          <li>Realizar actividades ilícitas, ilegales o contrarias a la buena fe y al orden público.</li>
+          <li>Difundir contenidos de carácter racista, xenófobo, pornográfico ilegal, de apología del terrorismo o atentatorios contra los derechos humanos, la dignidad o la intimidad de las personas.</li>
+          <li>Provocar daños en los sistemas físicos o lógicos de LA WEB, de sus proveedores o de terceros, incluyendo la introducción o difusión de virus informáticos, malware o cualesquiera otros sistemas físicos o lógicos que sean susceptibles de provocar daños.</li>
+          <li>Intentar acceder, utilizar o manipular cuentas de otros usuarios sin autorización, así como suplantar la identidad de cualquier otro USUARIO o de terceros.</li>
+          <li>Reproducir, copiar, distribuir, transformar, descargar mediante medios no autorizados, capturar, retransmitir o poner a disposición de terceros, total o parcialmente, los materiales formativos a los que se haya tenido acceso como alumno (vídeos, PDFs, esquemas, audios, supuestos prácticos y cualesquiera otros recursos didácticos), cuya licencia es de uso estrictamente personal e intransferible.</li>
+          <li>Compartir las credenciales de acceso al área privada con terceros, así como permitir el uso simultáneo de la misma cuenta por más personas que las expresamente autorizadas en las condiciones de contratación.</li>
+          <li>Realizar actividades publicitarias, comerciales o de explotación comercial a través de LA WEB sin autorización expresa y por escrito del titular.</li>
+          <li>Recopilar, mediante medios automatizados o no, datos personales de otros usuarios o información publicada en el sitio con fines distintos a los estrictamente personales.</li>
+        </ol>
+        <p>
+          El titular se reserva el derecho de retirar aquellos contenidos o
+          comentarios que vulneren la dignidad de las personas, resulten
+          discriminatorios, xenófobos, racistas, pornográficos, atenten
+          contra la juventud o la infancia, el orden o la seguridad pública,
+          o que, a su juicio, no resultaran adecuados para su publicación,
+          sin que ello genere derecho a indemnización alguna a favor del
+          USUARIO.
+        </p>
+        <p>
+          El titular no será responsable de las opiniones vertidas por los
+          usuarios a través de las herramientas de participación que, en su
+          caso, se habiliten en LA WEB, conforme a la normativa aplicable.
+        </p>
+
+        <h3>4.2 Modificaciones del sitio web</h3>
+        <p>
+          El titular se reserva el derecho de efectuar, en cualquier momento
+          y sin necesidad de previo aviso, modificaciones y actualizaciones
+          de la información contenida en LA WEB, de su configuración,
+          presentación y condiciones de acceso, así como del presente aviso
+          legal. Las modificaciones serán publicadas en esta misma URL y
+          entrarán en vigor desde el momento de su publicación, por lo que
+          se recomienda al USUARIO revisar periódicamente los términos aquí
+          recogidos.
+        </p>
       </section>
 
       <section>
         <h2>5. Propiedad intelectual e industrial</h2>
         <p>
-          Todos los contenidos del sitio web —incluyendo, a título enunciativo
-          y no limitativo, textos, fotografías, gráficos, imágenes, iconos,
-          tecnología, software, vídeos, audios, código fuente, diseño y nombre
-          comercial— son propiedad de Emilio José Piote Bueno o de los
-          terceros que han autorizado su uso, y están protegidos por la
-          legislación nacional e internacional sobre propiedad intelectual e
-          industrial.
+          El titular, por sí o como cesionario, es titular de todos los
+          derechos de propiedad intelectual e industrial de LA WEB y de los
+          elementos contenidos en la misma —incluyendo, a título enunciativo
+          y no limitativo, los textos, fotografías, gráficos, imágenes,
+          iconos, tecnología, software, vídeos, audios, código fuente, bases
+          de datos, diseño gráfico, estructura de navegación, marcas, nombres
+          comerciales, signos distintivos y, muy especialmente, los
+          materiales formativos elaborados por el propio titular o por
+          colaboradores autorizados— o cuenta con las licencias y
+          autorizaciones necesarias para su uso.
         </p>
         <p>
-          Queda <strong>expresamente prohibida</strong> la reproducción total
-          o parcial, la distribución, la comunicación pública, la
-          transformación o cualquier otra forma de explotación de los
-          contenidos sin la autorización expresa del titular. El uso de los
-          materiales adquiridos se limita al ámbito estrictamente personal del
-          alumno, no pudiendo ser cedidos, prestados o compartidos con
-          terceros.
+          Todos los contenidos del sitio están protegidos por la legislación
+          nacional e internacional sobre propiedad intelectual e industrial,
+          sin que pueda entenderse cedido al USUARIO ninguno de los derechos
+          de explotación reconocidos por la normativa vigente sobre la
+          materia, más allá de los estrictamente necesarios para el uso de
+          la web.
+        </p>
+        <p>
+          Queda <strong>expresamente prohibida</strong> la reproducción,
+          distribución y comunicación pública, incluida la puesta a
+          disposición, la transformación o cualquier otra forma de
+          explotación, por cualquier procedimiento, de la totalidad o parte
+          de los contenidos de LA WEB con fines comerciales, en cualquier
+          soporte y por cualquier medio técnico, sin la autorización expresa
+          y por escrito del titular.
+        </p>
+        <p>
+          El USUARIO podrá visualizar los contenidos para su uso personal y
+          privado, comprometiéndose a respetar los derechos de propiedad
+          intelectual e industrial de los que es titular Emilio José Piote
+          Bueno o, en su caso, los terceros licenciantes, y, de manera
+          particular, a no suprimir, alterar, eludir o manipular los sistemas
+          de protección existentes en la plataforma, incluida la protección
+          DRM aplicada a los vídeos formativos y cualesquiera otras medidas
+          tecnológicas de protección implementadas.
+        </p>
+        <p>
+          El uso de los materiales adquiridos se limita al ámbito
+          estrictamente personal del alumno, no pudiendo ser cedidos,
+          prestados, alquilados, revendidos, compartidos ni difundidos a
+          terceros por ningún medio, ya sea oneroso o gratuito. El
+          incumplimiento de esta obligación podrá dar lugar a las acciones
+          legales correspondientes, civiles o penales, así como a la
+          suspensión inmediata del acceso del USUARIO a la plataforma sin
+          derecho a reembolso.
         </p>
       </section>
 
       <section>
-        <h2>6. Limitación de responsabilidad</h2>
+        <h2>6. Exclusión de garantías y responsabilidad</h2>
         <p>
-          El titular del sitio web realiza los mayores esfuerzos para
-          mantener el correcto funcionamiento de la plataforma, pero no
-          garantiza la disponibilidad permanente del servicio frente a
-          incidencias técnicas, mantenimientos programados o causas de
-          fuerza mayor.
+          El titular realiza los mayores esfuerzos para garantizar el correcto
+          funcionamiento de la plataforma, la veracidad de la información
+          publicada y la calidad de los contenidos ofrecidos. No obstante,
+          no se hace responsable de los daños y perjuicios, directos o
+          indirectos, que pudieran derivarse, a título enunciativo, de:
         </p>
+        <ul>
+          <li>Errores, inexactitudes u omisiones en los contenidos del sitio web o de los materiales formativos.</li>
+          <li>La falta de disponibilidad del sitio web por causas técnicas, mantenimientos programados, ataques informáticos o causas de fuerza mayor ajenas a la voluntad del titular.</li>
+          <li>La transmisión de virus, software malicioso u otros elementos dañinos, pese a haberse adoptado las medidas tecnológicas razonables para evitarlo.</li>
+          <li>Las interrupciones, retrasos, errores o malfuncionamiento del servicio debidos a deficiencias del equipo informático o de la conexión a internet del USUARIO.</li>
+          <li>El uso indebido, inadecuado o no autorizado que el USUARIO haga de los servicios contratados o de los materiales formativos adquiridos.</li>
+          <li>Los daños derivados del incumplimiento por parte del USUARIO de las obligaciones recogidas en el presente aviso legal o en las Condiciones de Contratación.</li>
+        </ul>
         <p>
-          El sitio web puede contener enlaces a páginas de terceros sobre
-          cuyo contenido el titular no se hace responsable, limitándose la
-          función del enlace a permitir el acceso a los mismos.
+          El titular no garantiza la consecución de objetivos profesionales
+          concretos derivados de la formación impartida, ya que el resultado
+          de las oposiciones depende de múltiples factores ajenos al ámbito
+          formativo, incluyendo la convocatoria oficial, el desempeño
+          individual del alumno y los criterios del tribunal calificador.
         </p>
       </section>
 
       <section>
-        <h2>7. Protección de datos</h2>
+        <h2>7. Política de enlaces</h2>
+        <p>
+          LA WEB puede contener enlaces a sitios web de terceros, los cuales
+          se ofrecen con finalidad informativa y para facilitar el acceso a
+          recursos complementarios. El titular no ejerce control alguno sobre
+          los contenidos, productos o servicios de dichos sitios web
+          enlazados, y no asume responsabilidad alguna por los mismos, ni
+          por las consecuencias que pudieran derivarse del acceso a ellos por
+          parte del USUARIO.
+        </p>
+        <p>
+          El establecimiento de enlaces no implica la existencia de relación,
+          aprobación, recomendación, vinculación o respaldo alguno por parte
+          del titular respecto de las personas o entidades titulares de
+          dichos sitios, ni de sus contenidos o servicios.
+        </p>
+        <p>
+          Igualmente, queda prohibido el establecimiento de enlaces desde
+          sitios de terceros hacia LA WEB sin la previa autorización expresa
+          del titular, así como la creación de marcos (frames) u otros
+          mecanismos que puedan generar confusión sobre la titularidad de
+          los contenidos o que persigan un aprovechamiento desleal de la
+          reputación del proyecto Cursos Umme.
+        </p>
+      </section>
+
+      <section>
+        <h2>8. Derecho de exclusión</h2>
+        <p>
+          El titular se reserva el derecho a denegar o retirar el acceso a
+          LA WEB y/o a los servicios ofrecidos, sin necesidad de preaviso, a
+          aquellos usuarios que incumplan las presentes condiciones de uso,
+          las Condiciones Generales de Contratación o, en general, cualquier
+          disposición legal aplicable.
+        </p>
+        <p>
+          En particular, podrá suspenderse o cancelarse el acceso al área
+          privada del alumno cuando se detecten indicios fundados de uso
+          fraudulento de las credenciales, compartición de contenidos con
+          terceros, intento de eludir las medidas de protección DRM, accesos
+          masivos o automatizados, o cualquier otra conducta lesiva para los
+          derechos del titular o de otros usuarios, sin que ello genere
+          derecho a indemnización ni a reembolso alguno a favor del USUARIO
+          infractor.
+        </p>
+      </section>
+
+      <section>
+        <h2>9. Reclamaciones</h2>
+        <p>
+          El titular informa que existen hojas de reclamaciones a disposición
+          de los usuarios y consumidores.
+        </p>
+        <p>Las reclamaciones podrán remitirse a través de los siguientes canales:</p>
+        <ul class="legal-lista-datos">
+          <li><strong>Por correo electrónico a:</strong> <a href="mailto:info@cursosumme.es">info@cursosumme.es</a></li>
+          <li>
+            <strong>Por correo postal a:</strong><br>
+            Emilio José Piote Bueno<br>
+            Calle Cervantes nº 4, 1ºA<br>
+            23213 Santa Elena, Jaén (España)
+          </li>
+        </ul>
+        <p>
+          El titular se compromete a dar respuesta a las reclamaciones
+          recibidas en el menor plazo posible y, en cualquier caso, en el
+          plazo máximo legalmente establecido al efecto.
+        </p>
+        <p>
+          Asimismo, y de conformidad con el Reglamento (UE) 524/2013 del
+          Parlamento Europeo y del Consejo, de 21 de mayo de 2013, sobre
+          resolución de litigios en línea en materia de consumo, se informa
+          al USUARIO de la existencia de la plataforma europea de resolución
+          de litigios en línea, accesible a través del siguiente enlace:
+          <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener noreferrer">https://ec.europa.eu/consumers/odr</a>.
+          El USUARIO podrá utilizar dicha plataforma para tratar de resolver
+          de forma extrajudicial cualquier controversia derivada de la
+          contratación realizada en LA WEB.
+        </p>
+      </section>
+
+      <section>
+        <h2>10. Protección de datos y contratación</h2>
         <p>
           El tratamiento de los datos personales facilitados por los
-          usuarios se rige por nuestra
-          <a href="/privacidad">Política de privacidad</a>, que forma parte
-          integral del presente aviso legal.
+          usuarios se regirá por lo dispuesto en la
+          <a href="/privacidad">Política de Privacidad</a> del sitio web,
+          que forma parte integrante del presente aviso legal y que recoge
+          la información exigida por el Reglamento (UE) 2016/679 (RGPD) y la
+          Ley Orgánica 3/2018, de 5 de diciembre, de Protección de Datos
+          Personales y garantía de los derechos digitales (LOPDGDD).
+        </p>
+        <p>
+          Asimismo, el uso de cookies por parte de LA WEB se regula en la
+          <a href="/cookies">Política de Cookies</a>, accesible igualmente
+          desde este sitio web.
+        </p>
+        <p>
+          La contratación de los cursos y demás servicios ofrecidos a través
+          de LA WEB se regirá por las correspondientes
+          <a href="/condiciones">Condiciones de Contratación</a>, que
+          deberán ser aceptadas expresamente por el USUARIO con carácter
+          previo a la formalización de cualquier pedido, y que recogen,
+          entre otros extremos, los precios aplicables, las modalidades de
+          pago, los plazos de entrega del acceso, el derecho de desistimiento
+          legalmente reconocido al consumidor y las garantías post-venta.
         </p>
       </section>
 
       <section>
-        <h2>8. Modificaciones</h2>
+        <h2>11. Legislación aplicable y jurisdicción</h2>
         <p>
-          El titular se reserva el derecho a modificar en cualquier momento
-          el contenido de este aviso legal. Las modificaciones serán
-          publicadas en esta misma URL y entrarán en vigor desde su
-          publicación.
+          La relación entre el titular y el USUARIO se regirá e interpretará
+          conforme a lo dispuesto en la legislación española vigente.
         </p>
-      </section>
-
-      <section>
-        <h2>9. Legislación aplicable y jurisdicción</h2>
         <p>
-          Las presentes condiciones se rigen por la legislación española.
           Para la resolución de cualquier controversia que pudiera derivarse
-          del acceso o uso del sitio web, las partes se someten a los
-          juzgados y tribunales del domicilio del consumidor, conforme a la
-          normativa española de protección de los consumidores y usuarios.
+          del acceso, navegación o uso de LA WEB, así como de la contratación
+          de los servicios ofrecidos a través de la misma, las partes se
+          someten expresamente, con renuncia a cualquier otro fuero que
+          pudiera corresponderles, a los Juzgados y Tribunales de la ciudad
+          de Jaén (España), salvo que la normativa aplicable en materia de
+          protección de los consumidores y usuarios establezca otro fuero
+          imperativo distinto, en particular el correspondiente al domicilio
+          del consumidor, en cuyo caso prevalecerá lo dispuesto en dicha
+          normativa.
         </p>
       </section>
     </article>
