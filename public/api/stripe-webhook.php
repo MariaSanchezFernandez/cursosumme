@@ -114,8 +114,11 @@ if (!$usuario) {
     $hash          = password_hash($passwordPlano, PASSWORD_BCRYPT, ['cost' => 12]);
     // Nombre: del custom_field si se rellenó, si no del email (fallback)
     $nombre        = $nombreCustomField !== '' ? $nombreCustomField : ucfirst(explode('@', $email)[0]);
-    $pdo->prepare('INSERT INTO usuarios (nombre, email, contrasena, rol, activo) VALUES (:n, :e, :h, "alumno", 1)')
-        ->execute([':n' => $nombre, ':e' => $email, ':h' => $hash]);
+    // fecha_baja = hoy + 1 año (acceso de 12 meses desde la compra)
+    $pdo->prepare(
+        'INSERT INTO usuarios (nombre, email, contrasena, rol, activo, fecha_alta, fecha_baja)
+         VALUES (:n, :e, :h, "alumno", 1, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 1 YEAR))'
+    )->execute([':n' => $nombre, ':e' => $email, ':h' => $hash]);
     $alumnoId = (int)$pdo->lastInsertId();
     $esNuevo  = true;
     registrar_log($pdo, 'alumno_creado_stripe', "Alumno {$nombre} ({$email}) creado tras pago Stripe", 0);
