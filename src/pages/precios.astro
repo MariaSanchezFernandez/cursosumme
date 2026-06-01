@@ -502,8 +502,11 @@ function renderizar(dataPacks: any, dataCursos: any) {
     grid.innerHTML = '<p style="color:#aaa;font-size:0.9rem;grid-column:1/-1;">No hay cursos disponibles aún.</p>';
   }
 
-  // Botones Comprar → Stripe
-  document.addEventListener('click', async (e) => {
+  // Botones Comprar → /checkout (pre-checkout fiscal + RGPD + LGDCU
+  // antes de pasar a Stripe). Ya no hacemos POST directo a stripe-checkout
+  // porque tenemos que recoger nombre completo, dirección, DNI/NIF y la
+  // renuncia explícita al desistimiento. Ver src/pages/checkout.astro.
+  document.addEventListener('click', (e) => {
     const btn = (e.target as HTMLElement).closest('.tarjeta-curso-cta') as HTMLButtonElement | null;
     if (!btn) return;
     e.preventDefault();
@@ -511,19 +514,10 @@ function renderizar(dataPacks: any, dataCursos: any) {
       window.mostrarToast('Modo preview — el pago no está activo', 'info');
       return;
     }
-    await window.botonCargando(btn, 'Redirigiendo…', async () => {
-      const res  = await fetch('/api/stripe-checkout.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tipo: btn.dataset.tipo, id: Number(btn.dataset.id) }),
-      });
-      const data = await res.json();
-      if (data.ok) {
-        window.location.href = data.url;
-      } else {
-        window.mostrarToast(data.mensaje || 'Error al iniciar el pago', 'error');
-      }
-    });
+    const tipo = btn.dataset.tipo;
+    const id   = Number(btn.dataset.id);
+    if (!tipo || !id) return;
+    window.location.href = `/checkout?tipo=${encodeURIComponent(tipo)}&id=${id}`;
   });
 }
 
