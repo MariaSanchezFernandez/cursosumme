@@ -40,7 +40,12 @@ try {
                 ADD COLUMN IF NOT EXISTS es_alumna_rocio TINYINT(1) NOT NULL DEFAULT 0");
     $pasos[] = 'usuarios.es_alumna_rocio añadido (o ya existía)';
 
-    // 2. Tabla de bloqueos
+    // 2. Tabla de bloqueos.
+    // Sin FKs explícitas: la BD de IONOS no las acepta (errno 150 por
+    // discrepancia de tipo/charset entre usuarios.id y la nueva tabla).
+    // La integridad se aplica desde la aplicación: al borrar un alumno o
+    // un tema, se borran sus filas en temas_bloqueos_alumno (ver
+    // alumnos.php DELETE y temas.php DELETE).
     $pdo->exec(
         "CREATE TABLE IF NOT EXISTS temas_bloqueos_alumno (
             usuario_id        INT      NOT NULL,
@@ -49,9 +54,7 @@ try {
             creado_en         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             actualizado_en    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (usuario_id, tema_id),
-            KEY idx_bloqueado_hasta (bloqueado_hasta),
-            CONSTRAINT fk_tba_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
-            CONSTRAINT fk_tba_tema    FOREIGN KEY (tema_id)    REFERENCES temas(id)    ON DELETE CASCADE
+            KEY idx_bloqueado_hasta (bloqueado_hasta)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
     );
     $pasos[] = 'tabla temas_bloqueos_alumno creada (o ya existía)';

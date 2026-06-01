@@ -7,8 +7,15 @@ import BotonesFlair from '../components/BotonesFlair.astro';
 
 interface Props {
   titulo?: string;
+  // Solo cargar el reproductor VdoCipher en páginas que de hecho lo usan
+  // (inicio, preview, test-vdo). Son 352 KB que bloquean render: meterlo en
+  // páginas sin vídeo (home, login, precios, legales…) ralentiza el primer paint.
+  vdoCipher?: boolean;
+  // BotonesFlair carga GSAP (~70 KB) y un MutationObserver del body solo
+  // para el hover magnético de .cta--ghost. Hoy solo se usa en la home.
+  botonesFlair?: boolean;
 }
-const { titulo = 'Cursos Umme' } = Astro.props;
+const { titulo = 'Cursos Umme', vdoCipher = false, botonesFlair = false } = Astro.props;
 ---
 
 <html lang="es">
@@ -16,9 +23,12 @@ const { titulo = 'Cursos Umme' } = Astro.props;
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
-    <link rel="icon" type="image/png" href="/flaticon.png" />
+    <link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <title>{titulo}</title>
-    <script data-cfasync="false" data-no-defer="1" src="https://player.vdocipher.com/v2/player.js"></script>
+    {vdoCipher && (
+      <script is:inline data-cfasync="false" data-no-defer="1" src="https://player.vdocipher.com/v2/player.js"></script>
+    )}
   </head>
   <body>
     <!-- 0) Anular la restauración automática del scroll del navegador.
@@ -185,8 +195,8 @@ const { titulo = 'Cursos Umme' } = Astro.props;
     <!-- Helper global de modal de confirmación (window.confirmar) -->
     <Modal />
 
-    <!-- Efecto magnetic flair en CTAs (.cta, .tarjeta-curso-cta, .cd-cta, etc.) -->
-    <BotonesFlair />
+    <!-- Efecto magnetic flair (GSAP) en CTAs .cta--ghost — solo donde se usa. -->
+    {botonesFlair && <BotonesFlair />}
 
     <!-- Helper global de estados vacíos (window.htmlEstadoVacio) -->
     <script is:inline>

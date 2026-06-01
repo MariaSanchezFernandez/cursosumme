@@ -27,7 +27,7 @@ import CabeceraPublica from '../components/CabeceraPublica.astro';
 import PiePagina from '../components/PiePagina.astro';
 ---
 
-<Plantilla>
+<Plantilla botonesFlair={true}>
   <!-- Si la visitante ya tiene sesión vigente, la llevamos directa a su área.
        Evita el "estoy logueada y aún veo la landing de promoción" tras
        cerrar la pestaña y volver con "Recordarme". -->
@@ -361,10 +361,10 @@ import PiePagina from '../components/PiePagina.astro';
   overflow: hidden;
   padding: 5.5rem 1.5rem 6rem;
   background:
-    radial-gradient(circle at 15% 20%, rgba(179,232,218,0.55), transparent 55%),
-    radial-gradient(circle at 85% 15%, rgba(255,181,167,0.45), transparent 50%),
-    radial-gradient(circle at 70% 90%, rgba(255,248,183,0.55), transparent 55%),
-    linear-gradient(135deg, #e6f4ee 0%, #def1ec 45%, #fef0e8 100%);
+    radial-gradient(circle at 15% 20%, rgba(179,232,218,0.78), transparent 58%),
+    radial-gradient(circle at 85% 15%, rgba(255,181,167,0.65), transparent 52%),
+    radial-gradient(circle at 70% 90%, rgba(255,248,183,0.78), transparent 58%),
+    linear-gradient(135deg, #d9eee4 0%, #c9e6dd 45%, #fbdfcf 100%);
 }
 .hero-deco {
   position: absolute;

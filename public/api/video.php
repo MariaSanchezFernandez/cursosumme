@@ -46,18 +46,20 @@ if ($rol === 'admin') {
     $stmt->execute([$materialId]);
     $mat = $stmt->fetch();
 } else {
-    // Alumno: verificar matrícula en el curso y que el tema NO esté
-    // bloqueado temporalmente (defensa en servidor — el cliente ya no
-    // recibe el ID del material desde mis-cursos.php, pero esto cierra
-    // accesos directos por URL).
+    // Alumno: verificar matrícula en el curso. Si es alumna de Rocío y
+    // tiene un bloqueo activo para ESTE tema, denegamos el acceso al
+    // archivo aunque conociera la URL.
     $stmt = $pdo->prepare(
         'SELECT m.ruta, m.nombre FROM materiales m
          INNER JOIN temas t ON t.id = m.tema_id
          INNER JOIN usuarios_cursos uc ON uc.curso_id = t.curso_id
          INNER JOIN cursos c ON c.id = t.curso_id
+         INNER JOIN usuarios u ON u.id = uc.usuario_id
+         LEFT JOIN temas_bloqueos_alumno b
+                ON b.usuario_id = uc.usuario_id AND b.tema_id = t.id
          WHERE m.id = :mid AND m.tipo = "video"
            AND uc.usuario_id = :uid AND c.activo = 1
-           AND (t.bloqueado_hasta IS NULL OR t.bloqueado_hasta <= NOW())'
+           AND (u.es_alumna_rocio = 0 OR b.bloqueado_hasta IS NULL OR b.bloqueado_hasta <= NOW())'
     );
     $stmt->execute([':mid' => $materialId, ':uid' => $usuarioId]);
     $mat = $stmt->fetch();

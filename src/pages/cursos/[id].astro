@@ -79,7 +79,6 @@ const precioFmt = curso.precio
   ? parseFloat(String(curso.precio)).toFixed(2).replace('.', ',')
   : null;
 const numTemas = Number(curso.num_temas ?? curso.temas?.length ?? 0);
-const inicial  = curso.titulo.trim().charAt(0).toUpperCase();
 const tituloPag = `${curso.titulo} — Cursos Umme`;
 ---
 
@@ -149,17 +148,6 @@ const tituloPag = `${curso.titulo} — Cursos Umme`;
           </p>
         </div>
 
-        <div class="cd-hero-media">
-          {curso.imagen ? (
-            <div class="cd-media-img">
-              <img src={curso.imagen} alt={curso.titulo} loading="eager" />
-            </div>
-          ) : (
-            <div class="cd-media-placeholder">
-              <span class="cd-media-inicial">{inicial}</span>
-            </div>
-          )}
-        </div>
       </div>
     </section>
 
@@ -259,8 +247,8 @@ const tituloPag = `${curso.titulo} — Cursos Umme`;
   padding: 3.5rem 1.5rem 4rem;
   overflow: hidden;
   background:
-    radial-gradient(circle at 90% 10%, color-mix(in srgb, var(--curso-color) 30%, transparent), transparent 50%),
-    linear-gradient(135deg, #ffffff 0%, color-mix(in srgb, var(--curso-color) 14%, #ffffff) 100%);
+    radial-gradient(circle at 90% 10%, color-mix(in srgb, var(--curso-color) 48%, transparent), transparent 55%),
+    linear-gradient(135deg, #ffffff 0%, color-mix(in srgb, var(--curso-color) 24%, #ffffff) 100%);
 }
 .cd-hero-deco {
   position: absolute;
@@ -276,10 +264,10 @@ const tituloPag = `${curso.titulo} — Cursos Umme`;
   animation: blobFlota1 11s ease-in-out infinite;
 }
 .cd-hero-grid {
-  max-width: 1100px;
+  max-width: 960px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 1.15fr 1fr;
+  grid-template-columns: 1fr;
   gap: 3rem;
   align-items: center;
   position: relative;

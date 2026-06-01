@@ -57,14 +57,18 @@ if (empty($cursos)) {
 $cursoIds = array_column($cursos, 'id');
 $placeholders = implode(',', array_fill(0, count($cursoIds), '?'));
 
-// Asegurar columna por si el alumno entra antes que el admin (la
-// auto-migración vive en temas.php GET, que el alumno no llama).
-try { $pdo->exec('ALTER TABLE temas ADD COLUMN IF NOT EXISTS bloqueado_hasta DATETIME DEFAULT NULL'); } catch (PDOException $e) {}
-
 // Temas de los cursos del alumno. duracion_seg sale de la suma de
 // duraciones reales de los vídeos (materiales.duracion_seg) — fuente única.
+// bloqueado_hasta es per-alumna: subquery contra temas_bloqueos_alumno
+// filtrando por el usuario que pide y solo si está marcado como
+// es_alumna_rocio=1. Para cualquier otro alumno → NULL (siempre abierto).
 $stmtTemas = $pdo->prepare(
-    "SELECT t.id, t.curso_id, t.titulo, t.descripcion, t.orden, t.bloqueado_hasta,
+    "SELECT t.id, t.curso_id, t.titulo, t.descripcion, t.orden,
+            (SELECT b.bloqueado_hasta
+               FROM temas_bloqueos_alumno b
+               INNER JOIN usuarios u ON u.id = b.usuario_id
+              WHERE b.tema_id = t.id AND b.usuario_id = ? AND u.es_alumna_rocio = 1
+              LIMIT 1) AS bloqueado_hasta,
             COALESCE(SUM(m.duracion_seg), 0) AS duracion_seg
      FROM temas t
      LEFT JOIN materiales m ON m.tema_id = t.id
@@ -72,7 +76,7 @@ $stmtTemas = $pdo->prepare(
      GROUP BY t.id
      ORDER BY t.curso_id ASC, t.orden ASC, t.id ASC"
 );
-$stmtTemas->execute($cursoIds);
+$stmtTemas->execute(array_merge([$usuarioId], $cursoIds));
 $temasRows = $stmtTemas->fetchAll();
 
 if (empty($temasRows)) {
