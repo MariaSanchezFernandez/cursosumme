@@ -57,6 +57,93 @@ if ($metodo !== 'POST') {
 }
 
 $body = json_decode(file_get_contents('php://input'), true) ?? [];
+
+// ── Acción "copiar": clona los bloqueos de una alumna a otra ──
+// Body: { accion: "copiar", origen_id, destino_id }
+// Estrategia: REEMPLAZA. Borra los bloqueos actuales de la destino y
+// duplica todos los de la origen. La destino debe estar marcada como
+// "Alumna de Rocío"; la origen solo debe existir.
+if (($body['accion'] ?? '') === 'copiar') {
+    $origenId  = (int)($body['origen_id']  ?? 0);
+    $destinoId = (int)($body['destino_id'] ?? 0);
+    if (!$origenId || !$destinoId) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'mensaje' => 'Faltan origen_id y/o destino_id']);
+        exit;
+    }
+    if ($origenId === $destinoId) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'mensaje' => 'La alumna origen y destino no pueden ser la misma']);
+        exit;
+    }
+    $stmtDestino = $pdo->prepare(
+        "SELECT nombre, es_alumna_rocio FROM usuarios WHERE id = :id AND rol = 'alumno' LIMIT 1"
+    );
+    $stmtDestino->execute([':id' => $destinoId]);
+    $destino = $stmtDestino->fetch();
+    if (!$destino) {
+        http_response_code(404);
+        echo json_encode(['ok' => false, 'mensaje' => 'Alumna destino no encontrada']);
+        exit;
+    }
+    if (empty($destino['es_alumna_rocio'])) {
+        http_response_code(409);
+        echo json_encode(['ok' => false, 'mensaje' => 'La alumna destino no está marcada como Alumna de Rocío']);
+        exit;
+    }
+    $stmtOrigen = $pdo->prepare(
+        "SELECT nombre FROM usuarios WHERE id = :id AND rol = 'alumno' LIMIT 1"
+    );
+    $stmtOrigen->execute([':id' => $origenId]);
+    $origenNombre = (string)$stmtOrigen->fetchColumn();
+    if ($origenNombre === '') {
+        http_response_code(404);
+        echo json_encode(['ok' => false, 'mensaje' => 'Alumna origen no encontrada']);
+        exit;
+    }
+
+    $adminIdC = (int)($user['id'] ?? 0);
+    $pdo->beginTransaction();
+    try {
+        $del = $pdo->prepare('DELETE FROM temas_bloqueos_alumno WHERE usuario_id = :uid');
+        $del->execute([':uid' => $destinoId]);
+        $borrados = $del->rowCount();
+
+        // Copia: solo conservamos los que SIGUEN siendo bloqueos futuros.
+        // Si la origen tiene rows con bloqueado_hasta ya en el pasado, no
+        // tiene sentido portarlas a la destino.
+        $ins = $pdo->prepare(
+            'INSERT INTO temas_bloqueos_alumno (usuario_id, tema_id, bloqueado_hasta)
+             SELECT :destino, tema_id, bloqueado_hasta
+               FROM temas_bloqueos_alumno
+              WHERE usuario_id = :origen AND bloqueado_hasta > NOW()'
+        );
+        $ins->execute([':destino' => $destinoId, ':origen' => $origenId]);
+        $copiados = $ins->rowCount();
+
+        $pdo->commit();
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'mensaje' => 'Error copiando bloqueos', 'detalle' => $e->getMessage()]);
+        exit;
+    }
+
+    registrar_log(
+        $pdo,
+        'bloqueos_copiados',
+        "Bloqueos copiados de {$origenNombre} (ID {$origenId}) a {$destino['nombre']} (ID {$destinoId}). Borrados {$borrados}, copiados {$copiados}",
+        $adminIdC
+    );
+
+    echo json_encode([
+        'ok'        => true,
+        'borrados'  => $borrados,
+        'copiados'  => $copiados,
+    ]);
+    exit;
+}
+
 $usuarioId = (int)($body['usuario_id'] ?? 0);
 $temaId    = (int)($body['tema_id']    ?? 0);
 if (!$usuarioId || !$temaId) {

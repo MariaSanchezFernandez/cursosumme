@@ -97,6 +97,19 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
     <p style="font-size:0.78rem; color:#888; margin:0 0 0.85rem;">
       Configura hasta cuándo cada tema permanece bloqueado para esta alumna. Al pasar la fecha se desbloquea automáticamente. Si dejas un tema sin fecha, la alumna lo verá disponible.
     </p>
+
+    <!-- Copiar bloqueos desde otra alumna de Rocío -->
+    <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap; padding:0.7rem 0.85rem; background:#f7faf9; border:1px solid #e8eeec; border-radius:7px; margin-bottom:1rem;">
+      <span style="font-size:0.82rem; color:#333;">Copiar bloqueos desde:</span>
+      <select id="sel-origen-bloqueos" class="form-input" style="height:34px; font-size:0.8rem; padding:0 0.5rem; min-width:220px;">
+        <option value="">— Selecciona una alumna —</option>
+      </select>
+      <button id="btn-copiar-bloqueos" class="btn-admin" style="height:34px; font-size:0.78rem;" disabled>
+        Copiar
+      </button>
+      <span style="font-size:0.74rem; color:#a66;">⚠ Reemplaza los bloqueos actuales de esta alumna.</span>
+    </div>
+
     <div id="bloqueos-lista"></div>
   </div>
 
@@ -480,6 +493,8 @@ async function cargar() {
   // "de Rocío") para que al activar el checkbox la sección aparezca
   // ya poblada sin necesidad de recargar la página.
   const bloqueosLista = document.getElementById('bloqueos-lista')!;
+
+  async function recargarBloqueos() {
   const resBloqueos   = await fetch(`/api/bloqueo-tema-alumno.php?usuario_id=${alumnoId}`);
   const dataBloqueos  = await resBloqueos.json();
   const bloqueoPorTema = new Map<number, string>();
@@ -557,6 +572,56 @@ async function cargar() {
       bloqueosLista.appendChild(card);
     });
   }
+  } // fin recargarBloqueos
+  await recargarBloqueos();
+
+  // ── Copiar bloqueos de otra alumna de Rocío ────────────────
+  const selOrigen   = document.getElementById('sel-origen-bloqueos')   as HTMLSelectElement;
+  const btnCopiar   = document.getElementById('btn-copiar-bloqueos')   as HTMLButtonElement;
+  const alumnasRocio = (dataAlumnos.alumnos ?? []).filter((a: any) =>
+    Number(a.es_alumna_rocio) === 1 && Number(a.id) !== Number(alumnoId)
+  );
+  alumnasRocio.forEach((a: any) => {
+    const opt = document.createElement('option');
+    opt.value = String(a.id);
+    opt.textContent = `${a.nombre} ${a.apellidos ?? ''} · ${a.email}`.trim();
+    selOrigen.appendChild(opt);
+  });
+  if (alumnasRocio.length === 0) {
+    const opt = selOrigen.querySelector('option');
+    if (opt) opt.textContent = '— No hay otras alumnas de Rocío —';
+    selOrigen.disabled = true;
+  }
+  selOrigen.addEventListener('change', () => {
+    btnCopiar.disabled = !selOrigen.value;
+  });
+  btnCopiar.addEventListener('click', async () => {
+    const origenId = Number(selOrigen.value);
+    if (!origenId) return;
+    const nombreOrigen = selOrigen.options[selOrigen.selectedIndex].textContent || 'esa alumna';
+    const ok = await window.confirmar({
+      titulo: 'Copiar bloqueos',
+      mensaje: `Se reemplazarán los bloqueos actuales de esta alumna por los de:\n\n${nombreOrigen}\n\n¿Continuar?`,
+      textoConfirmar: 'Copiar y reemplazar',
+      peligro: true,
+    });
+    if (!ok) return;
+    btnCopiar.disabled = true;
+    const prevTxt = btnCopiar.textContent; btnCopiar.textContent = 'Copiando…';
+    const res  = await fetch('/api/bloqueo-tema-alumno.php', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ accion: 'copiar', origen_id: origenId, destino_id: alumnoId }),
+    });
+    const data = await res.json();
+    btnCopiar.disabled = false; btnCopiar.textContent = prevTxt;
+    if (!data.ok) {
+      mostrarMsg(data.mensaje || 'No se pudieron copiar los bloqueos.', 'error');
+      return;
+    }
+    mostrarMsg(`✓ ${data.copiados} bloqueo(s) copiados (se reemplazaron ${data.borrados} anteriores).`, 'ok');
+    await recargarBloqueos();
+  });
 
   const cursosActivos = (dataCursos.cursos ?? []).filter((c: any) => c.activo == 1);
   const cargaEl    = document.getElementById('cursos-carga')!;
