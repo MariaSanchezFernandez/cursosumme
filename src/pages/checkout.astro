@@ -1,0 +1,515 @@
+---
+/**
+ * PÁGINA: /checkout
+ * ─────────────────────────────────────────────────────────────
+ * Pre-checkout legal antes de redirigir a Stripe. Cumple con el
+ * art. 103.m del TRLGDCU (renuncia expresa al desistimiento al
+ * acceder a contenido digital online) y RGPD (recoge los datos
+ * fiscales mínimos para emitir factura y registrar la evidencia
+ * de aceptación con IP/UA/timestamp en el servidor).
+ *
+ * Flujo:
+ *   1. Llega como /checkout?tipo=curso|pack&id=X
+ *   2. Pide el producto a /api/cursos.php o /api/packs.php para
+ *      pintar el resumen + precio.
+ *   3. Formulario "de un tirón" (sin stepper, según preferencia
+ *      de UX del proyecto): nombre, apellidos, email, teléfono,
+ *      dirección completa, DNI/NIF (o CIF si es empresa) + la
+ *      casilla obligatoria de renuncia al desistimiento.
+ *   4. El botón "Pagar" está deshabilitado hasta que la casilla
+ *      esté marcada y los campos básicos cumplan.
+ *   5. POST a /api/stripe-checkout.php, que valida en servidor,
+ *      guarda la evidencia y devuelve la URL de Stripe Checkout.
+ *   6. Redirige a Stripe con location.href.
+ *
+ * Importante:
+ *   - El texto exacto de la casilla NO se cambia sin actualizar
+ *     también el placeholder de comprobación en el servidor; el
+ *     texto se manda al backend para guardarse literal por compra.
+ */
+import Plantilla from '../layouts/Plantilla.astro';
+import CabeceraPublica from '../components/CabeceraPublica.astro';
+import PiePagina from '../components/PiePagina.astro';
+import '../styles/global.css';
+---
+
+<Plantilla titulo="Finalizar compra — Cursos Umme">
+  <CabeceraPublica activa="cursos" />
+
+  <main class="ck-main">
+    <div class="ck-wrap">
+      <a href="/precios" class="ck-volver">← Volver al catálogo</a>
+
+      <h1 class="ck-titulo">Finalizar compra</h1>
+      <p class="ck-sub">
+        Necesitamos estos datos para emitir tu factura y cumplir con la normativa
+        española antes de pasarte a la pasarela de pago segura de Stripe.
+      </p>
+
+      <!-- Resumen del producto -->
+      <section class="ck-resumen" id="ckResumen" aria-live="polite">
+        <div class="ck-resumen-skel">Cargando producto…</div>
+      </section>
+
+      <!-- Mensaje de error global -->
+      <p class="ck-error-global" id="ckErrorGlobal" role="alert" style="display:none;"></p>
+
+      <form id="formCheckout" class="ck-form" novalidate>
+
+        <fieldset class="ck-grupo">
+          <legend>Datos personales</legend>
+
+          <div class="ck-fila ck-fila-2">
+            <div class="ck-campo">
+              <label for="ckNombre">Nombre <span class="ck-req">*</span></label>
+              <input type="text" id="ckNombre" name="nombre" autocomplete="given-name" required />
+              <span class="ck-err" data-err="nombre"></span>
+            </div>
+            <div class="ck-campo">
+              <label for="ckApellidos">Apellidos <span class="ck-req">*</span></label>
+              <input type="text" id="ckApellidos" name="apellidos" autocomplete="family-name" required />
+              <span class="ck-err" data-err="apellidos"></span>
+            </div>
+          </div>
+
+          <div class="ck-fila ck-fila-2">
+            <div class="ck-campo">
+              <label for="ckEmail">Email <span class="ck-req">*</span></label>
+              <input type="email" id="ckEmail" name="email" autocomplete="email" required />
+              <span class="ck-err" data-err="email"></span>
+            </div>
+            <div class="ck-campo">
+              <label for="ckTelefono">Teléfono <span class="ck-req">*</span></label>
+              <input type="tel" id="ckTelefono" name="telefono" autocomplete="tel" required placeholder="+34 600 000 000" />
+              <span class="ck-err" data-err="telefono"></span>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="ck-grupo">
+          <legend>Datos fiscales</legend>
+
+          <label class="ck-empresa-toggle">
+            <input type="checkbox" id="ckEsEmpresa" name="es_empresa" />
+            <span>Soy una empresa (necesito CIF en lugar de DNI/NIE)</span>
+          </label>
+
+          <div class="ck-fila">
+            <div class="ck-campo">
+              <label for="ckDniNif">
+                <span id="ckDniLabel">DNI / NIE</span> <span class="ck-req">*</span>
+              </label>
+              <input type="text" id="ckDniNif" name="dni_nif" required autocomplete="off"
+                placeholder="12345678A" maxlength="20" />
+              <span class="ck-err" data-err="dni_nif"></span>
+              <small class="ck-help" id="ckDniHelp">8 dígitos + letra. Para NIE empieza por X, Y o Z.</small>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="ck-grupo">
+          <legend>Dirección de facturación</legend>
+
+          <div class="ck-fila">
+            <div class="ck-campo">
+              <label for="ckCalle">Dirección (calle, número, piso) <span class="ck-req">*</span></label>
+              <input type="text" id="ckCalle" name="direccion_calle" autocomplete="street-address" required />
+              <span class="ck-err" data-err="direccion_calle"></span>
+            </div>
+          </div>
+
+          <div class="ck-fila ck-fila-3">
+            <div class="ck-campo">
+              <label for="ckCp">Código postal <span class="ck-req">*</span></label>
+              <input type="text" id="ckCp" name="direccion_cp" inputmode="numeric"
+                pattern="\d{5}" maxlength="5" autocomplete="postal-code" required />
+              <span class="ck-err" data-err="direccion_cp"></span>
+            </div>
+            <div class="ck-campo">
+              <label for="ckCiudad">Ciudad <span class="ck-req">*</span></label>
+              <input type="text" id="ckCiudad" name="direccion_ciudad" autocomplete="address-level2" required />
+              <span class="ck-err" data-err="direccion_ciudad"></span>
+            </div>
+            <div class="ck-campo">
+              <label for="ckProvincia">Provincia <span class="ck-req">*</span></label>
+              <input type="text" id="ckProvincia" name="direccion_provincia" autocomplete="address-level1" required />
+              <span class="ck-err" data-err="direccion_provincia"></span>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="ck-grupo ck-grupo-legal">
+          <legend>Información legal</legend>
+
+          <p class="ck-legal-texto">
+            Los cursos son <strong>contenido digital de acceso inmediato</strong>. La normativa
+            española (art. 103.m del Texto Refundido de la Ley General para la Defensa de
+            los Consumidores y Usuarios) establece que, en cuanto accedes al contenido, pierdes
+            tu derecho a desistir de la compra. Para poder darte acceso desde el primer minuto
+            necesitamos que aceptes expresamente esa renuncia.
+          </p>
+
+          <label class="ck-desist">
+            <input type="checkbox" id="ckDesist" name="desistimiento_aceptado" required />
+            <span id="ckDesistTexto">He leído y acepto que, al acceder a los contenidos de la plataforma, pierdo mi derecho de desistimiento conforme al art. 103.m) del Texto Refundido de la Ley General para la Defensa de los Consumidores y Usuarios</span>
+          </label>
+          <span class="ck-err" data-err="desistimiento"></span>
+        </fieldset>
+
+        <button type="submit" class="ck-btn-pagar" id="ckBtnPagar" disabled>
+          <span class="ck-btn-txt">Continuar al pago seguro</span>
+          <svg viewBox="0 0 16 16" fill="none" width="16" height="16" aria-hidden="true">
+            <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </form>
+    </div>
+  </main>
+
+  <PiePagina />
+</Plantilla>
+
+<style>
+.ck-main { background: #f7faf8; min-height: calc(100vh - 56px); padding: 2rem 1rem 3rem; }
+.ck-wrap {
+  max-width: 720px; margin: 0 auto; background: #fff;
+  border: 1px solid #e8eeec; border-radius: 14px;
+  padding: 2rem 2rem 2.5rem; box-shadow: 0 2px 12px rgba(0,0,0,0.03);
+}
+.ck-volver {
+  display: inline-block; font-size: 0.82rem; color: var(--color-text-muted);
+  text-decoration: none; margin-bottom: 1rem;
+}
+.ck-volver:hover { color: var(--color-primary); }
+.ck-titulo { margin: 0 0 0.4rem; font-size: 1.5rem; font-weight: 800; letter-spacing: -0.01em; }
+.ck-sub { margin: 0 0 1.5rem; font-size: 0.9rem; color: var(--color-text-muted); line-height: 1.5; }
+
+/* Resumen del producto */
+.ck-resumen {
+  background: color-mix(in srgb, var(--color-primary) 6%, white);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 14%, transparent);
+  border-radius: 10px; padding: 1rem 1.2rem; margin-bottom: 1.5rem;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+}
+.ck-resumen-titulo { font-weight: 700; font-size: 0.95rem; margin: 0; }
+.ck-resumen-tipo { font-size: 0.72rem; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.ck-resumen-precio { font-size: 1.4rem; font-weight: 800; color: var(--color-primary); white-space: nowrap; }
+.ck-resumen-skel { color: var(--color-text-muted); font-size: 0.85rem; }
+
+/* Form */
+.ck-form { display: flex; flex-direction: column; gap: 1.25rem; }
+.ck-grupo {
+  border: 1px solid #ebf0ee; border-radius: 10px; padding: 1.1rem 1.25rem;
+  display: flex; flex-direction: column; gap: 0.85rem; margin: 0;
+}
+.ck-grupo legend {
+  font-size: 0.7rem; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--color-primary); padding: 0 0.4rem;
+}
+.ck-grupo-legal {
+  background: #fff7e6; border-color: #f3d6a8;
+}
+.ck-grupo-legal legend { color: #b56b1f; }
+
+.ck-fila { display: flex; gap: 0.85rem; flex-wrap: wrap; }
+.ck-fila-2 > .ck-campo { flex: 1 1 220px; }
+.ck-fila-3 > .ck-campo { flex: 1 1 160px; }
+
+.ck-campo { display: flex; flex-direction: column; gap: 0.25rem; flex: 1; min-width: 0; }
+.ck-campo label {
+  font-size: 0.78rem; font-weight: 600; color: var(--color-text);
+}
+.ck-req { color: #e07070; font-weight: 700; }
+.ck-campo input[type="text"], .ck-campo input[type="email"], .ck-campo input[type="tel"] {
+  padding: 0.55rem 0.75rem; border: 1px solid #d8e0dc;
+  border-radius: 7px; font-family: inherit; font-size: 0.88rem;
+  background: #fff; transition: border-color 0.12s, box-shadow 0.12s;
+}
+.ck-campo input:focus {
+  outline: none; border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+.ck-campo.ck-error input { border-color: #e07070; background: #fffafa; }
+.ck-err { display: none; font-size: 0.72rem; color: #c33; font-weight: 600; }
+.ck-campo.ck-error .ck-err { display: block; }
+.ck-help { font-size: 0.7rem; color: var(--color-text-muted); }
+
+.ck-empresa-toggle {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  font-size: 0.82rem; cursor: pointer; user-select: none;
+}
+
+/* Desistimiento (clave para cumplir LGDCU) */
+.ck-desist {
+  display: flex; gap: 0.7rem; align-items: flex-start;
+  background: #fff; border: 1.5px solid #f3d6a8; border-radius: 8px;
+  padding: 0.85rem 1rem; cursor: pointer; user-select: none;
+  font-size: 0.83rem; line-height: 1.5; color: #5a3d12;
+}
+.ck-desist input { margin-top: 0.18rem; flex-shrink: 0; width: 18px; height: 18px; cursor: pointer; }
+.ck-desist:hover { border-color: #e09a4a; }
+.ck-desist input:checked + span { color: #2e7d55; }
+.ck-legal-texto { margin: 0; font-size: 0.82rem; color: #5a3d12; line-height: 1.55; }
+
+/* Botón pagar */
+.ck-btn-pagar {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 0.5rem; padding: 0.85rem 1.5rem;
+  background: var(--color-primary); color: #fff;
+  border: none; border-radius: 9px; cursor: pointer;
+  font-family: inherit; font-size: 1rem; font-weight: 700;
+  transition: opacity 0.15s, transform 0.12s, box-shadow 0.15s;
+}
+.ck-btn-pagar:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+.ck-btn-pagar:disabled {
+  opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none;
+}
+.ck-error-global {
+  background: #fdf0f0; border: 1px solid #f5c6c6; color: #a33;
+  padding: 0.7rem 1rem; border-radius: 8px; font-size: 0.85rem; margin: 0 0 1rem;
+}
+
+@media (max-width: 540px) {
+  .ck-wrap { padding: 1.25rem 1rem 1.75rem; }
+  .ck-fila-2, .ck-fila-3 { flex-direction: column; }
+  .ck-fila-2 > .ck-campo, .ck-fila-3 > .ck-campo { flex: 1 1 auto; }
+}
+</style>
+
+<script>
+// ── Recuperar producto desde query string ─────────────────────
+const params = new URLSearchParams(location.search);
+const tipo   = params.get('tipo');
+const id     = Number(params.get('id') || 0);
+
+const errorGlobal = document.getElementById('ckErrorGlobal') as HTMLElement;
+const resumen     = document.getElementById('ckResumen') as HTMLElement;
+
+function mostrarErrorGlobal(msg: string) {
+  errorGlobal.textContent = msg;
+  errorGlobal.style.display = 'block';
+}
+
+const productoValido = ['curso', 'pack'].includes(tipo || '') && id > 0;
+
+if (!productoValido) {
+  resumen.innerHTML = '';
+  mostrarErrorGlobal('Producto no válido. Vuelve al catálogo y elige un curso o pack.');
+  // Ocultar el formulario entero — no tiene sentido rellenarlo si no
+  // sabemos qué se está comprando: el POST acabaría en "Parámetros inválidos".
+  const formEl = document.getElementById('formCheckout') as HTMLFormElement | null;
+  if (formEl) formEl.style.display = 'none';
+} else {
+  cargarResumen();
+}
+
+async function cargarResumen() {
+  try {
+    // /api/cursos.php?publicos=1&id=X — endpoint público sin auth, devuelve {ok, curso}.
+    // /api/packs.php?id=X — devuelve {ok, pack}.
+    const endpoint = tipo === 'curso'
+      ? `/api/cursos.php?publicos=1&id=${id}`
+      : `/api/packs.php?id=${id}`;
+    const res  = await fetch(endpoint);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.mensaje || 'No se pudo cargar el producto');
+
+    // /api/cursos.php?id=X devuelve {curso: {...}}; /api/packs.php?id=X devuelve {pack:{...}}.
+    // Algunos endpoints devuelven un array — soportamos ambos por tolerancia.
+    const item = data.curso || data.pack || (Array.isArray(data.cursos) ? data.cursos[0] : null) || (Array.isArray(data.packs) ? data.packs[0] : null);
+    if (!item) throw new Error('Producto no encontrado');
+    if (!item.precio) throw new Error('Este producto no está disponible para la venta');
+
+    const titulo = item.titulo || item.nombre || 'Producto';
+    const precio = Number(item.precio).toFixed(2).replace('.', ',');
+    resumen.innerHTML = `
+      <div>
+        <span class="ck-resumen-tipo">${tipo === 'pack' ? 'Pack' : 'Curso'}</span>
+        <p class="ck-resumen-titulo">${escapar(titulo)}</p>
+      </div>
+      <span class="ck-resumen-precio">${precio} €</span>
+    `;
+  } catch (err: any) {
+    resumen.innerHTML = '';
+    mostrarErrorGlobal(err?.message || 'No se pudo cargar el producto.');
+  }
+}
+
+function escapar(s: string) {
+  return s.replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]!));
+}
+
+// ── Validación cliente DNI/NIE/CIF (espejo del servidor) ──────
+function normalizar(v: string) {
+  return v.toUpperCase().replace(/[\s\-\.]+/g, '');
+}
+function validarDniNie(v: string) {
+  v = normalizar(v);
+  let numero = '', letra = '';
+  if (/^[XYZ]\d{7}[A-Z]$/.test(v)) {
+    const map: Record<string, string> = { X: '0', Y: '1', Z: '2' };
+    numero = map[v[0]] + v.slice(1, 8);
+    letra  = v[8];
+  } else if (/^\d{8}[A-Z]$/.test(v)) {
+    numero = v.slice(0, 8);
+    letra  = v[8];
+  } else {
+    return false;
+  }
+  return 'TRWAGMYFPDXBNJZSQVHLCKE'[parseInt(numero, 10) % 23] === letra;
+}
+function validarCif(v: string) {
+  v = normalizar(v);
+  if (!/^[ABCDEFGHJNPQRSUVW]\d{7}[0-9A-J]$/.test(v)) return false;
+  const d = v.slice(1, 8);
+  const ctrl = v[8];
+  const par   = +d[1] + +d[3] + +d[5];
+  const impar = [0,2,4,6].reduce((acc, i) => {
+    const x = +d[i] * 2; return acc + (x >= 10 ? 1 + (x - 10) : x);
+  }, 0);
+  const unidad = (par + impar) % 10;
+  const dCtrl = unidad === 0 ? 0 : 10 - unidad;
+  const lEq = 'JABCDEFGHI'[dCtrl];
+  const primera = v[0];
+  if ('PQRSNW'.includes(primera)) return ctrl === lEq;
+  if ('ABEH'.includes(primera))   return ctrl === String(dCtrl);
+  return ctrl === String(dCtrl) || ctrl === lEq;
+}
+
+// ── Toggle empresa: cambia label/help y validación ────────────
+const $ = <T extends HTMLElement = HTMLElement>(s: string) => document.querySelector<T>(s)!;
+const esEmpresa = $<HTMLInputElement>('#ckEsEmpresa');
+const dniLabel  = $('#ckDniLabel');
+const dniHelp   = $('#ckDniHelp');
+const dniInput  = $<HTMLInputElement>('#ckDniNif');
+
+esEmpresa.addEventListener('change', () => {
+  if (esEmpresa.checked) {
+    dniLabel.textContent = 'CIF';
+    dniHelp.textContent  = 'Letra inicial (A, B, C…) + 7 dígitos + carácter de control.';
+    dniInput.placeholder = 'B12345678';
+  } else {
+    dniLabel.textContent = 'DNI / NIE';
+    dniHelp.textContent  = '8 dígitos + letra. Para NIE empieza por X, Y o Z.';
+    dniInput.placeholder = '12345678A';
+  }
+  revalidar();
+});
+
+// ── Marca/desmarca el error de un campo ───────────────────────
+function setError(nombre: string, msg: string) {
+  const input = document.querySelector<HTMLInputElement>(`[name="${nombre}"]`);
+  if (!input) return;
+  const wrap = input.closest('.ck-campo');
+  const err  = wrap?.querySelector<HTMLElement>('[data-err="' + nombre + '"]');
+  if (msg) {
+    wrap?.classList.add('ck-error');
+    if (err) err.textContent = msg;
+  } else {
+    wrap?.classList.remove('ck-error');
+    if (err) err.textContent = '';
+  }
+}
+
+// ── Activar/desactivar botón según validez global ─────────────
+const btn = $<HTMLButtonElement>('#ckBtnPagar');
+const desist = $<HTMLInputElement>('#ckDesist');
+const form = $<HTMLFormElement>('#formCheckout');
+const inputsBasicos = ['nombre','apellidos','email','telefono','dni_nif','direccion_calle','direccion_cp','direccion_ciudad','direccion_provincia']
+  .map(n => document.querySelector<HTMLInputElement>(`[name="${n}"]`)!);
+
+function todoLleno() {
+  return inputsBasicos.every(i => i.value.trim().length > 0);
+}
+function revalidar() {
+  btn.disabled = !(desist.checked && todoLleno());
+}
+form.addEventListener('input',  revalidar);
+form.addEventListener('change', revalidar);
+revalidar();
+
+// ── Submit ────────────────────────────────────────────────────
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  errorGlobal.style.display = 'none';
+
+  // Limpia errores anteriores
+  document.querySelectorAll('.ck-campo.ck-error').forEach(el => el.classList.remove('ck-error'));
+
+  // Validación cliente (espejo de la del servidor; el servidor es la autoridad)
+  const datos: Record<string, any> = {
+    tipo, id,
+    nombre:                (form.elements.namedItem('nombre')                as HTMLInputElement).value.trim(),
+    apellidos:             (form.elements.namedItem('apellidos')             as HTMLInputElement).value.trim(),
+    email:                 (form.elements.namedItem('email')                 as HTMLInputElement).value.trim().toLowerCase(),
+    telefono:              (form.elements.namedItem('telefono')              as HTMLInputElement).value.trim(),
+    direccion_calle:       (form.elements.namedItem('direccion_calle')       as HTMLInputElement).value.trim(),
+    direccion_ciudad:      (form.elements.namedItem('direccion_ciudad')      as HTMLInputElement).value.trim(),
+    direccion_provincia:   (form.elements.namedItem('direccion_provincia')   as HTMLInputElement).value.trim(),
+    direccion_cp:          (form.elements.namedItem('direccion_cp')          as HTMLInputElement).value.trim(),
+    direccion_pais:        'ES',
+    es_empresa:            esEmpresa.checked,
+    dni_nif:               normalizar((form.elements.namedItem('dni_nif')   as HTMLInputElement).value),
+    desistimiento_aceptado: desist.checked,
+    // Mandamos el texto LITERAL mostrado en pantalla. El servidor exige >=60 chars
+    // y lo guarda en BD por compra para tener evidencia del texto exacto firmado.
+    desistimiento_texto:   ($('#ckDesistTexto').textContent || '').trim(),
+  };
+
+  // Email
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(datos.email)) {
+    setError('email', 'Email no válido'); return;
+  }
+  // Teléfono
+  if (!/^[\+\d\s\-\(\)]{6,30}$/.test(datos.telefono)) {
+    setError('telefono', 'Teléfono no válido'); return;
+  }
+  // CP español: 5 dígitos
+  if (!/^\d{5}$/.test(datos.direccion_cp)) {
+    setError('direccion_cp', 'Código postal de 5 dígitos'); return;
+  }
+  // DNI/CIF
+  const dniOk = datos.es_empresa ? validarCif(datos.dni_nif) : validarDniNie(datos.dni_nif);
+  if (!dniOk) {
+    setError('dni_nif', datos.es_empresa ? 'CIF inválido' : 'DNI / NIE inválido'); return;
+  }
+  if (!datos.desistimiento_aceptado) {
+    mostrarErrorGlobal('Debes aceptar la cláusula de desistimiento para continuar.');
+    return;
+  }
+
+  // Disable botón mientras procesamos
+  btn.disabled = true;
+  const txt = $('.ck-btn-txt');
+  const txtOriginal = txt.textContent;
+  txt.textContent = 'Procesando…';
+
+  try {
+    const res  = await fetch('/api/stripe-checkout.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(datos),
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      // Si el servidor indica el campo problemático, lo marcamos
+      if (data.campo) setError(data.campo, data.mensaje || 'Dato inválido');
+      else mostrarErrorGlobal(data.mensaje || 'Error procesando el pago.');
+      (window as any).logAppError?.('checkout', 'Servidor rechazó checkout', { detalle: data.mensaje, campo: data.campo });
+      return;
+    }
+    // Redirección a Stripe
+    location.href = data.url;
+  } catch (err: any) {
+    mostrarErrorGlobal('Error de red. Comprueba tu conexión y vuelve a intentarlo.');
+    (window as any).logAppError?.('checkout', 'Error de red en checkout', { detalle: err?.message, stack: err?.stack });
+  } finally {
+    btn.disabled = false;
+    txt.textContent = txtOriginal || 'Continuar al pago seguro';
+    revalidar();
+  }
+});
+</script>

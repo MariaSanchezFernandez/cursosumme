@@ -3,7 +3,7 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-const BASE_URL = process.env.BASE_URL || 'http://cursosumme.es';
+const BASE_URL = process.env.BASE_URL || 'https://cursosumme.es';
 
 export default defineConfig({
   testDir: './tests/e2e',

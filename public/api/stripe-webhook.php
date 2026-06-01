@@ -83,8 +83,15 @@ if (!$email || empty($cursosIds)) {
 
 $pdo = obtenerPDO();
 
-// Evitar doble procesado (idempotencia)
-$pagoRow = $pdo->prepare('SELECT id, estado, alumno_id FROM pagos WHERE stripe_session_id=:sid LIMIT 1');
+// Evitar doble procesado (idempotencia). También leemos los datos
+// fiscales que stripe-checkout.php guardó en el pago pendiente para
+// poder propagarlos al alumno cuando se crea su cuenta.
+$pagoRow = $pdo->prepare(
+    'SELECT id, estado, alumno_id, nombre_completo, telefono,
+            direccion_calle, direccion_ciudad, direccion_provincia, direccion_cp, direccion_pais,
+            dni_nif, es_empresa, stripe_customer_id
+       FROM pagos WHERE stripe_session_id=:sid LIMIT 1'
+);
 $pagoRow->execute([':sid' => $sessionId]);
 $pagoRow = $pagoRow->fetch();
 if ($pagoRow && $pagoRow['estado'] === 'completado') {
@@ -109,23 +116,78 @@ $usuario = $uStmt->fetch();
 $passwordPlano = null;
 $esNuevo       = false;
 
+// Prioridad para el nombre: el que la usuaria escribió en /checkout
+// (guardado en pagos.nombre_completo) > custom_field de Stripe > fallback.
+$nombreDelPago = trim((string)($pagoRow['nombre_completo'] ?? ''));
+
 if (!$usuario) {
     $passwordPlano = generarPassword();
     $hash          = password_hash($passwordPlano, PASSWORD_BCRYPT, ['cost' => 12]);
-    // Nombre: del custom_field si se rellenó, si no del email (fallback)
-    $nombre        = $nombreCustomField !== '' ? $nombreCustomField : ucfirst(explode('@', $email)[0]);
-    // fecha_baja = hoy + 1 año (acceso de 12 meses desde la compra)
+    $nombre        = $nombreDelPago !== ''
+        ? $nombreDelPago
+        : ($nombreCustomField !== '' ? $nombreCustomField : ucfirst(explode('@', $email)[0]));
+
+    // Crear alumno con los datos fiscales que vinieron del checkout para
+    // que el alumno los vea en su perfil y el admin pueda facturar.
     $pdo->prepare(
-        'INSERT INTO usuarios (nombre, email, contrasena, rol, activo, fecha_alta, fecha_baja)
-         VALUES (:n, :e, :h, "alumno", 1, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 1 YEAR))'
-    )->execute([':n' => $nombre, ':e' => $email, ':h' => $hash]);
+        'INSERT INTO usuarios
+            (nombre, email, contrasena, rol, activo, fecha_alta, fecha_baja,
+             telefono, direccion_calle, direccion_ciudad, direccion_provincia,
+             direccion_cp, direccion_pais, dni_nif, es_empresa, stripe_customer_id)
+         VALUES
+            (:n, :e, :h, "alumno", 1, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 1 YEAR),
+             :tel, :calle, :ciudad, :prov, :cp, :pais, :dni, :esemp, :cust)'
+    )->execute([
+        ':n'      => $nombre,
+        ':e'      => $email,
+        ':h'      => $hash,
+        ':tel'    => $pagoRow['telefono']            ?? null,
+        ':calle'  => $pagoRow['direccion_calle']     ?? null,
+        ':ciudad' => $pagoRow['direccion_ciudad']    ?? null,
+        ':prov'   => $pagoRow['direccion_provincia'] ?? null,
+        ':cp'     => $pagoRow['direccion_cp']        ?? null,
+        ':pais'   => $pagoRow['direccion_pais']      ?? 'ES',
+        ':dni'    => $pagoRow['dni_nif']             ?? null,
+        ':esemp'  => (int)($pagoRow['es_empresa']    ?? 0),
+        ':cust'   => $pagoRow['stripe_customer_id']  ?? null,
+    ]);
     $alumnoId = (int)$pdo->lastInsertId();
     $esNuevo  = true;
     registrar_log($pdo, 'alumno_creado_stripe', "Alumno {$nombre} ({$email}) creado tras pago Stripe", 0);
 } else {
     $alumnoId = (int)$usuario['id'];
-    // Para los emails: usa el nombre del custom_field si vino, si no el que ya tenía
-    $nombre   = $nombreCustomField !== '' ? $nombreCustomField : $usuario['nombre'];
+    // Para los emails: usa el nombre que vino del checkout si existe.
+    $nombre   = $nombreDelPago !== '' ? $nombreDelPago : ($nombreCustomField !== '' ? $nombreCustomField : $usuario['nombre']);
+
+    // Refrescar datos fiscales del alumno existente con la última versión
+    // que vino del checkout (la usuaria puede haber cambiado dirección o
+    // teléfono entre una compra y otra).
+    if ($pagoRow) {
+        $pdo->prepare(
+            'UPDATE usuarios SET
+                telefono = COALESCE(:tel, telefono),
+                direccion_calle = COALESCE(:calle, direccion_calle),
+                direccion_ciudad = COALESCE(:ciudad, direccion_ciudad),
+                direccion_provincia = COALESCE(:prov, direccion_provincia),
+                direccion_cp = COALESCE(:cp, direccion_cp),
+                direccion_pais = COALESCE(:pais, direccion_pais),
+                dni_nif = COALESCE(:dni, dni_nif),
+                es_empresa = :esemp,
+                stripe_customer_id = COALESCE(:cust, stripe_customer_id)
+             WHERE id = :uid'
+        )->execute([
+            ':tel'    => $pagoRow['telefono']            ?: null,
+            ':calle'  => $pagoRow['direccion_calle']     ?: null,
+            ':ciudad' => $pagoRow['direccion_ciudad']    ?: null,
+            ':prov'   => $pagoRow['direccion_provincia'] ?: null,
+            ':cp'     => $pagoRow['direccion_cp']        ?: null,
+            ':pais'   => $pagoRow['direccion_pais']      ?: null,
+            ':dni'    => $pagoRow['dni_nif']             ?: null,
+            ':esemp'  => (int)($pagoRow['es_empresa']    ?? 0),
+            ':cust'   => $pagoRow['stripe_customer_id']  ?: null,
+            ':uid'    => $alumnoId,
+        ]);
+    }
 }
 
 // ── Asignar cursos ────────────────────────────────────────────

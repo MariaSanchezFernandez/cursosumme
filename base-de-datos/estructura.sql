@@ -118,6 +118,40 @@ CREATE TABLE IF NOT EXISTS pagos (
   UNIQUE KEY uq_stripe_session_id (stripe_session_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Campos fiscales y de cumplimiento (RGPD + derecho desistimiento art. 103.m LGDCU).
+-- Guardamos en `pagos` (no en tabla aparte) porque la evidencia legal de
+-- la renuncia al desistimiento es siempre por-compra. La columna
+-- `desistimiento_texto` conserva el texto EXACTO mostrado a la usuaria
+-- en el momento de marcar la casilla; si la redacción del checkout
+-- cambiase, cada pago histórico mantiene la versión vigente entonces.
+ALTER TABLE pagos ADD COLUMN IF NOT EXISTS nombre_completo      VARCHAR(200) DEFAULT NULL;
+ALTER TABLE pagos ADD COLUMN IF NOT EXISTS telefono             VARCHAR(40)  DEFAULT NULL;
+ALTER TABLE pagos ADD COLUMN IF NOT EXISTS direccion_calle      VARCHAR(255) DEFAULT NULL;
+ALTER TABLE pagos ADD COLUMN IF NOT EXISTS direccion_ciudad     VARCHAR(120) DEFAULT NULL;
+ALTER TABLE pagos ADD COLUMN IF NOT EXISTS direccion_provincia  VARCHAR(120) DEFAULT NULL;
+ALTER TABLE pagos ADD COLUMN IF NOT EXISTS direccion_cp         VARCHAR(20)  DEFAULT NULL;
+ALTER TABLE pagos ADD COLUMN IF NOT EXISTS direccion_pais       VARCHAR(2)   DEFAULT 'ES';
+ALTER TABLE pagos ADD COLUMN IF NOT EXISTS dni_nif              VARCHAR(20)  DEFAULT NULL;
+ALTER TABLE pagos ADD COLUMN IF NOT EXISTS es_empresa           TINYINT(1)   DEFAULT 0;
+ALTER TABLE pagos ADD COLUMN IF NOT EXISTS ip_cliente           VARCHAR(45)  DEFAULT NULL;
+ALTER TABLE pagos ADD COLUMN IF NOT EXISTS user_agent           VARCHAR(500) DEFAULT NULL;
+ALTER TABLE pagos ADD COLUMN IF NOT EXISTS desistimiento_texto  TEXT         DEFAULT NULL;
+ALTER TABLE pagos ADD COLUMN IF NOT EXISTS desistimiento_en     DATETIME     DEFAULT NULL;
+ALTER TABLE pagos ADD COLUMN IF NOT EXISTS stripe_customer_id   VARCHAR(100) DEFAULT NULL;
+
+-- Datos fiscales también en `usuarios` para que el alumno los vea/edite
+-- en su perfil y el admin pueda emitir facturas correctamente.
+-- (Las columnas viven aquí porque son del alumno, no de cada compra.)
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS telefono            VARCHAR(40)  DEFAULT NULL;
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS direccion_calle     VARCHAR(255) DEFAULT NULL;
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS direccion_ciudad    VARCHAR(120) DEFAULT NULL;
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS direccion_provincia VARCHAR(120) DEFAULT NULL;
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS direccion_cp        VARCHAR(20)  DEFAULT NULL;
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS direccion_pais      VARCHAR(2)   DEFAULT 'ES';
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS dni_nif             VARCHAR(20)  DEFAULT NULL;
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS es_empresa          TINYINT(1)   DEFAULT 0;
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS stripe_customer_id  VARCHAR(100) DEFAULT NULL;
+
 
 -- -----------------------------------------------------------------
 -- Tabla: pack_cursos

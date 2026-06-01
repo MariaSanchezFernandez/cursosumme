@@ -46,7 +46,7 @@ interface CursoDetalle extends CursoBasico {
 }
 
 export async function getStaticPaths() {
-  const BASE = 'http://cursosumme.es';
+  const BASE = 'https://cursosumme.es';
   let cursos: CursoBasico[] = [];
   try {
     const res = await fetch(`${BASE}/api/cursos.php?publicos=1`);
@@ -637,29 +637,17 @@ const tituloPag = `${curso.titulo} — Cursos Umme`;
 </style>
 
 <script>
-// Comprar curso vía Stripe Checkout. Mismo patrón que /precios.
+// Comprar curso → /checkout (pre-checkout fiscal + RGPD + LGDCU
+// antes de pasar a Stripe). Antes hacíamos POST directo a
+// /api/stripe-checkout.php; ahora hay que recoger nombre completo,
+// dirección, DNI/NIF y la renuncia al desistimiento. Mismo patrón
+// que /precios. Ver src/pages/checkout.astro.
 document.querySelectorAll<HTMLButtonElement>('.cd-cta').forEach((btn) => {
-  btn.addEventListener('click', async () => {
-    await window.botonCargando(btn, 'Redirigiendo…', async () => {
-      try {
-        const res = await fetch('/api/stripe-checkout.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            tipo: btn.dataset.tipo,
-            id: Number(btn.dataset.id),
-          }),
-        });
-        const data = await res.json();
-        if (data.ok && data.url) {
-          window.location.href = data.url;
-        } else {
-          window.mostrarToast(data.mensaje || 'No se pudo iniciar el pago.', 'error');
-        }
-      } catch {
-        window.mostrarToast('Error de conexión. Inténtalo de nuevo.', 'error');
-      }
-    });
+  btn.addEventListener('click', () => {
+    const tipo = btn.dataset.tipo;
+    const id   = Number(btn.dataset.id);
+    if (!tipo || !id) return;
+    window.location.href = `/checkout?tipo=${encodeURIComponent(tipo)}&id=${id}`;
   });
 });
 
