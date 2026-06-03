@@ -27,7 +27,36 @@ import CabeceraPublica from '../components/CabeceraPublica.astro';
 import PiePagina from '../components/PiePagina.astro';
 ---
 
-<Plantilla botonesFlair={true}>
+<Plantilla
+  titulo="Cursos Umme — Oposiciones de Pedagogía Terapéutica online"
+  descripcion="Prepara las oposiciones de Pedagogía Terapéutica (PT) desde casa, a tu ritmo: vídeos on-demand, temario actualizado, supuestos prácticos y materiales descargables. Compra única con 1 año de acceso."
+  botonesFlair={true}
+>
+  <!-- Datos estructurados Schema.org — describe a Cursos Umme como
+       organización educativa para que Google muestre resultados
+       enriquecidos (nombre, logo, sitio, redes) cuando indexa la home. -->
+  <script type="application/ld+json" is:inline set:html={JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'EducationalOrganization',
+    name: 'Cursos Umme',
+    alternateName: 'Cursos Umme — Pedagogía Terapéutica',
+    url: 'https://cursosumme.es',
+    logo: 'https://cursosumme.es/logo.png',
+    image: 'https://cursosumme.es/logo.png',
+    description: 'Academia online especializada en la preparación de oposiciones del cuerpo de maestros, especialidad de Pedagogía Terapéutica.',
+    email: 'info@cursosumme.es',
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: 'Calle Cervantes nº 4, 1ºA',
+      addressLocality: 'Santa Elena',
+      addressRegion: 'Jaén',
+      postalCode: '23213',
+      addressCountry: 'ES',
+    },
+    areaServed: 'ES',
+    knowsLanguage: 'es',
+  })}></script>
+
   <!-- Si la visitante ya tiene sesión vigente, la llevamos directa a su área.
        Evita el "estoy logueada y aún veo la landing de promoción" tras
        cerrar la pestaña y volver con "Recordarme". -->

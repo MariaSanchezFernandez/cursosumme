@@ -1,0 +1,24 @@
+User-agent: *
+Allow: /
+
+# Backend y subidas de archivos: nunca deben indexarse
+Disallow: /api/
+Disallow: /uploads/
+
+# Panel de administración
+Disallow: /admin/
+
+# Área privada del alumno (requiere sesión)
+Disallow: /inicio
+Disallow: /perfil
+Disallow: /cursos/
+Disallow: /checkout
+
+# Páginas funcionales o de retorno de pago (no aportan SEO)
+Disallow: /pago-ok
+Disallow: /pago-ko
+Disallow: /preview
+Disallow: /test-vdo
+Disallow: /recuperar-contrasena
+
+Sitemap: https://cursosumme.es/sitemap-index.xml

@@ -1,0 +1,368 @@
+---
+/**
+ * Estadísticas del campus.
+ * Vista agregada del progreso y la actividad de alumnado y cursos.
+ * Datos servidos por /api/estadisticas.php (solo admin).
+ */
+import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
+---
+
+<PlantillaAdmin titulo="Estadísticas" paginaActual="estadisticas">
+
+  <!-- Resumen -->
+  <div class="stats-grid" id="resumen-grid">
+    <div class="stat-card">
+      <p class="stat-card-label">Avance medio</p>
+      <p class="stat-card-valor" id="stat-avance">—</p>
+      <p class="stat-card-sub">% temas completados al 100%</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-card-label">Activos · 7 días</p>
+      <p class="stat-card-valor" id="stat-act-7">—</p>
+      <p class="stat-card-sub" id="stat-act-7-sub">de — alumnos</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-card-label">Activos · 30 días</p>
+      <p class="stat-card-valor" id="stat-act-30">—</p>
+      <p class="stat-card-sub" id="stat-act-30-sub">de — alumnos</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-card-label">Sin avance</p>
+      <p class="stat-card-valor" id="stat-sin-avance">—</p>
+      <p class="stat-card-sub">sin ningún vídeo terminado al 100%</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-card-label">Vídeos terminados</p>
+      <p class="stat-card-valor" id="stat-vistos">—</p>
+      <p class="stat-card-sub">reproducidos hasta el final (100%)</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-card-label">Temas en catálogo</p>
+      <p class="stat-card-valor" id="stat-temas">—</p>
+      <p class="stat-card-sub">en cursos activos</p>
+    </div>
+  </div>
+
+  <!-- Avance por alumno -->
+  <div class="tabla-wrap" style="margin-bottom:1.5rem;">
+    <div class="tabla-header">
+      <span class="tabla-titulo">Progreso por alumno</span>
+      <div style="display:flex; gap:0.6rem; align-items:center; flex-wrap:wrap;">
+        <div style="position:relative;">
+          <svg style="position:absolute;left:0.6rem;top:50%;transform:translateY(-50%);pointer-events:none;" viewBox="0 0 16 16" fill="none" width="13" height="13">
+            <circle cx="6.5" cy="6.5" r="4" stroke="#aaa" stroke-width="1.4"/>
+            <path d="M10 10l3 3" stroke="#aaa" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+          <input id="buscar-alumno" type="text" placeholder="Buscar alumno…"
+            style="padding:0.42rem 0.75rem 0.42rem 2rem; border:1px solid #d8e4df; border-radius:8px;
+            font-family:inherit; font-size:0.8rem; color:var(--color-text); outline:none;
+            background:#fff; width:200px;" />
+        </div>
+        <select id="ordenar-alumnos" class="form-input"
+          style="height:32px; padding:0 0.7rem; font-size:0.78rem; width:auto;">
+          <option value="avance-desc">Más avance</option>
+          <option value="avance-asc">Menos avance</option>
+          <option value="actividad-desc" selected>Actividad reciente</option>
+          <option value="alta-desc">Más recientes</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="alumnos-carga" style="padding:2rem 1.5rem; color:#aaa; font-size:0.85rem;">Cargando…</div>
+    <table id="tabla-alumnos" style="display:none;">
+      <thead>
+        <tr>
+          <th>Alumno</th>
+          <th>Cursos</th>
+          <th style="min-width:180px;" title="% de temas con todos sus vídeos terminados al 100%">Avance</th>
+          <th title="Vídeos individuales terminados al 100% / total de vídeos en sus cursos">Vídeos vistos</th>
+          <th title="Temas con todos los vídeos terminados al 100% / total de temas">Temas completados</th>
+          <th>Última actividad</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tbody-alumnos"></tbody>
+    </table>
+    <div id="alumnos-vacio" style="display:none; padding:1.5rem; text-align:center; color:#aaa; font-size:0.85rem;">
+      No hay datos suficientes para mostrar progreso.
+    </div>
+  </div>
+
+  <!-- Avance por curso -->
+  <div class="tabla-wrap">
+    <div class="tabla-header">
+      <span class="tabla-titulo">Progreso por curso</span>
+      <select id="ordenar-cursos" class="form-input"
+        style="height:32px; padding:0 0.7rem; font-size:0.78rem; width:auto;">
+        <option value="avance-desc" selected>Más completados</option>
+        <option value="avance-asc">Menos completados</option>
+        <option value="alumnos-desc">Más alumnos</option>
+        <option value="titulo">Por título</option>
+      </select>
+    </div>
+
+    <div id="cursos-carga" style="padding:2rem 1.5rem; color:#aaa; font-size:0.85rem;">Cargando…</div>
+    <table id="tabla-cursos" style="display:none;">
+      <thead>
+        <tr>
+          <th>Curso</th>
+          <th>Alumnos</th>
+          <th>Temas</th>
+          <th style="min-width:180px;">Tasa media de finalización</th>
+          <th>Completaciones</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-cursos"></tbody>
+    </table>
+    <div id="cursos-vacio" style="display:none; padding:1.5rem; text-align:center; color:#aaa; font-size:0.85rem;">
+      Aún no hay cursos activos.
+    </div>
+  </div>
+
+</PlantillaAdmin>
+
+<script>
+type Alumno = {
+  id: number; nombre: string; apellidos: string; email: string;
+  fecha_alta: string | null; fecha_baja: string | null;
+  num_cursos: number; total_temas: number; temas_completados: number;
+  total_videos: number; videos_vistos: number;
+  porcentaje: number; ultima_actividad: string | null;
+};
+type Curso = {
+  id: number; titulo: string;
+  num_alumnos: number; num_temas: number;
+  completaciones_totales: number; porcentaje_medio: number;
+};
+
+let alumnos: Alumno[] = [];
+let cursos:  Curso[]  = [];
+
+function colorBarra(pct: number): string {
+  if (pct >= 75) return '#3ba776';
+  if (pct >= 40) return '#d99a3d';
+  if (pct >  0)  return '#bca6e0';
+  return '#d8d8d8';
+}
+
+function barra(pct: number, sub?: string): string {
+  const ancho = Math.max(0, Math.min(100, pct));
+  const col   = colorBarra(pct);
+  const txt   = `${pct.toFixed(1).replace('.0','')}%`;
+  return `
+    <div style="display:flex; align-items:center; gap:0.55rem;">
+      <div style="flex:1; height:7px; background:#eef3f0; border-radius:4px; overflow:hidden; min-width:80px;">
+        <div style="height:100%; width:${ancho}%; background:${col}; border-radius:4px; transition:width 0.4s;"></div>
+      </div>
+      <span style="font-size:0.78rem; font-weight:700; color:#555; min-width:42px; text-align:right;">${txt}</span>
+    </div>
+    ${sub ? `<p style="font-size:0.7rem; color:#999; margin:0.25rem 0 0;">${sub}</p>` : ''}
+  `.replace(/<\/div>\s*<p/, '</div><p').trim() + '__SKIP__';
+}
+
+// Barra mini "X / Y" para celdas compactas (Vídeos vistos, Temas completados).
+// Color por nivel: verde ≥75%, naranja ≥40%, lila >0, gris si no hay datos.
+function barraMini(hecho: number, total: number): string {
+  if (total <= 0) return '<span style="color:#bbb; font-size:0.78rem;">—</span>';
+  const pct = (hecho / total) * 100;
+  const col = colorBarra(pct);
+  return `
+    <div style="display:flex; flex-direction:column; gap:0.2rem; min-width:90px;">
+      <div style="display:flex; align-items:center; gap:0.45rem;">
+        <div style="flex:1; height:5px; background:#eef3f0; border-radius:3px; overflow:hidden;">
+          <div style="height:100%; width:${pct.toFixed(1)}%; background:${col}; border-radius:3px; transition:width 0.4s;"></div>
+        </div>
+        <span style="font-size:0.74rem; font-weight:700; color:#555; white-space:nowrap;">${hecho}/${total}</span>
+      </div>
+    </div>
+  `;
+}
+
+function _barraReal(pct: number, sub?: string): string {
+  const ancho = Math.max(0, Math.min(100, pct));
+  const col   = colorBarra(pct);
+  const txt   = `${pct.toFixed(1).replace('.0','')}%`;
+  return `
+    <div style="display:flex; align-items:center; gap:0.55rem;">
+      <div style="flex:1; height:7px; background:#eef3f0; border-radius:4px; overflow:hidden; min-width:80px;">
+        <div style="height:100%; width:${ancho}%; background:${col}; border-radius:4px; transition:width 0.4s;"></div>
+      </div>
+      <span style="font-size:0.78rem; font-weight:700; color:#555; min-width:42px; text-align:right;">${txt}</span>
+    </div>
+    ${sub ? `<p style="font-size:0.7rem; color:#999; margin:0.25rem 0 0;">${sub}</p>` : ''}
+  `;
+}
+
+function formatearFecha(iso: string | null): string {
+  if (!iso) return '<span style="color:#bbb;">—</span>';
+  const d = new Date(iso.replace(' ', 'T'));
+  if (isNaN(d.getTime())) return '<span style="color:#bbb;">—</span>';
+  const ahora = Date.now();
+  const dias  = Math.floor((ahora - d.getTime()) / 86400000);
+  if (dias < 0)    return d.toLocaleDateString('es-ES');
+  if (dias === 0)  return '<span style="color:#3ba776; font-weight:600;">hoy</span>';
+  if (dias === 1)  return 'ayer';
+  if (dias < 7)    return `hace ${dias} días`;
+  if (dias < 30)   return `hace ${Math.floor(dias/7)} sem.`;
+  if (dias < 365)  return `hace ${Math.floor(dias/30)} meses`;
+  return d.toLocaleDateString('es-ES');
+}
+
+function ordenarAlumnos(lista: Alumno[], modo: string): Alumno[] {
+  const copia = lista.slice();
+  switch (modo) {
+    case 'avance-desc':     copia.sort((a, b) => b.porcentaje - a.porcentaje); break;
+    case 'avance-asc':      copia.sort((a, b) => a.porcentaje - b.porcentaje); break;
+    case 'actividad-desc':  copia.sort((a, b) => (b.ultima_actividad || '').localeCompare(a.ultima_actividad || '')); break;
+    case 'alta-desc':       copia.sort((a, b) => (b.fecha_alta || '').localeCompare(a.fecha_alta || '')); break;
+  }
+  return copia;
+}
+
+function ordenarCursos(lista: Curso[], modo: string): Curso[] {
+  const copia = lista.slice();
+  switch (modo) {
+    case 'avance-desc':   copia.sort((a, b) => b.porcentaje_medio - a.porcentaje_medio); break;
+    case 'avance-asc':    copia.sort((a, b) => a.porcentaje_medio - b.porcentaje_medio); break;
+    case 'alumnos-desc':  copia.sort((a, b) => b.num_alumnos - a.num_alumnos); break;
+    case 'titulo':        copia.sort((a, b) => a.titulo.localeCompare(b.titulo, 'es')); break;
+  }
+  return copia;
+}
+
+function pintarAlumnos() {
+  const tabla  = document.getElementById('tabla-alumnos') as HTMLElement;
+  const tbody  = document.getElementById('tbody-alumnos') as HTMLElement;
+  const vacio  = document.getElementById('alumnos-vacio') as HTMLElement;
+  const carga  = document.getElementById('alumnos-carga') as HTMLElement;
+
+  carga.style.display = 'none';
+
+  if (alumnos.length === 0) {
+    tabla.style.display = 'none';
+    vacio.style.display = 'block';
+    return;
+  }
+
+  const modo = (document.getElementById('ordenar-alumnos') as HTMLSelectElement).value;
+  const q    = (document.getElementById('buscar-alumno') as HTMLInputElement).value.toLowerCase().trim();
+
+  const filtrados = ordenarAlumnos(alumnos, modo).filter(a => {
+    if (!q) return true;
+    const txt = `${a.nombre} ${a.apellidos} ${a.email}`.toLowerCase();
+    return txt.includes(q);
+  });
+
+  if (filtrados.length === 0) {
+    tabla.style.display = 'none';
+    vacio.style.display = 'block';
+    vacio.textContent   = 'Ningún alumno coincide con la búsqueda.';
+    return;
+  }
+
+  vacio.style.display = 'none';
+  tabla.style.display = 'table';
+
+  tbody.innerHTML = filtrados.map(a => {
+    const nombreCompleto = `${a.nombre} ${a.apellidos}`.trim();
+    const cursosBadge = a.num_cursos > 0
+      ? `<span class="badge-modulos">${a.num_cursos}</span>`
+      : `<span class="badge-modulos vacio">—</span>`;
+    const temasTxt = a.total_temas > 0
+      ? `${a.temas_completados} / ${a.total_temas}`
+      : '<span style="color:#bbb;">—</span>';
+    const videosTxt = a.total_videos > 0
+      ? `${a.videos_vistos} / ${a.total_videos}`
+      : '<span style="color:#bbb;">—</span>';
+    return `
+      <tr>
+        <td>
+          <p style="margin:0; font-weight:600; color:#333;">${nombreCompleto}</p>
+          <p style="margin:0; font-size:0.74rem; color:#999;">${a.email}</p>
+        </td>
+        <td>${cursosBadge}</td>
+        <td>${a.total_temas > 0 ? barra(a.porcentaje) : '<span style="color:#bbb;font-size:0.78rem;">sin cursos</span>'}</td>
+        <td style="font-size:0.82rem; color:#666;">${videosTxt}</td>
+        <td style="font-size:0.82rem; color:#666;">${temasTxt}</td>
+        <td style="font-size:0.78rem; color:#666;">${formatearFecha(a.ultima_actividad)}</td>
+        <td>
+          <a href="/admin/alumnos/detalle?id=${a.id}" class="btn-admin">
+            Ver detalle
+            <svg viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function pintarCursos() {
+  const tabla = document.getElementById('tabla-cursos') as HTMLElement;
+  const tbody = document.getElementById('tbody-cursos') as HTMLElement;
+  const vacio = document.getElementById('cursos-vacio') as HTMLElement;
+  const carga = document.getElementById('cursos-carga') as HTMLElement;
+
+  carga.style.display = 'none';
+
+  if (cursos.length === 0) {
+    tabla.style.display = 'none';
+    vacio.style.display = 'block';
+    return;
+  }
+
+  vacio.style.display = 'none';
+  tabla.style.display = 'table';
+
+  const modo = (document.getElementById('ordenar-cursos') as HTMLSelectElement).value;
+  const ordenados = ordenarCursos(cursos, modo);
+
+  tbody.innerHTML = ordenados.map(c => {
+    const denom = c.num_alumnos * c.num_temas;
+    const sub   = denom > 0 ? `${c.completaciones_totales} / ${denom} temas-alumno` : 'sin datos';
+    return `
+      <tr>
+        <td style="font-weight:600; color:#333;">${c.titulo}</td>
+        <td style="font-size:0.82rem; color:#666;">${c.num_alumnos}</td>
+        <td style="font-size:0.82rem; color:#666;">${c.num_temas}</td>
+        <td>${denom > 0 ? barra(c.porcentaje_medio, sub) : '<span style="color:#bbb;font-size:0.78rem;">sin alumnos o sin temas</span>'}</td>
+        <td style="font-size:0.82rem; color:#666;">${c.completaciones_totales}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function cargar() {
+  try {
+    const res  = await fetch('/api/estadisticas.php');
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.mensaje || 'Error al cargar');
+
+    // Resumen
+    const r = data.resumen;
+    (document.getElementById('stat-avance')      as HTMLElement).textContent = `${r.avance_medio_global}%`;
+    (document.getElementById('stat-act-7')       as HTMLElement).textContent = String(r.activos_7d);
+    (document.getElementById('stat-act-30')      as HTMLElement).textContent = String(r.activos_30d);
+    (document.getElementById('stat-sin-avance')  as HTMLElement).textContent = String(r.sin_avance);
+    (document.getElementById('stat-vistos')      as HTMLElement).textContent = String(r.materiales_vistos_total);
+    (document.getElementById('stat-temas')       as HTMLElement).textContent = String(r.temas_totales);
+    (document.getElementById('stat-act-7-sub')   as HTMLElement).textContent = `de ${r.total_alumnos} alumnos`;
+    (document.getElementById('stat-act-30-sub')  as HTMLElement).textContent = `de ${r.total_alumnos} alumnos`;
+
+    alumnos = data.alumnos || [];
+    cursos  = data.cursos  || [];
+    pintarAlumnos();
+    pintarCursos();
+  } catch (e: any) {
+    const carga1 = document.getElementById('alumnos-carga');
+    const carga2 = document.getElementById('cursos-carga');
+    if (carga1) carga1.textContent = 'Error al cargar estadísticas.';
+    if (carga2) carga2.textContent = '';
+  }
+}
+
+document.getElementById('buscar-alumno')!.addEventListener('input', pintarAlumnos);
+document.getElementById('ordenar-alumnos')!.addEventListener('change', pintarAlumnos);
+document.getElementById('ordenar-cursos')!.addEventListener('change', pintarCursos);
+
+cargar();
+</script>

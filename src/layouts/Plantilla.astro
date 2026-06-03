@@ -7,6 +7,14 @@ import BotonesFlair from '../components/BotonesFlair.astro';
 
 interface Props {
   titulo?: string;
+  // Meta description SEO (≈155 caracteres). Si no se pasa, se usa la genérica.
+  descripcion?: string;
+  // Imagen para Open Graph / Twitter Card (URL absoluta o ruta). Default: logo.
+  imagenOg?: string;
+  // Tipo Open Graph — "website" por defecto. Solo cambia en artículos de blog.
+  tipoOg?: 'website' | 'article';
+  // Excluir esta página de los buscadores. Útil en /login, /pago-ok, etc.
+  noindex?: boolean;
   // Solo cargar el reproductor VdoCipher en páginas que de hecho lo usan
   // (inicio, preview, test-vdo). Son 352 KB que bloquean render: meterlo en
   // páginas sin vídeo (home, login, precios, legales…) ralentiza el primer paint.
@@ -15,7 +23,22 @@ interface Props {
   // para el hover magnético de .cta--ghost. Hoy solo se usa en la home.
   botonesFlair?: boolean;
 }
-const { titulo = 'Cursos Umme', vdoCipher = false, botonesFlair = false } = Astro.props;
+const {
+  titulo = 'Cursos Umme',
+  descripcion = 'Cursos online para preparar las oposiciones de Pedagogía Terapéutica: vídeo on-demand, temario actualizado y materiales descargables. Compra única, 1 año de acceso.',
+  imagenOg = '/logo.png',
+  tipoOg = 'website',
+  noindex = false,
+  vdoCipher = false,
+  botonesFlair = false,
+} = Astro.props;
+
+// URL canónica y URL absoluta de la imagen OG. Astro.site se define en
+// astro.config.mjs como 'https://cursosumme.es'.
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const imagenOgAbs = imagenOg.startsWith('http')
+  ? imagenOg
+  : new URL(imagenOg, Astro.site).href;
 ---
 
 <html lang="es">
@@ -26,11 +49,33 @@ const { titulo = 'Cursos Umme', vdoCipher = false, botonesFlair = false } = Astr
     <link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <title>{titulo}</title>
+
+    <!-- SEO básico -->
+    <meta name="description" content={descripcion} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="canonical" href={canonical} />
+
+    <!-- Open Graph (Facebook, WhatsApp, LinkedIn, Slack…) -->
+    <meta property="og:site_name" content="Cursos Umme" />
+    <meta property="og:locale" content="es_ES" />
+    <meta property="og:type" content={tipoOg} />
+    <meta property="og:title" content={titulo} />
+    <meta property="og:description" content={descripcion} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={imagenOgAbs} />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={titulo} />
+    <meta name="twitter:description" content={descripcion} />
+    <meta name="twitter:image" content={imagenOgAbs} />
+
     {vdoCipher && (
       <script is:inline data-cfasync="false" data-no-defer="1" src="https://player.vdocipher.com/v2/player.js"></script>
     )}
   </head>
   <body>
+
     <!-- 0) Anular la restauración automática del scroll del navegador.
          Chrome (y otros) recuerdan en qué scrollY estabas la última vez
          que visitaste cada URL y te dejan ahí al volver. En esta app eso

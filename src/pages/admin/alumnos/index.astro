@@ -67,10 +67,10 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
         <tr>
           <th style="width:44px;"></th>
           <th>Nombre</th>
-          <th>Email</th>
+          <th class="col-email">Email</th>
           <th>Cursos</th>
-          <th>Alta</th>
-          <th>Acceso hasta</th>
+          <th class="col-alta">Alta</th>
+          <th class="col-acceso">Acceso hasta</th>
           <th></th>
         </tr>
       </thead>
@@ -135,15 +135,18 @@ async function cargarAlumnos() {
       return `
         <tr>
           <td style="padding:0.5rem 0.75rem;">${avatarHtml}</td>
-          <td class="td-nombre">${a.nombre} ${a.apellidos}</td>
-          <td class="td-email">${a.email}</td>
+          <td class="td-nombre">
+            ${a.nombre} ${a.apellidos}
+            <span class="td-email-movil">${a.email}</span>
+          </td>
+          <td class="td-email col-email">${a.email}</td>
           <td>
             ${a.num_cursos > 0
               ? `<span class="badge-modulos">${a.num_cursos}</span>`
               : `<span class="badge-modulos vacio">—</span>`}
           </td>
-          <td>${fechaAlta}</td>
-          <td>${badgeBaja}</td>
+          <td class="col-alta">${fechaAlta}</td>
+          <td class="col-acceso">${badgeBaja}</td>
           <td>
             <a href="/admin/alumnos/detalle?id=${a.id}" class="btn-admin">
               Ver detalle
@@ -210,5 +213,35 @@ function filtrarAlumnos() {
     display: flex;
     flex-direction: column;
     gap: 0.2rem;
+  }
+
+  /* Email apilado bajo el nombre — solo visible en móvil */
+  .td-email-movil {
+    display: none;
+    font-size: 0.74rem;
+    color: var(--color-text-muted);
+    margin-top: 0.15rem;
+  }
+
+  /* ── Responsive móvil ── */
+  @media (max-width: 768px) {
+    /* Ocultamos columnas secundarias para que la tabla quepa
+       en pantalla sin scroll horizontal */
+    .col-email,
+    .col-alta,
+    .col-acceso {
+      display: none;
+    }
+
+    /* El email pasa a mostrarse bajo el nombre */
+    .td-email-movil { display: block; }
+
+    /* Sin min-width fijo: la tabla se adapta al ancho disponible */
+    #tabla-alumnos { min-width: 0; }
+
+    /* La fila de búsqueda + botón ocupa el ancho completo y se apila */
+    #buscar-alumno { width: 100% !important; box-sizing: border-box; }
+    .tabla-header { flex-wrap: wrap; gap: 0.75rem; }
+    .tabla-header > div { width: 100%; }
   }
 </style>

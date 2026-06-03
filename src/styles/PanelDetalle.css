@@ -972,6 +972,13 @@
   color: var(--color-primary);
 }
 
+.material-flaticon {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
 .material-nombre {
   font-size: 0.82rem;
   font-weight: 600;

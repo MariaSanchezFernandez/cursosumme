@@ -169,3 +169,17 @@ CREATE TABLE IF NOT EXISTS pack_cursos (
   CONSTRAINT fk_pc_pack  FOREIGN KEY (pack_id)  REFERENCES packs(id)  ON DELETE CASCADE,
   CONSTRAINT fk_pc_curso FOREIGN KEY (curso_id) REFERENCES cursos(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- -----------------------------------------------------------------
+-- sesiones.ultimo_uso
+-- Marca de "última actividad" — la actualiza requireAuth() en
+-- cada llamada autenticada. Permite que la página
+-- /admin/estadisticas refleje la última vez que la persona usó la
+-- web, aunque tenga "Recordarme" activo y no marque vídeos.
+-- Migración independiente: base-de-datos/migracion-sesiones-ultimo-uso.sql
+-- -----------------------------------------------------------------
+ALTER TABLE sesiones
+  ADD COLUMN IF NOT EXISTS ultimo_uso DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE sesiones
+  ADD INDEX IF NOT EXISTS idx_ultimo_uso (ultimo_uso);

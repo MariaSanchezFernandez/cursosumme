@@ -3,28 +3,109 @@
  * PÁGINA: Catálogo (/precios)
  * ---------------------------
  * Listado público de cursos y packs disponibles a la venta.
- * Estructura:
- *  1. Cabecera pública compartida.
- *  2. Hero pequeño con propósito.
- *  3. Sección "Packs" con tarjetas grandes (cuando hay packs).
- *  4. Sección "Cursos individuales" con grid de tarjetas grandes con
- *     imagen, badge etiqueta, precio y CTA "Ver detalle →".
- *  5. Pie.
  *
- * Las tarjetas reutilizan la misma clase `.tarjeta-curso` que la home,
- * pero los estilos viven aquí porque las dos páginas se sirven sueltas
- * (Astro estático). El estilo se mantiene en sync editando ambas.
+ * SEO: los cursos y packs se **pre-renderizan en build time** vía fetch
+ * a la API pública. Esto deja en el HTML estático todo el contenido que
+ * Googlebot necesita para indexar la página (nombres, precios, descripciones)
+ * sin tener que esperar a la segunda pasada de ejecución de JavaScript.
+ * Cada `npm run deploy` reconstruye y vuelve a pedir los datos, así que
+ * los cambios en admin se reflejan tras desplegar.
  *
- * El botón Comprar dispara Stripe Checkout; la tarjeta entera lleva al
- * detalle (/cursos/[id]) salvo el botón Comprar, que tiene su propio click.
+ * El botón "Comprar" se conecta por JS en el cliente y lleva a /checkout.
  */
 import Plantilla from '../layouts/Plantilla.astro';
 import CabeceraPublica from '../components/CabeceraPublica.astro';
 import PiePagina from '../components/PiePagina.astro';
 import '../styles/global.css';
+
+// Paleta de colores rotativa para las tarjetas (la API a veces devuelve
+// `color: null` y la home/landing usa esta misma lista).
+const PALETA = ['#b3e8da','#b5c8e8','#d4c8e8','#fff8b7','#ffb5a7','#c8e8b5'];
+
+type Curso = {
+  id: number;
+  titulo: string;
+  etiqueta?: string | null;
+  color?: string | null;
+  precio: string | number;
+  num_temas?: number;
+  puntos?: string[];
+};
+
+type Pack = {
+  id: number;
+  nombre: string;
+  descripcion?: string;
+  precio: string | number;
+};
+
+// Fetch en build time. Si la API falla (por ejemplo, durante el primer
+// build de un equipo nuevo sin SSL todavía), no se rompe el deploy: la
+// página queda con secciones vacías y el JS de cliente intenta llenarlas.
+async function pedir<T>(url: string, clave: string): Promise<T[]> {
+  try {
+    const r = await fetch(url);
+    if (!r.ok) return [];
+    const j = await r.json();
+    return Array.isArray(j[clave]) ? j[clave] : [];
+  } catch {
+    return [];
+  }
+}
+
+const porPrecio = <T extends { precio: string | number }>(a: T, b: T) =>
+  parseFloat(String(a.precio ?? 0)) - parseFloat(String(b.precio ?? 0));
+
+const cursos = (await pedir<Curso>('https://cursosumme.es/api/cursos.php?publicos=1', 'cursos'))
+  .filter((c) => c.precio)
+  .sort(porPrecio);
+
+const packs = (await pedir<Pack>('https://cursosumme.es/api/packs.php', 'packs'))
+  .filter((p) => p.precio)
+  .sort(porPrecio);
+
+const fmt = (v: string | number) =>
+  parseFloat(String(v)).toFixed(2).replace('.', ',');
+
+// JSON-LD Schema.org Course — pre-construido para que Google lo lea
+// directamente del HTML sin esperar a JavaScript.
+const schemaCursos = cursos.length
+  ? {
+      '@context': 'https://schema.org',
+      '@graph': cursos.map((c) => ({
+        '@type': 'Course',
+        name: c.titulo,
+        description: c.etiqueta
+          ? `${c.etiqueta} — preparación para oposiciones de Pedagogía Terapéutica.`
+          : 'Curso de preparación para oposiciones de Pedagogía Terapéutica.',
+        url: `https://cursosumme.es/cursos/${c.id}`,
+        provider: {
+          '@type': 'EducationalOrganization',
+          name: 'Cursos Umme',
+          sameAs: 'https://cursosumme.es',
+        },
+        offers: {
+          '@type': 'Offer',
+          price: parseFloat(String(c.precio ?? 0)).toFixed(2),
+          priceCurrency: 'EUR',
+          availability: 'https://schema.org/InStock',
+          url: 'https://cursosumme.es/precios',
+        },
+        hasCourseInstance: {
+          '@type': 'CourseInstance',
+          courseMode: 'online',
+          ...(c.num_temas ? { courseWorkload: `${c.num_temas} temas en vídeo` } : {}),
+        },
+        inLanguage: 'es',
+      })),
+    }
+  : null;
 ---
 
-<Plantilla titulo="Catálogo de cursos — Cursos Umme">
+<Plantilla
+  titulo="Catálogo de cursos — Pedagogía Terapéutica — Cursos Umme"
+  descripcion="Cursos individuales y packs para preparar las oposiciones de PT. Temario actualizado a cada convocatoria, vídeo on-demand y materiales descargables. Compra única, sin suscripción, con 1 año de acceso."
+>
   <CabeceraPublica activa="cursos" />
 
   <main class="contenido">
@@ -38,24 +119,96 @@ import '../styles/global.css';
       </p>
     </header>
 
-    <div id="loading" class="estado-carga">Cargando cursos…</div>
-    <div id="error" class="estado-error" style="display:none;"></div>
+    {packs.length > 0 && (
+      <section class="catalogo-seccion">
+        <header class="catalogo-seccion-header" id="packs">
+          <h2 class="catalogo-seccion-titulo">Packs completos</h2>
+          <p class="catalogo-seccion-sub">Más material por menos. Acceso a todos los cursos del pack en una sola compra.</p>
+        </header>
+        <div class="catalogo-grid catalogo-grid--packs">
+          {packs.map((pack, i) => (
+            <article
+              class="tarjeta-curso tarjeta-curso--pack"
+              style={`--curso-color: ${PALETA[i % PALETA.length]}; animation-delay: ${i * 0.07}s;`}
+            >
+              <div class="tarjeta-curso-acento"></div>
+              <div class="tarjeta-curso-body">
+                <span class="tarjeta-curso-chip tarjeta-curso-chip--pack">Pack completo</span>
+                <h3 class="tarjeta-curso-titulo">{pack.nombre}</h3>
+                {pack.descripcion && (
+                  <p class="tarjeta-curso-desc">{pack.descripcion}</p>
+                )}
+                <ul class="tarjeta-curso-checklist">
+                  <li>Todos los cursos del pack</li>
+                  <li>Apuntes y materiales descargables</li>
+                  <li>Ahorra frente a comprarlos sueltos</li>
+                </ul>
+                <div class="tarjeta-curso-pie">
+                  <span class="tarjeta-curso-precio">{fmt(pack.precio)} €</span>
+                  <button class="tarjeta-curso-cta" data-tipo="pack" data-id={pack.id}>Comprar pack →</button>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+    )}
 
-    <section id="cursos-section-wrap" class="catalogo-seccion" style="display:none;">
-      <header class="catalogo-seccion-header">
-        <h2 class="catalogo-seccion-titulo">Cursos individuales</h2>
-        <p class="catalogo-seccion-sub">Elige solo lo que necesitas. Acceso completo a cada curso por separado.</p>
-      </header>
-      <div id="cursos-section" class="catalogo-grid"></div>
-    </section>
+    {cursos.length > 0 ? (
+      <section class="catalogo-seccion">
+        <header class="catalogo-seccion-header">
+          <h2 class="catalogo-seccion-titulo">Cursos individuales</h2>
+          <p class="catalogo-seccion-sub">Elige solo lo que necesitas. Acceso completo a cada curso por separado.</p>
+        </header>
+        <div class="catalogo-grid">
+          {cursos.map((curso, i) => {
+            const color = curso.color || PALETA[i % PALETA.length];
+            const numTemas = Number(curso.num_temas ?? 0);
+            const puntos = Array.isArray(curso.puntos) ? curso.puntos : [];
+            const items: string[] = [];
+            if (numTemas > 0) items.push(`${numTemas} ${numTemas === 1 ? 'tema' : 'temas'} en vídeo`);
+            for (const p of puntos) {
+              if (items.length >= 4) break;
+              items.push(p);
+            }
+            return (
+              <article
+                class="tarjeta-curso"
+                style={`--curso-color: ${color}; animation-delay: ${i * 0.06}s;`}
+              >
+                <div class="tarjeta-curso-acento"></div>
+                <a href={`/cursos/${curso.id}`} class="tarjeta-curso-overlay" aria-label={`Ver detalle de ${curso.titulo}`}></a>
+                <div class="tarjeta-curso-body">
+                  {curso.etiqueta && <span class="tarjeta-curso-chip">{curso.etiqueta}</span>}
+                  <h3 class="tarjeta-curso-titulo">{curso.titulo}</h3>
+                  {items.length > 0 && (
+                    <ul class="tarjeta-curso-checklist">
+                      {items.map((p) => <li>{p}</li>)}
+                    </ul>
+                  )}
+                  <a href={`/cursos/${curso.id}`} class="tarjeta-curso-ver">Ver detalle del curso →</a>
+                  <div class="tarjeta-curso-pie">
+                    <span class="tarjeta-curso-precio">{fmt(curso.precio)} €</span>
+                    <button class="tarjeta-curso-cta" data-tipo="curso" data-id={curso.id}>Comprar →</button>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+    ) : (
+      <p class="estado-carga">No hay cursos disponibles aún.</p>
+    )}
 
-    <section id="packs-section" class="catalogo-seccion" style="display:none;">
-      <header class="catalogo-seccion-header" id="packs">
-        <h2 class="catalogo-seccion-titulo">Packs completos</h2>
-        <p class="catalogo-seccion-sub">Más material por menos. Acceso a todos los cursos del pack en una sola compra.</p>
-      </header>
-      <div id="packs-grid" class="catalogo-grid catalogo-grid--packs"></div>
-    </section>
+    {schemaCursos && (
+      <script type="application/ld+json" is:inline set:html={JSON.stringify(schemaCursos)}></script>
+    )}
+
+    {/* Snapshot de los datos del build: el JS lo compara contra lo que
+        devuelve la API en directo para repintar las tarjetas solo si han
+        cambiado entre el último deploy y ahora. */}
+    <script type="application/json" id="datos-build" is:inline set:html={JSON.stringify({ packs, cursos })}></script>
   </main>
 
   <PiePagina />
@@ -326,6 +479,15 @@ import '../styles/global.css';
 }
 .tarjeta-curso--pack .tarjeta-curso-precio { font-size: 1.8rem; }
 
+/* Descripción del pack — visible bajo el título, antes del checklist.
+   Color y espaciado coherentes con el resto de subtextos. */
+.tarjeta-curso-desc {
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
 /* Enlace visible "Ver detalle del curso" — secundario, alineado a la
    derecha encima del pie. Posicionado por encima del overlay para que
    el click vaya al link explícito (semántica clara). */
@@ -384,168 +546,175 @@ import '../styles/global.css';
 </style>
 
 <script>
-// ───────────────────────────────────────────────────────────────
-// Carga packs + cursos desde la API pública y los renderiza como
-// tarjetas grandes con imagen. Cada tarjeta entera enlaza al detalle
-// (/cursos/[id]); el botón "Comprar" dispara Stripe Checkout sin salir.
-//
-// Modo ?preview en la URL = sin pago, datos de muestra (útil para
-// previsualizar la página sin Stripe en test).
-// ───────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────
+// 1) Las tarjetas vienen pre-renderizadas del build (ver frontmatter).
+// 2) Tras la carga inicial, revalidamos contra la API: si los precios o
+//    los cursos han cambiado desde el último deploy, repintamos. Si la
+//    API falla, el visitante sigue viendo el HTML estático sin error.
+// 3) En modo ?preview los botones "Comprar" muestran un toast en vez
+//    de redirigir a checkout (útil para previsualización sin Stripe).
+// ───────────────────────────────────────────────────────────────────
 const PALETA = ['#b3e8da','#b5c8e8','#d4c8e8','#fff8b7','#ffb5a7','#c8e8b5'];
-
-const PREVIEW_PACKS = [
-  { id: 1, nombre: 'Pack Oposiciones Completo', descripcion: 'Acceso a todos los cursos de PT.', precio: '149.00' },
-  { id: 2, nombre: 'Pack Administración General', descripcion: 'Cuerpo General Administrativo y Auxiliar.', precio: '89.00' },
-];
-
-const PREVIEW_CURSOS = [
-  { id: 1, titulo: 'Derecho Constitucional', etiqueta: 'Materia común', precio: '39.00', color: '#b3e8da', num_temas: 14 },
-  { id: 2, titulo: 'Organización del Estado', etiqueta: 'Materia común', precio: '35.00', color: '#b5c8e8', num_temas: 10 },
-  { id: 3, titulo: 'Procedimiento Administrativo', etiqueta: 'Materia específica', precio: '39.00', color: '#d4c8e8', num_temas: 12 },
-  { id: 4, titulo: 'Ofimática e Informática', etiqueta: 'Materia específica', precio: '29.00', color: '#fff8b7', num_temas: 8 },
-];
-
 const esPreview = new URLSearchParams(location.search).has('preview');
 
 function escapar(s: string): string {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-
-function fmtPrecio(v: string | number): string {
+function fmt(v: string | number): string {
   return parseFloat(String(v)).toFixed(2).replace('.', ',');
 }
-
-function pintarTarjetaPack(pack: any, idx: number): HTMLElement {
-  const color = PALETA[idx % PALETA.length];
-  const card = document.createElement('article');
-  card.className = 'tarjeta-curso tarjeta-curso--pack';
-  card.style.setProperty('--curso-color', color);
-  card.style.animationDelay = `${idx * 0.07}s`;
-  card.innerHTML = `
-    <div class="tarjeta-curso-acento"></div>
-    <div class="tarjeta-curso-body">
-      <span class="tarjeta-curso-chip tarjeta-curso-chip--pack">Pack completo</span>
-      <h3 class="tarjeta-curso-titulo">${escapar(pack.nombre)}</h3>
-      <ul class="tarjeta-curso-checklist">
-        <li>Todos los cursos del pack</li>
-        <li>Apuntes y materiales descargables</li>
-        <li>Ahorra frente a comprarlos sueltos</li>
-      </ul>
-      <div class="tarjeta-curso-pie">
-        <span class="tarjeta-curso-precio">${fmtPrecio(pack.precio ?? 0)} €</span>
-        <button class="tarjeta-curso-cta" data-tipo="pack" data-id="${pack.id}">Comprar pack →</button>
-      </div>
-    </div>
-  `;
-  return card;
+function porPrecio(a: any, b: any): number {
+  return parseFloat(String(a.precio ?? 0)) - parseFloat(String(b.precio ?? 0));
 }
 
-function pintarTarjetaCurso(curso: any, idx: number): HTMLElement {
+function htmlPack(pack: any, idx: number): string {
+  const color = PALETA[idx % PALETA.length];
+  const desc = pack.descripcion ? `<p class="tarjeta-curso-desc">${escapar(pack.descripcion)}</p>` : '';
+  return `
+    <article class="tarjeta-curso tarjeta-curso--pack" style="--curso-color: ${color}; animation-delay: ${idx * 0.07}s;">
+      <div class="tarjeta-curso-acento"></div>
+      <div class="tarjeta-curso-body">
+        <span class="tarjeta-curso-chip tarjeta-curso-chip--pack">Pack completo</span>
+        <h3 class="tarjeta-curso-titulo">${escapar(pack.nombre)}</h3>
+        ${desc}
+        <ul class="tarjeta-curso-checklist">
+          <li>Todos los cursos del pack</li>
+          <li>Apuntes y materiales descargables</li>
+          <li>Ahorra frente a comprarlos sueltos</li>
+        </ul>
+        <div class="tarjeta-curso-pie">
+          <span class="tarjeta-curso-precio">${fmt(pack.precio ?? 0)} €</span>
+          <button class="tarjeta-curso-cta" data-tipo="pack" data-id="${pack.id}">Comprar pack →</button>
+        </div>
+      </div>
+    </article>`;
+}
+
+function htmlCurso(curso: any, idx: number): string {
   const color = curso.color || PALETA[idx % PALETA.length];
   const numTemas = Number(curso.num_temas ?? 0);
-  const puntosRaw: string[] = Array.isArray(curso.puntos) ? curso.puntos : [];
-  const card = document.createElement('article');
-  card.className = 'tarjeta-curso';
-  card.style.setProperty('--curso-color', color);
-  card.style.animationDelay = `${idx * 0.06}s`;
-  // Lista compacta — máx 4 ideas por curso. El nº de temas va como
-  // primer punto de la lista (no como pill aparte) y luego los puntos
-  // personalizados extraídos de .desc-chips/.desc-card. Si un curso no
-  // tiene puntos en su descripción, la lista queda más cortita.
+  const puntos: string[] = Array.isArray(curso.puntos) ? curso.puntos : [];
   const items: string[] = [];
   if (numTemas > 0) items.push(`${numTemas} ${numTemas === 1 ? 'tema' : 'temas'} en vídeo`);
-  for (const p of puntosRaw) {
+  for (const p of puntos) {
     if (items.length >= 4) break;
     items.push(p);
   }
-  const checklistHtml = items.length > 0
+  const checklist = items.length
     ? `<ul class="tarjeta-curso-checklist">${items.map((p) => `<li>${escapar(p)}</li>`).join('')}</ul>`
     : '';
-  card.innerHTML = `
-    <div class="tarjeta-curso-acento"></div>
-    <a href="/cursos/${curso.id}" class="tarjeta-curso-overlay" aria-label="Ver detalle de ${escapar(curso.titulo)}"></a>
-    <div class="tarjeta-curso-body">
-      ${curso.etiqueta ? `<span class="tarjeta-curso-chip">${escapar(curso.etiqueta)}</span>` : ''}
-      <h3 class="tarjeta-curso-titulo">${escapar(curso.titulo)}</h3>
-      ${checklistHtml}
-      <a href="/cursos/${curso.id}" class="tarjeta-curso-ver">Ver detalle del curso →</a>
-      <div class="tarjeta-curso-pie">
-        <span class="tarjeta-curso-precio">${fmtPrecio(curso.precio ?? 0)} €</span>
-        <button class="tarjeta-curso-cta" data-tipo="curso" data-id="${curso.id}">Comprar →</button>
+  return `
+    <article class="tarjeta-curso" style="--curso-color: ${color}; animation-delay: ${idx * 0.06}s;">
+      <div class="tarjeta-curso-acento"></div>
+      <a href="/cursos/${curso.id}" class="tarjeta-curso-overlay" aria-label="Ver detalle de ${escapar(curso.titulo)}"></a>
+      <div class="tarjeta-curso-body">
+        ${curso.etiqueta ? `<span class="tarjeta-curso-chip">${escapar(curso.etiqueta)}</span>` : ''}
+        <h3 class="tarjeta-curso-titulo">${escapar(curso.titulo)}</h3>
+        ${checklist}
+        <a href="/cursos/${curso.id}" class="tarjeta-curso-ver">Ver detalle del curso →</a>
+        <div class="tarjeta-curso-pie">
+          <span class="tarjeta-curso-precio">${fmt(curso.precio ?? 0)} €</span>
+          <button class="tarjeta-curso-cta" data-tipo="curso" data-id="${curso.id}">Comprar →</button>
+        </div>
       </div>
-    </div>
-  `;
-  return card;
+    </article>`;
 }
 
-function renderizar(dataPacks: any, dataCursos: any) {
-  // Orden ascendente por precio: más barato primero.
-  const porPrecio = (a: any, b: any) =>
-    parseFloat(String(a.precio ?? 0)) - parseFloat(String(b.precio ?? 0));
-  const packs  = (dataPacks.packs   ?? []).filter((p: any) => p.precio).sort(porPrecio);
-  const cursos = (dataCursos.cursos ?? []).filter((c: any) => c.precio).sort(porPrecio);
-
-  if (packs.length > 0) {
-    const sec  = document.getElementById('packs-section')!;
-    const grid = document.getElementById('packs-grid')!;
-    sec.style.display = 'block';
-    packs.forEach((p: any, i: number) => grid.appendChild(pintarTarjetaPack(p, i)));
-  }
-
-  const wrap = document.getElementById('cursos-section-wrap')!;
-  const grid = document.getElementById('cursos-section')!;
-  wrap.style.display = 'block';
-  if (cursos.length > 0) {
-    cursos.forEach((c: any, i: number) => grid.appendChild(pintarTarjetaCurso(c, i)));
-  } else {
-    grid.innerHTML = '<p style="color:#aaa;font-size:0.9rem;grid-column:1/-1;">No hay cursos disponibles aún.</p>';
-  }
-
-  // Botones Comprar → /checkout (pre-checkout fiscal + RGPD + LGDCU
-  // antes de pasar a Stripe). Ya no hacemos POST directo a stripe-checkout
-  // porque tenemos que recoger nombre completo, dirección, DNI/NIF y la
-  // renuncia explícita al desistimiento. Ver src/pages/checkout.astro.
-  document.addEventListener('click', (e) => {
-    const btn = (e.target as HTMLElement).closest('.tarjeta-curso-cta') as HTMLButtonElement | null;
-    if (!btn) return;
-    e.preventDefault();
-    if (esPreview) {
-      window.mostrarToast('Modo preview — el pago no está activo', 'info');
-      return;
-    }
-    const tipo = btn.dataset.tipo;
-    const id   = Number(btn.dataset.id);
-    if (!tipo || !id) return;
-    window.location.href = `/checkout?tipo=${encodeURIComponent(tipo)}&id=${id}`;
-  });
+// Huella ligera para detectar cambios: lista ordenada de "id|precio".
+// Si admin sube un precio, retira un curso o añade uno nuevo, la huella
+// cambia y disparamos el repintado. Comparamos packs y cursos por
+// separado para no repintar la sección equivocada.
+function huella(items: any[], idKey: string): string {
+  return items
+    .map((x) => `${x[idKey]}|${parseFloat(String(x.precio ?? 0)).toFixed(2)}`)
+    .join(',');
 }
 
-async function cargar() {
-  const loading = document.getElementById('loading')!;
-  const errorEl = document.getElementById('error')!;
-
-  if (esPreview) {
-    loading.style.display = 'none';
-    renderizar({ packs: PREVIEW_PACKS }, { cursos: PREVIEW_CURSOS });
+function pintarPacks(packs: any[]) {
+  // Busca la sección renderizada por build; si no existe (cero packs en
+  // build) la creamos antes del bloque de cursos.
+  let sec = document.querySelector('section[aria-label="packs"]') as HTMLElement | null
+    || document.getElementById('packs')?.closest('section') as HTMLElement | null;
+  if (!packs.length) {
+    if (sec) sec.remove();
     return;
   }
+  if (!sec) {
+    const main = document.querySelector('main.contenido')!;
+    sec = document.createElement('section');
+    sec.className = 'catalogo-seccion';
+    sec.setAttribute('aria-label', 'packs');
+    sec.innerHTML = `
+      <header class="catalogo-seccion-header" id="packs">
+        <h2 class="catalogo-seccion-titulo">Packs completos</h2>
+        <p class="catalogo-seccion-sub">Más material por menos. Acceso a todos los cursos del pack en una sola compra.</p>
+      </header>
+      <div class="catalogo-grid catalogo-grid--packs"></div>`;
+    main.insertBefore(sec, main.firstElementChild!.nextElementSibling);
+  }
+  const grid = sec.querySelector('.catalogo-grid') as HTMLElement;
+  grid.innerHTML = packs.map((p, i) => htmlPack(p, i)).join('');
+}
+
+function pintarCursos(cursos: any[]) {
+  // La sección de cursos individuales SIEMPRE existe en el HTML (al
+  // menos como contenedor). Localizamos el grid por la primera
+  // .catalogo-grid que no sea --packs.
+  const grids = Array.from(document.querySelectorAll('.catalogo-grid'));
+  const grid  = grids.find((g) => !g.classList.contains('catalogo-grid--packs')) as HTMLElement | undefined;
+  if (!grid) return;
+  if (!cursos.length) {
+    grid.innerHTML = '<p style="color:#aaa;font-size:0.9rem;">No hay cursos disponibles aún.</p>';
+    return;
+  }
+  grid.innerHTML = cursos.map((c, i) => htmlCurso(c, i)).join('');
+}
+
+async function revalidar() {
+  let inicial: { packs?: any[]; cursos?: any[] } = {};
+  try {
+    const raw = document.getElementById('datos-build')?.textContent || '{}';
+    inicial = JSON.parse(raw);
+  } catch {}
 
   try {
     const [resCursos, resPacks] = await Promise.all([
       fetch('/api/cursos.php?publicos=1'),
       fetch('/api/packs.php'),
     ]);
+    if (!resCursos.ok || !resPacks.ok) return;
     const dataCursos = await resCursos.json();
     const dataPacks  = await resPacks.json();
-    loading.style.display = 'none';
-    renderizar(dataPacks, dataCursos);
+
+    const cursosNuevos = (dataCursos.cursos ?? []).filter((c: any) => c.precio).sort(porPrecio);
+    const packsNuevos  = (dataPacks.packs   ?? []).filter((p: any) => p.precio).sort(porPrecio);
+
+    const cursosCambian = huella(cursosNuevos, 'id') !== huella(inicial.cursos ?? [], 'id');
+    const packsCambian  = huella(packsNuevos,  'id') !== huella(inicial.packs  ?? [], 'id');
+
+    if (packsCambian)  pintarPacks(packsNuevos);
+    if (cursosCambian) pintarCursos(cursosNuevos);
   } catch {
-    loading.style.display = 'none';
-    errorEl.style.display = 'block';
-    errorEl.textContent = 'Error al cargar los cursos. Inténtalo de nuevo.';
+    // Sin red o API caída: el visitante sigue viendo el HTML del build.
   }
 }
 
-cargar();
+// Botones Comprar → /checkout (recoge nombre, dirección, DNI/NIF y la
+// renuncia al desistimiento antes de pasar a Stripe).
+document.addEventListener('click', (e) => {
+  const btn = (e.target as HTMLElement).closest('.tarjeta-curso-cta') as HTMLButtonElement | null;
+  if (!btn) return;
+  e.preventDefault();
+  if (esPreview) {
+    window.mostrarToast('Modo preview — el pago no está activo', 'info');
+    return;
+  }
+  const tipo = btn.dataset.tipo;
+  const id   = Number(btn.dataset.id);
+  if (!tipo || !id) return;
+  window.location.href = `/checkout?tipo=${encodeURIComponent(tipo)}&id=${id}`;
+});
+
+// Revalidamos solo en producción real (sin ?preview).
+if (!esPreview) revalidar();
 </script>
