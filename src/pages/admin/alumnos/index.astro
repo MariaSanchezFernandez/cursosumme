@@ -30,6 +30,20 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
       </div>
     </div>
 
+    <!-- Filtros por origen del alumno. La selección se guarda en el
+         hash de la URL para que un refresco/compartido mantenga la vista. -->
+    <div class="filtros-origen" id="filtros-origen">
+      <button type="button" class="chip-filtro activo" data-origen="todos">
+        Todos <span class="chip-contador" id="contador-todos">—</span>
+      </button>
+      <button type="button" class="chip-filtro" data-origen="rocio">
+        De Rocío <span class="chip-contador" id="contador-rocio">—</span>
+      </button>
+      <button type="button" class="chip-filtro" data-origen="compradores">
+        Compradores <span class="chip-contador" id="contador-compradores">—</span>
+      </button>
+    </div>
+
     <div id="estado-carga" class="alumnos-skel" aria-hidden="true">
       <!-- Skeletons mientras cargan los alumnos -->
       <div class="alumno-skel-row">
@@ -132,8 +146,14 @@ async function cargarAlumnos() {
         ? `<img src="${a.foto_perfil}" alt="" style="${avatarStyle}" />`
         : `<div style="width:36px;height:36px;border-radius:50%;background:var(--color-light);display:flex;align-items:center;justify-content:center;font-size:0.78rem;font-weight:800;color:var(--color-text);border:2px solid #e4ede9;flex-shrink:0;">${(a.nombre?.[0] || '?').toUpperCase()}</div>`;
 
+      // origen: 'rocio' si el admin lo marcó explícitamente; 'comprador'
+      // en cualquier otro caso (alumno entrado vía Stripe Checkout o
+      // creado a mano sin marcar la casilla "alumna de Rocío").
+      const esRocio = Number(a.es_alumna_rocio) === 1;
+      const origen  = esRocio ? 'rocio' : 'comprador';
+
       return `
-        <tr>
+        <tr data-origen="${origen}">
           <td style="padding:0.5rem 0.75rem;">${avatarHtml}</td>
           <td class="td-nombre">
             ${a.nombre} ${a.apellidos}
@@ -158,6 +178,8 @@ async function cargarAlumnos() {
         </tr>
       `;
     }).join('');
+    // Aplicar filtro inicial (hash) + calcular contadores de los chips.
+    filtrarAlumnos();
   } catch {
     estadoCarga.textContent = 'Error al cargar los alumnos.';
   }
@@ -165,33 +187,135 @@ async function cargarAlumnos() {
 
 cargarAlumnos();
 
+// ── Filtros por origen (chips) ─────────────────────────────
+type OrigenFiltro = 'todos' | 'rocio' | 'compradores';
+let origenActivo: OrigenFiltro = 'todos';
+
+// Recuperar filtro previo de la URL (hash) para que un refresco mantenga la vista.
+const hashInicial = location.hash.replace('#', '') as OrigenFiltro;
+if (['rocio', 'compradores'].includes(hashInicial)) {
+  origenActivo = hashInicial;
+}
+
+document.querySelectorAll<HTMLButtonElement>('.chip-filtro').forEach(btn => {
+  if (btn.dataset.origen === origenActivo) btn.classList.add('activo');
+  else btn.classList.remove('activo');
+  btn.addEventListener('click', () => {
+    origenActivo = (btn.dataset.origen as OrigenFiltro) || 'todos';
+    document.querySelectorAll('.chip-filtro').forEach(b => b.classList.remove('activo'));
+    btn.classList.add('activo');
+    // Reflejar en hash: vacío para "todos" para no ensuciar la URL.
+    if (origenActivo === 'todos') history.replaceState(null, '', location.pathname + location.search);
+    else history.replaceState(null, '', '#' + origenActivo);
+    filtrarAlumnos();
+  });
+});
+
 function filtrarAlumnos() {
   const q = (document.getElementById('buscar-alumno') as HTMLInputElement).value.toLowerCase().trim();
-  const filas = tbody.querySelectorAll('tr');
+  const filas = tbody.querySelectorAll<HTMLTableRowElement>('tr');
   let visibles = 0;
+  let totRocio = 0, totComp = 0;
   filas.forEach(fila => {
     const nombre = fila.querySelector('.td-nombre')?.textContent?.toLowerCase() || '';
     const email  = fila.querySelector('.td-email')?.textContent?.toLowerCase()  || '';
-    const coincide = !q || nombre.includes(q) || email.includes(q);
-    (fila as HTMLElement).style.display = coincide ? '' : 'none';
-    if (coincide) visibles++;
+    const origen = fila.dataset.origen as OrigenFiltro | undefined;
+    if (origen === 'rocio') totRocio++;
+    else if (origen === 'comprador') totComp++;
+
+    const coincideBusqueda = !q || nombre.includes(q) || email.includes(q);
+    const coincideOrigen   = origenActivo === 'todos'
+      || (origenActivo === 'rocio' && origen === 'rocio')
+      || (origenActivo === 'compradores' && origen === 'comprador');
+    const visible = coincideBusqueda && coincideOrigen;
+    fila.style.display = visible ? '' : 'none';
+    if (visible) visibles++;
   });
-  // Mostrar "sin resultados" si no hay coincidencias
+
+  // Contadores en los chips
+  const totTotal = totRocio + totComp;
+  const setContador = (id: string, n: number) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = String(n);
+  };
+  setContador('contador-todos', totTotal);
+  setContador('contador-rocio', totRocio);
+  setContador('contador-compradores', totComp);
+
+  // "Sin resultados" si la combinación búsqueda + filtro no da nada.
   let sinRes = document.getElementById('sin-resultados');
   if (!sinRes) {
     sinRes = document.createElement('div');
     sinRes.id = 'sin-resultados';
     sinRes.style.cssText = 'padding:1.5rem; text-align:center; color:#aaa; font-size:0.85rem;';
-    sinRes.textContent = 'No hay alumnos que coincidan con la búsqueda.';
     tabla.after(sinRes);
   }
-  sinRes.style.display = (q && visibles === 0) ? 'block' : 'none';
+  if (visibles === 0 && (q || origenActivo !== 'todos')) {
+    sinRes.textContent = q
+      ? 'No hay alumnos que coincidan con la búsqueda.'
+      : (origenActivo === 'rocio'
+          ? 'No hay alumnos marcados como de Rocío.'
+          : 'Aún no hay compradores registrados.');
+    sinRes.style.display = 'block';
+  } else {
+    sinRes.style.display = 'none';
+  }
 }
 
 (window as any).filtrarAlumnos = filtrarAlumnos;
 </script>
 
 <style>
+  /* Chips de filtro por origen */
+  .filtros-origen {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.85rem 1.5rem;
+    border-bottom: 1px solid #eef3f0;
+    flex-wrap: wrap;
+  }
+  .chip-filtro {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.85rem;
+    border: 1px solid #d8e4df;
+    border-radius: 20px;
+    background: #fff;
+    color: var(--color-text-muted);
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
+  }
+  .chip-filtro:hover {
+    background: #f4f9f6;
+    border-color: var(--color-primary);
+    color: var(--color-text);
+  }
+  .chip-filtro.activo {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+  }
+  .chip-contador {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    padding: 0 0.4rem;
+    height: 18px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.06);
+    font-size: 0.7rem;
+    font-weight: 700;
+  }
+  .chip-filtro.activo .chip-contador {
+    background: rgba(255, 255, 255, 0.22);
+    color: #fff;
+  }
+
   /* Skeletons de filas de alumno mientras carga la tabla */
   .alumnos-skel {
     padding: 0.5rem 0;

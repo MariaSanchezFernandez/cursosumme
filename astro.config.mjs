@@ -23,6 +23,10 @@ const RUTAS_PRIVADAS = [
   '/preview',
   '/test-vdo',
   '/login',
+  // Envoltorio HTML para PDFs (preserva el favicon en la pestaña).
+  // Solo tiene sentido cuando se llega con ?ruta=... — sin URL útil
+  // para Google, así que la dejamos fuera del sitemap.
+  '/visor',
 ];
 
 // https://astro.build/config

@@ -1055,10 +1055,19 @@ async function seleccionarTema(tema: any, liEl: HTMLElement) {
       const ext = mat.nombre.split('.').pop()?.toUpperCase() ?? 'DOC';
       const a   = document.createElement('a');
       a.className = 'material-item';
-      a.href      = mat.ruta;
+      // PDFs van por /visor (envoltorio HTML que conserva el favicon
+      // de Cursos Umme en la pestaña). Cualquier otro formato se abre
+      // directo — el navegador no muestra favicon de la web para
+      // archivos no-HTML, pero al menos no se descargan a la fuerza.
+      const esPdf = ext === 'PDF';
+      if (esPdf) {
+        a.href = `/visor?ruta=${encodeURIComponent(mat.ruta)}&nombre=${encodeURIComponent(mat.nombre)}`;
+      } else {
+        a.href = mat.ruta;
+      }
       a.target    = '_blank';
       a.rel       = 'noopener';
-      a.download  = mat.nombre;
+      a.title     = `Abrir ${mat.nombre}`;
       a.innerHTML = `
         <img src="/flaticon.png" alt="" class="material-flaticon" />
         <div>

@@ -1,0 +1,78 @@
+---
+/**
+ * PÁGINA: /visor
+ * ─────────────────────────────────────────────────────────────
+ * Visor envoltorio para documentos PDF. Existe para una cosa
+ * concreta: cuando el navegador abre un PDF servido directamente
+ * (URL .pdf), usa su propio icono interno en la pestaña y NO
+ * respeta el favicon del dominio. Esa pestaña queda sin marca
+ * de Cursos Umme.
+ *
+ * Esta página es HTML normal, así que sí honra <link rel="icon">.
+ * Mete el PDF en un <embed> a pantalla completa y la pestaña
+ * muestra el globo del favicon + el nombre del documento como
+ * título. La alumna puede descargar el PDF desde el visor nativo
+ * de Chrome igual que antes.
+ *
+ * URL esperada:
+ *   /visor?ruta=/uploads/documentos/X.pdf&nombre=Mi%20documento.pdf
+ */
+import '../styles/global.css';
+---
+
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate icon" href="/favicon.ico" />
+    <title>Documento — Cursos Umme</title>
+    <style>
+      html, body { margin: 0; padding: 0; height: 100%; background: #2a2a2a; }
+      #vs-embed { width: 100%; height: 100vh; border: 0; display: block; }
+      .vs-error {
+        color: #ffd9d9; padding: 2rem; text-align: center;
+        font-family: 'DM Sans', sans-serif;
+      }
+      .vs-error a { color: #fff; text-decoration: underline; }
+    </style>
+  </head>
+  <body>
+    <embed id="vs-embed" type="application/pdf" />
+    <noscript>
+      <p class="vs-error">
+        Activa JavaScript para abrir el documento o vuelve a la
+        plataforma e inténtalo de nuevo.
+      </p>
+    </noscript>
+
+    <script is:inline>
+      (function () {
+        var params = new URLSearchParams(location.search);
+        var ruta   = params.get('ruta') || '';
+        var nombre = params.get('nombre') || '';
+
+        // Validación: solo permitimos rutas dentro de /uploads/ y que
+        // acaben en .pdf. Esto bloquea intentos de redirigir el visor
+        // a URLs externas o a otros recursos del servidor (path traversal).
+        var rutaSegura = /^\/uploads\/[A-Za-z0-9_\-/.]+\.pdf$/i.test(ruta);
+        if (!rutaSegura) {
+          document.body.innerHTML =
+            '<p class="vs-error">Documento no válido. <a href="/inicio">Volver a mis cursos</a></p>';
+          return;
+        }
+
+        // Título de pestaña: el nombre que vino por query string, si no la ruta.
+        var tituloLimpio = (nombre || ruta.split('/').pop() || 'Documento')
+          .replace(/\.pdf$/i, '');
+        document.title = tituloLimpio + ' — Cursos Umme';
+
+        var embed = document.getElementById('vs-embed');
+        embed.setAttribute('src', ruta + '#toolbar=1&navpanes=0');
+      })();
+    </script>
+  </body>
+</html>

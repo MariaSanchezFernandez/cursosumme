@@ -19,7 +19,9 @@ const __dir     = dirname(fileURLToPath(import.meta.url));
 const ROOT       = join(__dir, '..');
 const BACKUPS_DIR = join(ROOT, 'backups');
 const MAX_BACKUPS = 10;
-const BASE_URL    = 'http://cursosumme.es';
+// HTTPS obligatorio: IONOS redirige 301 http→https, lo que convierte
+// el POST en GET y el endpoint devuelve 405. Llamamos directo a HTTPS.
+const BASE_URL    = 'https://cursosumme.es';
 
 // ── Verificar BACKUP_SECRET ────────────────────────────────────────────────
 const secret = process.env.BACKUP_SECRET;
