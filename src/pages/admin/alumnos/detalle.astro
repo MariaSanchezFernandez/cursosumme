@@ -16,6 +16,35 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
     </div>
   </div>
 
+  <!-- Datos personales -->
+  <div id="datos-wrap" style="display:none; margin-bottom:1.75rem;">
+    <p class="seccion-titulo" style="margin-bottom:0.75rem;">Datos personales</p>
+    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:1rem;">
+      <div class="form-grupo" style="margin:0;">
+        <label class="form-label">Nombre</label>
+        <input class="form-input" type="text" id="inp-nombre" autocomplete="off" />
+      </div>
+      <div class="form-grupo" style="margin:0;">
+        <label class="form-label">Apellidos</label>
+        <input class="form-input" type="text" id="inp-apellidos" autocomplete="off" />
+      </div>
+      <div class="form-grupo" style="margin:0;">
+        <label class="form-label">
+          Email
+          <span style="font-weight:400; color:#aaa; font-size:0.76rem;">(usuario de acceso)</span>
+        </label>
+        <input class="form-input" type="email" id="inp-email" autocomplete="off" />
+      </div>
+    </div>
+    <p style="font-size:0.78rem; color:#a06010; background:#fff8e6; border:1px solid #f3dfb6;
+      border-radius:7px; padding:0.5rem 0.75rem; margin:0.75rem 0 0;">
+      Si cambias el email, el alumno deberá iniciar sesión con el nuevo correo. La contraseña no cambia.
+    </p>
+    <button id="btn-guardar-datos" class="btn-admin primario" style="height:38px; font-size:0.8rem; margin-top:0.75rem;">
+      Guardar datos
+    </button>
+  </div>
+
   <!-- Fechas de acceso -->
   <div id="acceso-wrap" style="display:none; margin-bottom:1.75rem;">
     <p class="seccion-titulo" style="margin-bottom:0.75rem;">Acceso a la plataforma</p>
@@ -251,6 +280,41 @@ async function cargar() {
   (document.getElementById('perfil-email')   as HTMLElement).textContent = alumno.email;
   (document.getElementById('perfil-cabecera') as HTMLElement).style.display = 'flex';
   document.querySelector('.admin-header-titulo')!.textContent = `${alumno.nombre} ${alumno.apellidos}`;
+
+  // ── Datos personales (nombre, apellidos, email) ──────────
+  const datosWrap    = document.getElementById('datos-wrap') as HTMLElement;
+  const inpNombre    = document.getElementById('inp-nombre') as HTMLInputElement;
+  const inpApellidos = document.getElementById('inp-apellidos') as HTMLInputElement;
+  const inpEmail     = document.getElementById('inp-email') as HTMLInputElement;
+  inpNombre.value    = alumno.nombre ?? '';
+  inpApellidos.value = alumno.apellidos ?? '';
+  inpEmail.value     = alumno.email ?? '';
+  datosWrap.style.display = 'block';
+
+  document.getElementById('btn-guardar-datos')!.addEventListener('click', async () => {
+    const btn       = document.getElementById('btn-guardar-datos') as HTMLButtonElement;
+    const nombre    = inpNombre.value.trim();
+    const apellidos = inpApellidos.value.trim();
+    const email     = inpEmail.value.trim().toLowerCase();
+    if (!nombre) { mostrarMsg('El nombre no puede estar vacío.', 'error'); inpNombre.focus(); return; }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { mostrarMsg('Introduce un email válido.', 'error'); inpEmail.focus(); return; }
+
+    btn.disabled = true; btn.textContent = 'Guardando…';
+    const res  = await fetch('/api/alumnos.php', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: alumnoId, nombre, apellidos, email }),
+    });
+    const data = await res.json();
+    btn.disabled = false; btn.textContent = 'Guardar datos';
+    if (!data.ok) { mostrarMsg(data.mensaje || 'No se pudieron guardar los datos.', 'error'); return; }
+
+    mostrarMsg('✓ Datos guardados.', 'ok');
+    // Reflejar los cambios en la cabecera, el título y el objeto local
+    (document.getElementById('perfil-nombre') as HTMLElement).textContent = `${nombre} ${apellidos}`;
+    (document.getElementById('perfil-email')  as HTMLElement).textContent = email;
+    document.querySelector('.admin-header-titulo')!.textContent = `${nombre} ${apellidos}`;
+    alumno.nombre = nombre; alumno.apellidos = apellidos; alumno.email = email;
+  });
 
   // ── Fechas de acceso ─────────────────────────────────────
   const inpAlta  = document.getElementById('inp-fecha-alta') as HTMLInputElement;

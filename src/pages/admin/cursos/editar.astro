@@ -847,7 +847,20 @@ const temasVacio = document.getElementById('temas-vacio')!;
 // ── Drag & drop para reordenar temas ─────────────────────────
 let draggingCard: HTMLElement | null = null;
 
+// El arrastre solo es válido si arranca desde el handle. Lo marcamos en
+// mousedown según dónde estuviera el puntero.
+let dragDesdeHandle = false;
+temasLista.addEventListener('mousedown', (e) => {
+  dragDesdeHandle = !!(e.target as HTMLElement).closest('.tema-drag-handle');
+});
+
 temasLista.addEventListener('dragstart', (e) => {
+  // Si el drag NO arrancó desde el handle, lo cancelamos AQUÍ, antes de
+  // marcar nada. Antes había dos listeners: uno añadía .dragging (opacity
+  // 0.4) y otro cancelaba el drag con preventDefault — pero al cancelarse,
+  // dragend nunca se disparaba y la clase se quedaba pegada, dejando la
+  // sección atenuada ("capa rara") tras varios clics.
+  if (!dragDesdeHandle) { e.preventDefault(); return; }
   draggingCard = (e.target as HTMLElement).closest('.tema-card');
   if (!draggingCard) return;
   draggingCard.classList.add('dragging');
@@ -897,15 +910,6 @@ async function guardarOrdenTemas() {
     body: JSON.stringify({ ordenes }),
   });
 }
-
-// El drag solo arranca si el puntero está sobre el handle
-let dragDesdeHandle = false;
-temasLista.addEventListener('mousedown', (e) => {
-  dragDesdeHandle = !!(e.target as HTMLElement).closest('.tema-drag-handle');
-});
-temasLista.addEventListener('dragstart', (e) => {
-  if (!dragDesdeHandle) e.preventDefault();
-});
 
 async function cargarTemas() {
   temasCarga.textContent   = 'Cargando temas…';

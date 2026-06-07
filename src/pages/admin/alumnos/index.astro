@@ -339,8 +339,13 @@ function filtrarAlumnos() {
     gap: 0.2rem;
   }
 
-  /* Email apilado bajo el nombre — solo visible en móvil */
-  .td-email-movil {
+  /* Email apilado bajo el nombre — solo visible en móvil.
+     Las filas de la tabla se inyectan por JS en runtime y NO llevan el
+     marcador de scope de Astro, así que estas reglas que tocan celdas
+     deben ir con :global() ancladas bajo #tabla-alumnos (elemento estático,
+     sí scoped) para aplicarse a las celdas inyectadas sin filtrarse a otras
+     páginas. Sin esto, el email se mostraba pegado al nombre en escritorio. */
+  #tabla-alumnos :global(.td-email-movil) {
     display: none;
     font-size: 0.74rem;
     color: var(--color-text-muted);
@@ -351,14 +356,14 @@ function filtrarAlumnos() {
   @media (max-width: 768px) {
     /* Ocultamos columnas secundarias para que la tabla quepa
        en pantalla sin scroll horizontal */
-    .col-email,
-    .col-alta,
-    .col-acceso {
+    #tabla-alumnos :global(.col-email),
+    #tabla-alumnos :global(.col-alta),
+    #tabla-alumnos :global(.col-acceso) {
       display: none;
     }
 
     /* El email pasa a mostrarse bajo el nombre */
-    .td-email-movil { display: block; }
+    #tabla-alumnos :global(.td-email-movil) { display: block; }
 
     /* Sin min-width fijo: la tabla se adapta al ancho disponible */
     #tabla-alumnos { min-width: 0; }

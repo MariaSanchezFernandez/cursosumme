@@ -103,23 +103,22 @@ $pdo->prepare('DELETE FROM sesiones WHERE usuario_id = :id AND expira_en < NOW()
 // Parsear el dispositivo ANTES del control de límite — necesitamos saber
 // si este login es desde un dispositivo que ya tenía sesión (en cuyo caso
 // no cuenta como sesión nueva, simplemente se reemplaza).
+//
+// IMPORTANTE: la etiqueta es SOLO el sistema operativo, deliberadamente SIN
+// el navegador. El objetivo del límite es evitar que se comparta la cuenta
+// entre personas/equipos distintos, NO penalizar a quien usa dos navegadores
+// en el mismo aparato. Como la identidad se combina luego con la IP
+// (dispositivo + ip), Chrome y Firefox en el mismo equipo y red producen la
+// misma clave ("Windows|IP") → cuentan como UNA sesión. Distinta persona o
+// ubicación implica distinta IP → cuenta aparte.
 $ua = substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 300);
 function parsearDispositivo(string $ua): string {
-    $os = 'Desconocido';
-    if (preg_match('/iPhone|iPad/i', $ua))         $os = str_contains($ua, 'iPad') ? 'iPad' : 'iPhone';
-    elseif (preg_match('/Android/i', $ua))          $os = 'Android';
-    elseif (preg_match('/Windows/i', $ua))          $os = 'Windows';
-    elseif (preg_match('/Macintosh|Mac OS X/i', $ua)) $os = 'Mac';
-    elseif (preg_match('/Linux/i', $ua))            $os = 'Linux';
-
-    $nav = 'Navegador';
-    if (preg_match('/Edg\//i', $ua))                $nav = 'Edge';
-    elseif (preg_match('/OPR\//i', $ua))            $nav = 'Opera';
-    elseif (preg_match('/Chrome\//i', $ua))         $nav = 'Chrome';
-    elseif (preg_match('/Firefox\//i', $ua))        $nav = 'Firefox';
-    elseif (preg_match('/Safari\//i', $ua))         $nav = 'Safari';
-
-    return $nav . ' · ' . $os;
+    if (preg_match('/iPhone|iPad/i', $ua))            return str_contains($ua, 'iPad') ? 'iPad' : 'iPhone';
+    if (preg_match('/Android/i', $ua))                return 'Android';
+    if (preg_match('/Windows/i', $ua))                return 'Windows';
+    if (preg_match('/Macintosh|Mac OS X/i', $ua))     return 'Mac';
+    if (preg_match('/Linux/i', $ua))                  return 'Linux';
+    return 'Desconocido';
 }
 $dispositivo = $ua ? parsearDispositivo($ua) : 'Dispositivo desconocido';
 
