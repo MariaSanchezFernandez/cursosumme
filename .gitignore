@@ -30,3 +30,7 @@ npm-debug.log*
 
 # Archivos pendientes de eliminar (código muerto, contenido viejo, etc.)
 pendientes-de-eliminar/
+
+# Presentación del TFM — NUNCA se versiona (decisión de María)
+presentacion.html
+PRESENTACION.md
