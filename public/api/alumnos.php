@@ -3,7 +3,8 @@
 // api/alumnos.php  —  Gestión de alumnos
 // GET  → lista todos los alumnos con número de cursos asignados
 // POST → crea un alumno { nombre, apellidos, email, fecha_alta, cursos: [id,...] }
-// PUT  → actualiza cursos asignados { id, cursos: [id,...] }
+// PUT  → actualiza datos personales (nombre, apellidos, email), fechas,
+//        flag "alumna de Rocío" y/o cursos asignados { id, ... }
 // ─────────────────────────────────────────────────────────────
 
 header('Content-Type: application/json; charset=utf-8');
@@ -110,6 +111,68 @@ if ($metodo === 'PUT') {
         exit;
     }
     $uid = (int)$body['id'];
+
+    // ── Datos personales (nombre, apellidos, email) ──────────────
+    // Solo se tocan los campos enviados. El email es el identificador de
+    // acceso: se normaliza, se valida y se comprueba que no colisione con
+    // otro usuario antes de guardarlo.
+    if (array_key_exists('nombre', $body) || array_key_exists('apellidos', $body) || array_key_exists('email', $body)) {
+        $campos = [];
+        $params = [':id' => $uid];
+
+        if (array_key_exists('nombre', $body)) {
+            $nombre = trim((string)$body['nombre']);
+            if ($nombre === '') {
+                http_response_code(400);
+                echo json_encode(['ok' => false, 'mensaje' => 'El nombre no puede estar vacío']);
+                exit;
+            }
+            $campos[] = 'nombre = :nombre';
+            $params[':nombre'] = $nombre;
+        }
+
+        if (array_key_exists('apellidos', $body)) {
+            $campos[] = 'apellidos = :apellidos';
+            $params[':apellidos'] = trim((string)$body['apellidos']);
+        }
+
+        $emailAntiguo = null;
+        if (array_key_exists('email', $body)) {
+            $email = trim(strtolower((string)$body['email']));
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                http_response_code(400);
+                echo json_encode(['ok' => false, 'mensaje' => 'El email no es válido']);
+                exit;
+            }
+            // No permitir colisión con OTRO usuario
+            $dup = $pdo->prepare('SELECT id FROM usuarios WHERE email = :email AND id <> :id LIMIT 1');
+            $dup->execute([':email' => $email, ':id' => $uid]);
+            if ($dup->fetch()) {
+                http_response_code(409);
+                echo json_encode(['ok' => false, 'mensaje' => 'Ya existe otro usuario con ese email']);
+                exit;
+            }
+            // Guardar el email anterior para el log de auditoría
+            $stOld = $pdo->prepare('SELECT email FROM usuarios WHERE id = :id LIMIT 1');
+            $stOld->execute([':id' => $uid]);
+            $emailAntiguo = $stOld->fetchColumn() ?: null;
+
+            $campos[] = 'email = :email';
+            $params[':email'] = $email;
+        }
+
+        if ($campos) {
+            $sql = 'UPDATE usuarios SET ' . implode(', ', $campos) . ' WHERE id = :id';
+            $pdo->prepare($sql)->execute($params);
+
+            // El cambio de email es sensible (afecta al acceso) → log dedicado
+            if ($emailAntiguo !== null && $emailAntiguo !== $email) {
+                $adminIdEmail = isset($body['admin_id']) ? (int)$body['admin_id'] : 0;
+                registrar_log($pdo, 'alumno_email_cambiado',
+                    "Email del alumno ID {$uid} cambiado de {$emailAntiguo} a {$email}", $adminIdEmail);
+            }
+        }
+    }
 
     // Actualizar fechas si se proporcionan
     if (array_key_exists('fecha_baja', $body) || array_key_exists('fecha_alta', $body)) {
