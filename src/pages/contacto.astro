@@ -21,34 +21,18 @@ import '../styles/global.css';
   <CabeceraPublica activa="contacto" />
 
   <main class="contacto-pagina">
+    {/* Blobs decorativos difuminados: dan profundidad y color al fondo
+        sin recargar (sustituyen a las antiguas estrellas parpadeantes). */}
+    <div class="contacto-blob contacto-blob--coral" aria-hidden="true"></div>
+    <div class="contacto-blob contacto-blob--prim" aria-hidden="true"></div>
+    <div class="contacto-blob contacto-blob--amar" aria-hidden="true"></div>
+
     <div class="contacto-inner">
 
-      {/* Estrellas decorativas flotando alrededor del hero, repartidas
-          en 6 posiciones distintas con desfase de animación para que
-          cada una parpadee a su ritmo. */}
-      <svg class="estrella estrella-1" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 2l2.39 7.36H22l-6.18 4.49L18.21 22 12 17.5 5.79 22l2.39-8.15L2 9.36h7.61z"/>
-      </svg>
-      <svg class="estrella estrella-2" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 2l2.39 7.36H22l-6.18 4.49L18.21 22 12 17.5 5.79 22l2.39-8.15L2 9.36h7.61z"/>
-      </svg>
-      <svg class="estrella estrella-3" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 2l2.39 7.36H22l-6.18 4.49L18.21 22 12 17.5 5.79 22l2.39-8.15L2 9.36h7.61z"/>
-      </svg>
-      <svg class="estrella estrella-4" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 2l2.39 7.36H22l-6.18 4.49L18.21 22 12 17.5 5.79 22l2.39-8.15L2 9.36h7.61z"/>
-      </svg>
-      <svg class="estrella estrella-5" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 2l2.39 7.36H22l-6.18 4.49L18.21 22 12 17.5 5.79 22l2.39-8.15L2 9.36h7.61z"/>
-      </svg>
-      <svg class="estrella estrella-6" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 2l2.39 7.36H22l-6.18 4.49L18.21 22 12 17.5 5.79 22l2.39-8.15L2 9.36h7.61z"/>
-      </svg>
-
-      <header class="contacto-cabecera">
+      <header class="contacto-cabecera contacto-reveal">
         <span class="contacto-badge">
-          <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14" aria-hidden="true">
-            <path d="M12 2l2.39 7.36H22l-6.18 4.49L18.21 22 12 17.5 5.79 22l2.39-8.15L2 9.36h7.61z"/>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" aria-hidden="true">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
           </svg>
           Estamos a tu disposición
         </span>
@@ -61,7 +45,7 @@ import '../styles/global.css';
 
       <div class="contacto-grid">
 
-        <form id="form-contacto" class="contacto-form" novalidate>
+        <form id="form-contacto" class="contacto-form contacto-reveal" novalidate>
           <div class="contacto-campos">
             <div class="contacto-campo">
               <label for="contacto-nombre">Nombre *</label>
@@ -103,7 +87,7 @@ import '../styles/global.css';
           </button>
         </form>
 
-        <aside class="contacto-info">
+        <aside class="contacto-info contacto-reveal contacto-reveal--delay">
           <h2>Otras vías</h2>
 
           <div class="contacto-info-item">
@@ -127,7 +111,7 @@ import '../styles/global.css';
                 <polyline points="22 4 12 14.01 9 11.01"/>
               </svg>
             </div>
-            <h3>¿Ya eres alumna?</h3>
+            <h3>¿Ya tienes cuenta?</h3>
             <p>
               Desde tu área privada tienes un canal de soporte directo
               con prioridad sobre el formulario público.
@@ -160,49 +144,48 @@ import '../styles/global.css';
 <style is:global>
 .contacto-pagina {
   position: relative;
-  padding: 3.5rem 1.5rem 5rem;
-  /* Fondo predominantemente AZUL pastel (paleta corporativa: #b5c8e8)
-     con dos manchas radiales que aportan profundidad sin pesar. Cae
-     a casi blanco en el centro para que el formulario y la info
-     destaquen sobre el azul. */
+  padding: 4rem 1.5rem 5rem;
+  /* Degradado cálido de marca (turquesa + coral + amarillo suaves),
+     aclarando hacia el centro para que la tarjeta blanca del formulario
+     resalte. Coherente con el hero de la home, sin el azul pesado. */
   background:
-    radial-gradient(circle at 50% 110%, color-mix(in srgb, #b5c8e8 68%, transparent), transparent 62%),
-    radial-gradient(circle at 50% -10%, color-mix(in srgb, #b5c8e8 50%, transparent), transparent 58%),
-    linear-gradient(180deg, color-mix(in srgb, #b5c8e8 42%, #ffffff) 0%, color-mix(in srgb, #b5c8e8 55%, #ffffff) 100%);
+    radial-gradient(circle at 18% 0%, rgba(179,232,218,0.32), transparent 42%),
+    radial-gradient(circle at 90% 6%, rgba(255,181,167,0.22), transparent 40%),
+    linear-gradient(180deg, #f5faf8 0%, #ffffff 55%);
   overflow: hidden;
 }
 .contacto-inner {
   position: relative;
+  z-index: 1;
   max-width: 1040px;
   margin: 0 auto;
 }
 
-/* ── Estrellas decorativas ───────────────────────────────────
-   6 estrellas con tamaños y colores ligeramente distintos. Cada
-   una parpadea con un desfase para que el conjunto se sienta
-   vivo sin distraer. */
-.estrella {
+/* ── Blobs decorativos difuminados (profundidad sin recargar) ──
+   Tres manchas suaves de color que flotan despacio. Sustituyen a
+   las antiguas estrellas amarillas parpadeantes. */
+.contacto-blob {
   position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.28;
   pointer-events: none;
-  /* Amarillo cálido y saturado sobre el azul de fondo — contraste
-     fuerte para que las estrellas brillen visualmente. */
-  fill: #FFD84A;
-  filter: drop-shadow(0 3px 8px rgba(255, 200, 50, 0.55));
-  animation: estrellaTwinkle 3.5s ease-in-out infinite;
   z-index: 0;
+  will-change: transform;
 }
-.estrella-1 { width: 42px; top: -16px; left: 8%; animation-delay: 0s; }
-.estrella-2 { width: 28px; top: 36px; right: 14%; animation-delay: 0.7s; fill: #FFF59A; }
-.estrella-3 { width: 34px; top: 180px; left: -10px; animation-delay: 1.4s; }
-.estrella-4 { width: 22px; top: 220px; right: 5%; animation-delay: 2.1s; fill: #FFE066; }
-.estrella-5 { width: 30px; bottom: 80px; left: 6%; animation-delay: 0.3s; fill: #FFEC8B; }
-.estrella-6 { width: 24px; bottom: 140px; right: 9%; animation-delay: 1.8s; }
-@keyframes estrellaTwinkle {
-  0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.85; }
-  50%      { transform: scale(1.2) rotate(15deg); opacity: 1; }
+.contacto-blob--coral { width: 320px; height: 320px; background: var(--color-coral); top: -140px; right: -100px; animation: contactoFloat1 13s ease-in-out infinite; }
+.contacto-blob--prim  { width: 300px; height: 300px; background: var(--color-primary); bottom: -150px; left: -110px; animation: contactoFloat2 15s ease-in-out infinite; }
+.contacto-blob--amar  { display: none; }
+@keyframes contactoFloat1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(-22px, 18px) scale(1.06); }
+}
+@keyframes contactoFloat2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(20px, -16px) scale(1.08); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .estrella { animation: none; }
+  .contacto-blob { animation: none; }
 }
 
 /* ── Cabecera ──────────────────────────────────────────────── */
@@ -216,20 +199,22 @@ import '../styles/global.css';
 .contacto-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  background: #fff;
-  border: 1px solid #FFD84A;
+  gap: 0.45rem;
+  background: rgba(255,255,255,0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 35%, #ffffff);
   color: var(--color-text);
-  padding: 0.4rem 0.9rem;
+  padding: 0.45rem 0.95rem;
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   margin-bottom: 1.1rem;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.06);
 }
-.contacto-badge svg { color: #FFC72A; }
+.contacto-badge svg { color: var(--color-coral); }
 .contacto-cabecera h1 {
   font-size: clamp(2rem, 4.5vw, 2.8rem);
   font-weight: 800;
@@ -277,21 +262,7 @@ import '../styles/global.css';
   padding: 2rem 2rem 2.1rem;
   border: 1px solid #eef0ef;
   box-shadow: 0 30px 60px -25px rgba(0, 0, 0, 0.12);
-  /* Borde superior coloreado tipo tarjeta de curso, refuerza la
-     identidad visual sin gritar. */
   position: relative;
-  overflow: hidden;
-}
-.contacto-form::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 6px;
-  background: linear-gradient(
-    90deg,
-    var(--color-coral) 0%,
-    var(--color-primary) 100%
-  );
 }
 .contacto-campos {
   display: grid;
@@ -487,9 +458,17 @@ import '../styles/global.css';
   margin: 0 0 1.75rem;
 }
 
-@media (max-width: 480px) {
-  .estrella-1, .estrella-3, .estrella-5 { width: 20px; }
-  .estrella-2, .estrella-4, .estrella-6 { width: 16px; }
+/* ── Animaciones de entrada al hacer scroll (coherencia con la home) ── */
+.contacto-reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+.contacto-reveal.visible { opacity: 1; transform: none; }
+.contacto-reveal--delay.visible { transition-delay: 0.12s; }
+@media (prefers-reduced-motion: reduce) {
+  .contacto-reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
 }
 </style>
 
@@ -548,4 +527,13 @@ form?.addEventListener('submit', async (e) => {
     }
   });
 });
+
+// Animaciones de entrada al hacer scroll (coherencia con el resto del sitio).
+const reveals = document.querySelectorAll('.contacto-reveal');
+const io = new IntersectionObserver((entries) => {
+  for (const e of entries) {
+    if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); }
+  }
+}, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+reveals.forEach((el) => io.observe(el));
 </script>
