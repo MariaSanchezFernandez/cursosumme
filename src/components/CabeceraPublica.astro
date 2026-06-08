@@ -15,7 +15,7 @@
  * hermano `#cabecera-nav` vía selector adyacente).
  */
 interface Props {
-  activa?: 'inicio' | 'cursos' | 'contacto';
+  activa?: 'inicio' | 'cursos' | 'quienes' | 'contacto';
 }
 const { activa = 'inicio' } = Astro.props;
 ---
@@ -28,6 +28,7 @@ const { activa = 'inicio' } = Astro.props;
   <nav id="cabecera-nav" class="cabecera-nav" aria-label="Navegación principal">
     <a href="/" class={activa === 'inicio' ? 'activo' : ''}>Inicio</a>
     <a href="/precios" class={activa === 'cursos' ? 'activo' : ''}>Cursos</a>
+    <a href="/quienes-somos" class={activa === 'quienes' ? 'activo' : ''}>Quiénes somos</a>
     <a href="/contacto" class={activa === 'contacto' ? 'activo' : ''}>Contacto</a>
   </nav>
 

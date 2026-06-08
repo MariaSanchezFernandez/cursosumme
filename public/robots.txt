@@ -9,9 +9,12 @@ Disallow: /uploads/
 Disallow: /admin/
 
 # Área privada del alumno (requiere sesión)
+# NOTA: /cursos/ NO se bloquea — son fichas públicas de cada curso
+# (descripción + índice de temas) pensadas para posicionar en Google.
+# El reproductor/área privada vive en /inicio y /visor, no aquí.
 Disallow: /inicio
 Disallow: /perfil
-Disallow: /cursos/
+Disallow: /visor
 Disallow: /checkout
 
 # Páginas funcionales o de retorno de pago (no aportan SEO)

@@ -6,10 +6,13 @@ import sitemap from '@astrojs/sitemap';
 // pasarelas de pago, panel admin, utilidades internas y previews que
 // no tienen sentido como página de aterrizaje desde Google.
 // Prefijos que indican secciones enteras del sitio que no deben indexarse:
-// panel admin, área privada de cursos del alumno y carpetas internas.
+// panel admin y carpetas internas.
+// NOTA: /cursos/ SÍ se indexa — son las fichas públicas de cada curso
+// (descripción + índice de temas), contenido pensado para SEO. El área
+// privada del alumno es /inicio y /visor, no /cursos/. El admin de cursos
+// queda cubierto por el prefijo '/admin/'.
 const PREFIJOS_PRIVADOS = [
   '/admin/',
-  '/cursos/',
 ];
 
 // Páginas concretas privadas o sin valor SEO (login, pago, etc.).

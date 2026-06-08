@@ -1,0 +1,382 @@
+---
+/**
+ * PÁGINA: /quienes-somos
+ * ----------------------
+ * Página pública de presentación de la academia. Cuenta quién está
+ * detrás del proyecto (autoría del contenido, comercialización y
+ * operativa) para dar confianza al visitante y reforzar las señales
+ * de autoría/E-E-A-T que Google valora en un negocio de formación.
+ *
+ * Estilo: reutiliza el lenguaje visual de la home (hero con degradado
+ * + blobs, tarjetas con icono, sección de color y cierre cálido), pero
+ * con estilos propios porque los de index.astro son is:global de esa
+ * página y no llegan aquí. Las clases .cta* sí son globales (global.css).
+ *
+ * Incluye JSON-LD (EducationalOrganization + AboutPage) para que Google
+ * entienda la entidad y su relación con Una Maestra Muy Especial.
+ */
+import Plantilla from '../layouts/Plantilla.astro';
+import CabeceraPublica from '../components/CabeceraPublica.astro';
+import PiePagina from '../components/PiePagina.astro';
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'EducationalOrganization',
+      '@id': 'https://cursosumme.es/#organizacion',
+      name: 'Cursos Umme',
+      url: 'https://cursosumme.es',
+      description:
+        'Plataforma de formación online especializada en la preparación de oposiciones a Pedagogía Terapéutica.',
+      sameAs: ['https://unamaestramuyespecial.es'],
+    },
+    {
+      '@type': 'AboutPage',
+      url: 'https://cursosumme.es/quienes-somos',
+      name: 'Quiénes somos — Cursos Umme',
+      about: { '@id': 'https://cursosumme.es/#organizacion' },
+      inLanguage: 'es',
+    },
+  ],
+};
+---
+
+<Plantilla
+  titulo="Quiénes somos — Cursos Umme | Oposiciones de Pedagogía Terapéutica"
+  descripcion="Cursos Umme es la plataforma online para preparar las oposiciones de Pedagogía Terapéutica con el contenido de Una Maestra Muy Especial: materiales rigurosos, actualizados y diseñados para conseguir tu plaza."
+>
+  <CabeceraPublica activa="quienes" />
+
+  <main>
+    <!-- ═══════════════════ HERO (editorial, alineado a la izquierda) ═══════════════════ -->
+    <section class="qs-hero">
+      <div class="qs-hero-inner">
+        <span class="qs-hero-barra" aria-hidden="true"></span>
+        <p class="qs-eyebrow">Quiénes somos</p>
+        <h1 class="qs-titulo">
+          Formación para oposiciones de PT con <span class="qs-acento">sello de autoría propio</span>
+        </h1>
+        <p class="qs-entradilla">
+          Cursos Umme es una plataforma de formación online especializada en la
+          preparación de oposiciones a Pedagogía Terapéutica.
+        </p>
+        <p class="qs-licencia">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+          <span>Contenido de <strong>Una Maestra Muy Especial</strong>, bajo licencia</span>
+        </p>
+      </div>
+    </section>
+
+    <!-- ═══════════════════ LA AUTORA ═══════════════════ -->
+    <section class="qs-seccion qs-seccion--azul">
+      <div class="qs-inner qs-inner--estrecha">
+        <div class="qs-autora">
+          <div class="qs-autora-avatar" aria-hidden="true">UMME</div>
+          <div class="qs-autora-texto">
+            <p>
+              Los cursos de esta web han sido creados y desarrollados por
+              <strong>Una Maestra Muy Especial</strong>, maestra de PT con amplia
+              experiencia en aulas desde infantil hasta secundaria y preparadora
+              de oposiciones a nivel nacional.
+            </p>
+            <a href="https://unamaestramuyespecial.es" target="_blank" rel="noopener noreferrer" class="qs-autora-link">
+              unamaestramuyespecial.es →
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════ ROLES ═══════════════════ -->
+    <section class="qs-seccion qs-seccion--clara">
+      <div class="qs-inner">
+        <header class="qs-header">
+          <p class="qs-seccion-eyebrow">Autoría y comercialización</p>
+          <h2 class="qs-h2">Quién hace qué</h2>
+        </header>
+        <div class="qs-roles">
+          <article class="qs-rol">
+            <div class="qs-rol-icono" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </div>
+            <h3>Contenido</h3>
+            <p>Autoría exclusiva de Una Maestra Muy Especial: vídeos, materiales y descargables.</p>
+          </article>
+          <article class="qs-rol">
+            <div class="qs-rol-icono" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+            </div>
+            <h3>Comercialización y gestión</h3>
+            <p>A cargo de Emilio José Piote Bueno.</p>
+          </article>
+          <article class="qs-rol">
+            <div class="qs-rol-icono" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            </div>
+            <h3>Operativa de la plataforma</h3>
+            <p>Responsabilidad de cursosumme.es.</p>
+          </article>
+        </div>
+        <p class="qs-nota">
+          ¿Consultas sobre compras, accesos o facturación? Escríbenos por los
+          <a href="/contacto">canales habilitados en esta web</a>.
+        </p>
+      </div>
+    </section>
+
+    <!-- ═══════════════════ LO QUE NO CAMBIA ═══════════════════ -->
+    <section class="qs-nocambia">
+      <div class="qs-inner qs-inner--estrecha">
+        <p class="qs-nocambia-eyebrow">Lo que no cambia</p>
+        <h2 class="qs-nocambia-titulo">El mismo sello de calidad de siempre</h2>
+        <ul class="qs-checklist">
+          <li>Materiales rigurosos y actualizados normativamente.</li>
+          <li>Diseñados para conseguir tu plaza.</li>
+          <li>Con el sello de calidad de Una Maestra Muy Especial.</li>
+        </ul>
+        <p class="qs-nocambia-pie">
+          Aunque la venta se gestiona desde aquí, el sello de calidad es el mismo
+          de siempre: materiales rigurosos, actualizados y diseñados para que
+          consigas tu plaza.
+        </p>
+      </div>
+    </section>
+
+    <!-- ═══════════════════ CTA ═══════════════════ -->
+    <section class="qs-cierre">
+      <div class="qs-inner qs-inner--estrecha">
+        <div class="qs-cta">
+          <a href="/precios" class="cta cta--primary">Ver los cursos →</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <PiePagina />
+
+  <script type="application/ld+json" is:inline set:html={JSON.stringify(schema)}></script>
+</Plantilla>
+
+<style>
+/* ── Layout base ─────────────────────────────────────────── */
+.qs-inner { max-width: 1040px; margin: 0 auto; }
+.qs-inner--estrecha { max-width: 720px; }
+/* Todo el contenido va en blanco; el turquesa solo aparece en detalles
+   (barra, iconos, checks, botón) para evitar grandes bloques de color. */
+.qs-seccion { padding: 4rem 1.5rem; background: #fff; }
+.qs-seccion--clara { background: #fff; border-top: 1px solid #eef2f1; }
+/* Secciones azules intercaladas (turquesa Umme con toques cálidos). */
+.qs-seccion--azul {
+  background:
+    radial-gradient(circle at 80% 15%, rgba(255,181,167,0.22), transparent 48%),
+    radial-gradient(circle at 5% 95%, rgba(255,248,183,0.3), transparent 52%),
+    var(--color-primary);
+}
+
+.qs-eyebrow,
+.qs-seccion-eyebrow {
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--color-text-muted);
+  margin: 0 0 0.85rem;
+}
+
+/* ── Hero editorial: alineado a la izquierda, fondo plano suave,
+      sin degradado multicolor ni blobs (para diferenciarlo de la home,
+      cuyo hero es centrado, con degradado vivo y blobs flotantes). ── */
+.qs-hero {
+  position: relative;
+  padding: 4.5rem 1.5rem 3.5rem;
+  background: #fff;
+  border-bottom: 1px solid #e7eeeb;
+}
+.qs-hero-inner {
+  max-width: 1040px;
+  margin: 0 auto;
+  text-align: left;
+}
+/* Barra de acento corta sobre el eyebrow — guiño editorial, nada que ver
+   con el hero de la home. */
+.qs-hero-barra {
+  display: block;
+  width: 48px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--color-coral);
+  margin-bottom: 1.25rem;
+}
+.qs-titulo {
+  font-size: clamp(1.9rem, 4.5vw, 2.9rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.14;
+  margin: 0 0 1.1rem;
+  max-width: 16ch;
+  color: var(--color-text);
+}
+.qs-acento {
+  display: inline;
+  background: linear-gradient(180deg, transparent 62%, var(--color-primary) 62%);
+  padding: 0 0.15em;
+}
+.qs-entradilla {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: var(--color-text);
+  max-width: 600px;
+  margin: 0 0 1.5rem;
+}
+.qs-licencia {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  background: var(--color-light);
+  padding: 0.5rem 0.95rem;
+  border-radius: 999px;
+  margin: 0;
+}
+.qs-licencia strong { color: var(--color-text); font-weight: 700; }
+
+/* ── Bloque autora ───────────────────────────────────────── */
+.qs-autora {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  background: #fff;
+  border: 1px solid #e7eeeb;
+  box-shadow: 0 12px 32px -20px rgba(0,0,0,0.22);
+  border-radius: var(--radius-md);
+  padding: 1.75rem;
+}
+.qs-autora-avatar {
+  flex-shrink: 0;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  color: var(--color-text);
+}
+.qs-autora-texto p { margin: 0 0 0.6rem; font-size: 1rem; line-height: 1.65; color: var(--color-text); }
+.qs-autora-link { font-weight: 700; color: var(--color-text); text-decoration: none; font-size: 0.92rem; }
+.qs-autora-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* ── Cabecera de sección ─────────────────────────────────── */
+.qs-header { text-align: center; margin-bottom: 2.25rem; }
+.qs-header .qs-seccion-eyebrow { margin-bottom: 0.5rem; }
+.qs-h2 {
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+  color: var(--color-text);
+}
+
+/* ── Tarjetas de rol (estilo beneficios de la home) ──────── */
+.qs-roles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-auto-rows: 1fr;
+  gap: 1.25rem;
+}
+.qs-rol {
+  background: #fff;
+  border: 1px solid #e7eeeb;
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s, border-color 0.2s;
+}
+.qs-rol:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 14px 28px rgba(0,0,0,0.08);
+  border-color: color-mix(in srgb, var(--color-primary) 55%, #ffffff);
+}
+.qs-rol-icono {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-primary) 45%, #ffffff);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--color-text);
+  margin-bottom: 1rem;
+}
+.qs-rol-icono svg { width: 22px; height: 22px; }
+.qs-rol h3 { font-size: 1rem; font-weight: 800; margin: 0 0 0.4rem; }
+.qs-rol p { font-size: 0.9rem; color: var(--color-text-muted); line-height: 1.55; margin: 0; }
+.qs-nota {
+  text-align: center;
+  margin: 2rem 0 0;
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+}
+.qs-nota a { color: var(--color-text); font-weight: 700; text-underline-offset: 3px; }
+
+/* ── "Lo que no cambia" — sección azul (ante-anterior al footer) ── */
+.qs-nocambia {
+  padding: 4.5rem 1.5rem;
+  text-align: center;
+  background:
+    radial-gradient(circle at 80% 20%, rgba(255,181,167,0.22), transparent 45%),
+    radial-gradient(circle at 10% 90%, rgba(255,248,183,0.32), transparent 50%),
+    var(--color-primary);
+}
+.qs-nocambia-eyebrow {
+  font-size: 0.74rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.16em;
+  color: var(--color-text); opacity: 0.65; margin: 0 0 1rem;
+}
+.qs-nocambia-titulo {
+  font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+  font-weight: 800; letter-spacing: -0.015em;
+  margin: 0 0 1.75rem; color: var(--color-text);
+}
+.qs-checklist {
+  list-style: none; margin: 0 auto 1.75rem; padding: 0;
+  display: inline-flex; flex-direction: column; gap: 0.75rem;
+  text-align: left;
+}
+.qs-checklist li {
+  position: relative; padding-left: 2rem;
+  font-size: 1.05rem; font-weight: 600; line-height: 1.5;
+  color: var(--color-text);
+}
+.qs-checklist li::before {
+  content: ''; position: absolute; left: 0; top: 0.05rem;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: rgba(255,255,255,0.85);
+}
+.qs-checklist li::after {
+  content: ''; position: absolute; left: 6px; top: 0.42rem;
+  width: 9px; height: 5px;
+  border-left: 2px solid var(--color-text);
+  border-bottom: 2px solid var(--color-text);
+  transform: rotate(-45deg);
+}
+.qs-nocambia-pie {
+  font-size: 1rem; color: var(--color-text); opacity: 0.8;
+  line-height: 1.65; max-width: 560px; margin: 0 auto;
+}
+
+/* ── Cierre: CTA ─────────────────────────────────────────── */
+.qs-cierre { padding: 4rem 1.5rem 5rem; text-align: center; background: #fff; border-top: 1px solid #eef2f1; }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 720px) {
+  .qs-hero { padding: 3.5rem 1.25rem 3.5rem; }
+  .qs-seccion { padding: 3rem 1.25rem; }
+  .qs-nocambia { padding: 3.5rem 1.25rem; }
+  .qs-cierre { padding: 3rem 1.25rem 4rem; }
+  .qs-autora { flex-direction: column; text-align: center; gap: 1rem; }
+}
+</style>
