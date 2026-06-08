@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="es">
+<!--
+  Presentación TFM — CursosUmme
+  Deck autónomo (sin dependencias externas, funciona sin internet).
+
+  USO EN PANTALLA:
+    - Abrir este archivo en el navegador (doble clic).
+    - Avanzar/retroceder: flechas ← →, espacio, o clic.
+    - Pantalla completa: tecla F (o F11 del navegador).
+
+  EXPORTAR A PDF:
+    - Cmd+P (Mac) / Ctrl+P (Windows) → Destino "Guardar como PDF".
+    - Diseño: Horizontal · Márgenes: Ninguno · Activar "Gráficos de fondo".
+    - Sale una diapositiva por página.
+-->
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CursosUmme — Presentación TFM</title>
+<style>
+  :root{
+    --primary:#b3e8da;   /* menta */
+    --accent:#f9c30e;    /* amarillo */
+    --coral:#ffb5a7;     /* coral */
+    --light:#def1ec;     /* menta clara */
+    --ink:#1a1a1a;
+    --muted:#5a5a5a;
+    --paper:#ffffff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink);
+    background:#0f1714;
+    overflow:hidden;
+  }
+
+  /* ---- Lienzo de cada slide: relación 16:9 ---- */
+  .deck{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+  .slide{
+    position:absolute;
+    width:min(96vw, calc(96vh * 16 / 9));
+    height:min(96vh, calc(96vw * 9 / 16));
+    background:var(--paper);
+    border-radius:22px;
+    box-shadow:0 30px 80px rgba(0,0,0,.45);
+    padding:6% 7%;
+    display:none;
+    flex-direction:column;
+    justify-content:center;
+    overflow:hidden;
+  }
+  .slide.active{display:flex}
+
+  /* franja decorativa */
+  .slide::before{
+    content:"";position:absolute;top:0;left:0;right:0;height:12px;
+    background:linear-gradient(90deg,var(--primary) 0%,var(--accent) 50%,var(--coral) 100%);
+  }
+  .slide::after{
+    content:"";position:absolute;right:-120px;bottom:-120px;width:340px;height:340px;border-radius:50%;
+    background:radial-gradient(circle at 30% 30%,var(--light),transparent 70%);opacity:.7;
+  }
+
+  h1{font-size:clamp(28px,5.2vw,62px);line-height:1.05;letter-spacing:-.02em}
+  h2{font-size:clamp(22px,3.4vw,40px);line-height:1.1;margin-bottom:.6em;letter-spacing:-.01em}
+  h2 .bar{display:inline-block;width:46px;height:6px;border-radius:6px;background:var(--accent);vertical-align:middle;margin-right:18px}
+  p,li{font-size:clamp(15px,2vw,25px);line-height:1.5;color:#222}
+  .muted{color:var(--muted)}
+  ul{list-style:none;display:flex;flex-direction:column;gap:.55em;position:relative;z-index:2}
+  ul li{padding-left:1.6em;position:relative}
+  ul li::before{content:"";position:absolute;left:0;top:.55em;width:.7em;height:.7em;border-radius:3px;background:var(--primary)}
+  ul li.dash::before{background:var(--coral)}
+  ul ul{margin-top:.4em;margin-left:.4em}
+  ul ul li{font-size:.9em}
+  ul ul li::before{background:#cfd8d4;width:.5em;height:.5em;top:.6em;border-radius:50%}
+  strong{color:#000}
+  .tag{display:inline-block;background:var(--light);color:#0c5a47;font-weight:700;
+       padding:.25em .8em;border-radius:999px;font-size:clamp(12px,1.5vw,17px);margin-bottom:1.2em;width:fit-content}
+  .lead{font-size:clamp(17px,2.4vw,30px);color:#333}
+
+  /* portada */
+  .cover{align-items:flex-start;text-align:left;background:
+        radial-gradient(120% 90% at 100% 0%, var(--light) 0%, #fff 55%)}
+  .cover .logo{height:clamp(60px,9vw,110px);margin-bottom:8%}
+  .cover h1{font-size:clamp(40px,8vw,96px)}
+  .cover .sub{font-size:clamp(18px,2.8vw,34px);color:#0c5a47;font-weight:600;margin-top:.4em}
+  .cover .meta{margin-top:auto;font-size:clamp(14px,1.8vw,22px);color:var(--muted)}
+  .cover .meta b{color:#000}
+
+  /* grid de 4 */
+  .grid4{display:grid;grid-template-columns:1fr 1fr;gap:1em 1.4em;position:relative;z-index:2;margin-top:.4em}
+  .card{background:var(--light);border-radius:14px;padding:1em 1.1em}
+  .card .n{font-weight:800;color:var(--accent);font-size:clamp(20px,2.8vw,34px)}
+  .card h3{font-size:clamp(15px,1.9vw,23px);margin:.1em 0 .25em}
+  .card p{font-size:clamp(13px,1.5vw,18px);color:#444}
+
+  /* diagrama arquitectura */
+  .arch{display:flex;align-items:center;justify-content:center;gap:1.1em;flex-wrap:wrap;margin-top:1.2em;position:relative;z-index:2}
+  .node{background:#fff;border:3px solid var(--primary);border-radius:14px;padding:.7em 1.1em;font-weight:700;text-align:center;font-size:clamp(13px,1.7vw,20px)}
+  .node small{display:block;font-weight:500;color:var(--muted);font-size:.72em}
+  .arrow{color:var(--accent);font-size:clamp(20px,3vw,34px);font-weight:800}
+  .side{display:flex;flex-direction:column;gap:.5em}
+  .node.alt{border-color:var(--coral)}
+
+  /* footer y numeración */
+  .pageno{position:absolute;bottom:4%;right:6%;font-size:clamp(11px,1.4vw,16px);color:#9aa6a1;z-index:3}
+  .brand-foot{position:absolute;bottom:4%;left:7%;font-size:clamp(11px,1.4vw,16px);color:#9aa6a1;z-index:3}
+
+  /* barra de progreso superior global */
+  .progress{position:fixed;top:0;left:0;height:5px;background:var(--accent);z-index:50;transition:width .25s}
+
+  /* controles */
+  .hint{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);color:#cdd6d2;font-size:13px;z-index:50;opacity:.8}
+  .hint kbd{background:#2a3631;border-radius:5px;padding:1px 7px;color:#fff;font-size:12px}
+
+  /* ---------- IMPRESIÓN / PDF ---------- */
+  @page{size:landscape;margin:0}
+  @media print{
+    body{background:#fff;overflow:visible}
+    .deck{position:static}
+    .progress,.hint{display:none!important}
+    .slide{
+      display:flex!important;position:relative;
+      width:100%;height:100vh;border-radius:0;box-shadow:none;
+      page-break-after:always;break-after:page;
+    }
+    .slide::before{height:14px}
+  }
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<div class="deck">
+
+  <!-- 1 · Portada -->
+  <section class="slide cover active">
+    <img class="logo" src="LOGO_CURSOSUMME_SF.png" alt="CursosUmme">
+    <h1>CursosUmme</h1>
+    <div class="sub">Plataforma e-learning con venta, DRM<br>y gestión propios — en producción</div>
+    <div class="meta">
+      <b>Trabajo de Fin de Máster</b><br>
+      María Sánchez Fernández · José Manuel Borrás Rodríguez<br>
+      🌐 cursosumme.es
+    </div>
+    <div class="brand-foot">TFM</div>
+    <div class="pageno">1</div>
+  </section>
+
+  <!-- 2 · Problema -->
+  <section class="slide">
+    <span class="tag">El problema</span>
+    <h2><span class="bar"></span>Vender formación online sin ceder el control</h2>
+    <p class="lead">La academia Umme quería vender y servir su formación online sin depender de plataformas tipo Udemy/Hotmart, que:</p>
+    <ul>
+      <li class="dash">Se llevan una <strong>comisión</strong> de cada venta</li>
+      <li class="dash">Limitan el <strong>control</strong> sobre contenido y alumnado</li>
+      <li class="dash">No protegen el <strong>vídeo</strong> frente a descargas y piratería</li>
+    </ul>
+    <p style="margin-top:1em"><strong>Necesitaba:</strong> vender + cobrar + servir vídeo protegido + autogestionarse — todo propio.</p>
+    <div class="pageno">2</div>
+  </section>
+
+  <!-- 3 · Solución -->
+  <section class="slide">
+    <span class="tag">La solución</span>
+    <h2><span class="bar"></span>Una plataforma end-to-end</h2>
+    <div class="grid4">
+      <div class="card"><div class="n">1</div><h3>Capta y vende</h3><p>Web comercial + checkout con Stripe (IVA y datos fiscales)</p></div>
+      <div class="card"><div class="n">2</div><h3>Da de alta sola</h3><p>El webhook crea la cuenta y envía las credenciales por email</p></div>
+      <div class="card"><div class="n">3</div><h3>Sirve protegido</h3><p>Vídeo con DRM y marca de agua dinámica</p></div>
+      <div class="card"><div class="n">4</div><h3>Se autogestiona</h3><p>Panel de administración completo para una sola persona</p></div>
+    </div>
+    <div class="pageno">3</div>
+  </section>
+
+  <!-- 4 · Demo -->
+  <section class="slide">
+    <span class="tag">Demo</span>
+    <h2><span class="bar"></span>Así funciona</h2>
+    <p class="lead">Recorrido del flujo real:</p>
+    <ul>
+      <li>Comprar un curso en la web pública</li>
+      <li>Recibir el email con las credenciales</li>
+      <li>Iniciar sesión y entrar al área privada</li>
+      <li>Reproducir un vídeo <strong>protegido con marca de agua</strong></li>
+    </ul>
+    <p class="muted" style="margin-top:1.2em">🌐 Demo en vivo en <strong>cursosumme.es</strong> · (capturas / GIF del flujo de compra como respaldo)</p>
+    <div class="pageno">4</div>
+  </section>
+
+  <!-- 5 · Arquitectura -->
+  <section class="slide">
+    <span class="tag">Arquitectura</span>
+    <h2><span class="bar"></span>Simple por dentro, potente en las integraciones</h2>
+    <div class="arch">
+      <div class="node">Navegador<small>Astro v5 + TS</small></div>
+      <div class="arrow">→</div>
+      <div class="node">API PHP 8<small>PDO · un endpoint por recurso</small></div>
+      <div class="arrow">→</div>
+      <div class="node">MySQL<small>IONOS</small></div>
+      <div class="side">
+        <div class="node alt">VdoCipher<small>DRM vídeo</small></div>
+        <div class="node alt">Stripe<small>pagos + webhook</small></div>
+      </div>
+    </div>
+    <p style="margin-top:1.3em">Sin framework de backend: cada recurso es un endpoint PHP que <strong>valida sesión</strong>, opera en MySQL y devuelve JSON. La complejidad real está en las integraciones de <strong>DRM</strong> y <strong>pagos</strong>.</p>
+    <div class="pageno">5</div>
+  </section>
+
+  <!-- 6 · Seguridad -->
+  <section class="slide">
+    <span class="tag">Seguridad — el punto fuerte</span>
+    <h2><span class="bar"></span>Prioridad transversal</h2>
+    <div class="grid4">
+      <div class="card"><h3>🔐 Contraseñas</h3><p>bcrypt cost 12 + migración transparente desde SHA-256</p></div>
+      <div class="card"><h3>🎟️ Sesiones</h3><p>Por dispositivo (tabla <code>sesiones</code>) + rate limiting por IP</p></div>
+      <div class="card"><h3>🎬 Vídeo</h3><p>DRM Widevine + FairPlay y marca de agua con el email</p></div>
+      <div class="card"><h3>💳 Pagos</h3><p>Webhook con verificación de firma e idempotencia</p></div>
+    </div>
+    <p style="margin-top:1em">➕ Cumplimiento <strong>RGPD</strong> y evidencia de desistimiento · secretos <strong>fuera del repositorio</strong>.</p>
+    <div class="pageno">6</div>
+  </section>
+
+  <!-- 7 · Retos -->
+  <section class="slide">
+    <span class="tag">Retos técnicos resueltos</span>
+    <h2><span class="bar"></span>Donde estuvo la dificultad real</h2>
+    <ul>
+      <li><strong>Vídeos de hasta 3,5 GB</strong> en hosting compartido → subida por <em>chunks</em> con <em>raw body streaming</em> (sin <code>/tmp</code>, evita la cuota de disco)</li>
+      <li><strong>Apache borra headers</strong> en ciertas rutas → el token también viaja por <code>?token=</code></li>
+      <li><strong>DRM y compositing del navegador</strong> → un <code>overflow:hidden</code> rompía la protección anti-captura; se rediseñó el contenedor</li>
+      <li><strong>Pago → acceso sin intervención</strong> → webhook idempotente que crea cuenta, asigna cursos y envía email</li>
+    </ul>
+    <div class="pageno">7</div>
+  </section>
+
+  <!-- 8 · Buenas prácticas -->
+  <section class="slide">
+    <span class="tag">Buenas prácticas y testing</span>
+    <h2><span class="bar"></span>Trabajado como un proyecto real</h2>
+    <ul>
+      <li><strong>Tests E2E con Playwright</strong> de los flujos críticos (login, uploads, autorización de vídeo, estadísticas, responsive)</li>
+      <li><strong>Migraciones idempotentes</strong> de BD, versionadas</li>
+      <li><strong>Backups automáticos</strong> antes de tocar datos (se conservan los últimos 10)</li>
+      <li><strong>Auditoría</strong>: log de cambios + captura global de errores JS del frontend</li>
+      <li>Despliegue <strong>automatizado</strong> con un solo comando (<code>npm run deploy</code>)</li>
+    </ul>
+    <div class="pageno">8</div>
+  </section>
+
+  <!-- 9 · IA -->
+  <section class="slide">
+    <span class="tag">Uso de IA en el desarrollo</span>
+    <h2><span class="bar"></span>La IA como par de programación</h2>
+    <ul>
+      <li>Gran parte del código se generó con <strong>IA (Claude Code)</strong></li>
+      <li>Nuestro papel: <strong>dirigir, estructurar, revisar y validar</strong> cada pieza</li>
+      <li>Aceleró endpoints repetitivos, tests, refactors y documentación</li>
+      <li>Las decisiones de <strong>arquitectura, seguridad y negocio</strong> son nuestras</li>
+    </ul>
+    <p class="muted" style="margin-top:1em">La IA es la herramienta de desarrollo, no una función del producto: la usamos para construir mejor y más rápido, supervisando el resultado.</p>
+    <div class="pageno">9</div>
+  </section>
+
+  <!-- 10 · Estado y futuro -->
+  <section class="slide">
+    <span class="tag">Estado y futuro</span>
+    <h2><span class="bar"></span>Ya está vivo</h2>
+    <ul>
+      <li>✅ <strong>En producción</strong> en cursosumme.es (HTTPS)</li>
+      <li>✅ Pagos, DRM, panel y soporte funcionando</li>
+      <li>🔜 Stripe a modo <em>live</em> para cobrar en real</li>
+      <li>🔜 Facturación automática con los datos fiscales ya capturados</li>
+      <li>🔜 Más analítica del progreso del alumnado</li>
+    </ul>
+    <div class="pageno">10</div>
+  </section>
+
+  <!-- 11 · Cierre -->
+  <section class="slide cover">
+    <img class="logo" src="LOGO_CURSOSUMME_SF.png" alt="CursosUmme">
+    <h1>Gracias 🙌</h1>
+    <div class="sub">De un problema de negocio real<br>a un producto en producción</div>
+    <div class="meta">
+      🌐 cursosumme.es · 📧 sanchez.fdez.maria@gmail.com
+    </div>
+    <div class="pageno">11</div>
+  </section>
+
+</div>
+
+<div class="hint">Navega con <kbd>←</kbd> <kbd>→</kbd> · <kbd>F</kbd> pantalla completa · <kbd>Cmd/Ctrl+P</kbd> → PDF</div>
+
+<script>
+  const slides=[...document.querySelectorAll('.slide')];
+  let i=0;
+  const prog=document.getElementById('progress');
+  function show(n){
+    i=Math.max(0,Math.min(slides.length-1,n));
+    slides.forEach((s,k)=>s.classList.toggle('active',k===i));
+    prog.style.width=((i+1)/slides.length*100)+'%';
+  }
+  function next(){show(i+1)} function prev(){show(i-1)}
+  document.addEventListener('keydown',e=>{
+    if(['ArrowRight','ArrowDown',' ','PageDown'].includes(e.key)){e.preventDefault();next()}
+    else if(['ArrowLeft','ArrowUp','PageUp'].includes(e.key)){e.preventDefault();prev()}
+    else if(e.key==='Home'){show(0)} else if(e.key==='End'){show(slides.length-1)}
+    else if(e.key==='f'||e.key==='F'){
+      if(!document.fullscreenElement)document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    }
+  });
+  document.querySelector('.deck').addEventListener('click',e=>{
+    // clic en mitad derecha avanza, izquierda retrocede
+    (e.clientX > window.innerWidth/2) ? next() : prev();
+  });
+  show(0);
+</script>
+</body>
+</html>

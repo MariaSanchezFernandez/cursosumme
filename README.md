@@ -1,6 +1,19 @@
 # CursosUmme — Plataforma E-Learning
 
-Plataforma de formación online privada para la academia Umme. Permite gestionar cursos, alumnos, materiales multimedia y soporte, con panel de administración completo y área protegida para alumnos.
+Plataforma de formación online para la academia **Umme**. Incluye una web comercial pública con venta de cursos y packs, pasarela de pago con Stripe, área privada para estudiantes con reproductor de vídeo protegido por DRM, y un panel de administración completo para gestionar cursos, materiales, alumnado, pagos y soporte.
+
+🌐 **En producción:** [https://cursosumme.es](https://cursosumme.es)
+
+---
+
+## Idea general
+
+Umme necesitaba vender su formación y servirla online de forma segura, sin depender de plataformas de terceros que se llevan comisión y limitan el control sobre el contenido. CursosUmme resuelve todo el ciclo:
+
+1. **Capta y vende** — web comercial pública con catálogo, precios, packs y checkout con Stripe (incluyendo datos fiscales e IVA).
+2. **Da de alta automáticamente** — al completarse el pago, un webhook crea la cuenta, asigna los cursos comprados y envía las credenciales por email.
+3. **Sirve el contenido protegido** — los vídeos se reproducen con DRM (Widevine + FairPlay) y marca de agua dinámica, evitando la descarga y la captura de pantalla.
+4. **Se autogestiona** — la administración (una sola persona) controla cursos, temas, materiales, alumnado, pagos y soporte desde un panel propio, con auditoría y captura de errores.
 
 ---
 
@@ -9,112 +22,91 @@ Plataforma de formación online privada para la academia Umme. Permite gestionar
 | Capa | Tecnología |
 |------|-----------|
 | Frontend | [Astro](https://astro.build/) v5 + TypeScript |
-| Estilos | CSS puro con variables CSS |
-| API | PHP 8 + PDO (MySQL) |
-| Base de datos | MySQL / MariaDB (IONOS hosting) |
-| Despliegue | SFTP a IONOS / 1&1 |
+| Estilos / animación | CSS puro con variables + [GSAP](https://gsap.com/) |
+| API | PHP 8 + PDO (sin framework) |
+| Base de datos | MySQL / MariaDB (hosting IONOS) |
+| Vídeo | [VdoCipher](https://www.vdocipher.com/) — DRM Widevine + FairPlay |
+| Pagos | [Stripe](https://stripe.com/) Checkout + webhooks |
+| Email | SMTP de IONOS vía cURL |
+| Testing | [Playwright](https://playwright.dev/) (E2E) |
+| Despliegue | SFTP a IONOS (`ssh2-sftp-client`) |
 
 ---
 
 ## Funcionalidades
 
-### Alumnos
-- **Login** con sesión en `sessionStorage` + token Bearer (expira 8 h)
-- **Mis cursos**: cursos asignados agrupados por categoría/pack con imagen de portada y barra de progreso
-- **Reproductor de vídeo**: streaming seguro con marca de agua del email, bloqueo de descarga y clic derecho
-- **Progreso**: porcentaje de temas completados; se marca automáticamente al terminar un vídeo
-- **Materiales**: descarga de documentos, PDFs y audios adjuntos a cada tema
-- **Perfil**: cambio de foto, nombre, email y contraseña
-- **Soporte**: creación de tickets, conversación con el admin, cierre de consulta
+### Web pública (visitante)
+- **Landing comercial** (`/`) con animaciones GSAP, sección de quiénes somos y catálogo.
+- **Precios** (`/precios`): cursos individuales y packs, con etiquetas y descripciones.
+- **Checkout** (`/checkout`): formulario de compra con datos fiscales (nombre, DNI/NIF, dirección, persona o empresa) e IVA, más la renuncia expresa al derecho de desistimiento (art. 103.m LGDCU) con registro del texto exacto mostrado.
+- **Pago con Stripe**: redirección a Stripe Checkout y retorno a `/pago-ok` o `/pago-ko`. La página de éxito **sondea el servidor** hasta confirmar el pago real (no muestra éxito por llegar a la URL manualmente).
+- **Contacto** (`/contacto`): formulario que envía email a la academia.
+- **Páginas legales**: aviso legal, condiciones de contratación, privacidad y cookies.
 
-### Administradores
-- **Dashboard**: estadísticas en tiempo real (alumnos, cursos activos, packs, tickets abiertos)
-- **Alumnos**: listado con búsqueda, creación, edición, asignación de cursos y control de fechas de acceso
-- **Cursos**: CRUD completo con título, descripción con editor enriquecido (H2/H3/negrita/listas), imagen de portada, nivel, etiqueta, pack y colores personalizables
-- **Temas y materiales**: añadir/reordenar/eliminar temas; subida de vídeos (hasta 3.5 GB) y documentos/audios (hasta 100 MB) con barra de progreso real
-- **Soporte**: ver todos los tickets, responder, cambiar estado (abierto → respondido → cerrado), eliminar conversaciones
-- **Log de cambios**: auditoría de todas las acciones (alumnos, cursos, tickets)
-- **Log de errores JS**: captura global de errores de frontend de todos los usuarios, con filtros y detalle
-- **Perfil admin**: editar nombre, apellidos y email
-- **Vista alumno**: previsualizar la plataforma tal como la ve un alumno
+### Estudiantes (área privada)
+- **Login** con sesión por token y opción "Recordarme".
+- **Mis cursos**: cursos asignados agrupados por categoría/pack, con portada y barra de progreso.
+- **Reproductor de vídeo seguro**: streaming con DRM (VdoCipher), marca de agua dinámica con el email, y bloqueo de descarga.
+- **Bloqueo secuencial de temas**: un tema puede quedar bloqueado hasta una fecha (drip content).
+- **Progreso** automático al terminar cada vídeo.
+- **Materiales**: descarga de documentos, PDFs y audios por tema.
+- **Perfil**: foto, datos personales, datos fiscales y cambio de contraseña.
+- **Soporte**: creación de tickets y conversación con la administración.
+
+### Administración
+- **Dashboard / estadísticas**: alumnado, cursos activos, packs, tickets y **última actividad real** de cada persona (incluso con "Recordarme" activo).
+- **Alumnado**: listado con búsqueda, alta/edición, asignación de cursos, fechas de acceso y de baja.
+- **Cursos**: CRUD completo con editor enriquecido (H2/H3/negrita/listas), portada, nivel, etiqueta, pack, precio, `stripe_price_id` y colores.
+- **Temas y materiales**: añadir/reordenar/eliminar temas; subida de vídeos por chunks (hasta 3,5 GB) a VdoCipher y de documentos/audios; bloqueo por fechas.
+- **Packs**: CRUD de packs comerciales y asignación N:N de cursos.
+- **Soporte**: gestión de todos los tickets y respuestas.
+- **Auditoría**: log de cambios (alumnos, cursos, tickets) y log de errores JS del frontend de todos los usuarios.
+- **Herramientas**: vista previa como alumno, guía de formato de contenido, auditoría de materiales y backups de BD.
 
 ---
 
-## Estructura del proyecto
+## Arquitectura
+
+Frontend estático generado con **Astro** (HTML + JS hidratado puntual) que consume una **API REST en PHP** desplegada en el mismo hosting. No hay framework de backend: cada endpoint es un archivo PHP en `public/api/` que valida la sesión, opera sobre MySQL vía PDO y devuelve JSON.
 
 ```
-cursosumme/
+Navegador (Astro build)  ──fetch /api/*.php (header X-Token)──▶  API PHP + PDO  ──▶  MySQL (IONOS)
+        │                                                              │
+        ├── Vídeo: iframe VdoCipher (OTP + DRM)  ◀──OTP firmado────────┤
+        └── Pago:  Stripe Checkout  ──webhook──▶  /api/stripe-webhook.php
+```
+
+### Estructura del proyecto
+
+```
+.
 ├── public/
-│   ├── api/                         # API REST en PHP
-│   │   ├── .user.ini                # Límites PHP (upload_max_filesize, post_max_size, memoria)
-│   │   ├── db-config.php            # Credenciales BD + SETUP_KEY — NO versionar
-│   │   ├── db-connect.php           # Conexión PDO + requireAuth/requireAdmin (Bearer token)
-│   │   ├── log-helper.php           # Helper de auditoría
-│   │   ├── login.php                # Autenticación con bcrypt + rate limiting + emisión de token
-│   │   ├── alumnos.php              # CRUD alumnos
-│   │   ├── cursos.php               # CRUD cursos (incluye imagen de portada)
-│   │   ├── temas.php                # CRUD temas
-│   │   ├── materiales.php           # CRUD materiales
-│   │   ├── upload.php               # Subida de documentos/audios (100 MB) — raw body stream
-│   │   ├── upload-chunk.php         # Subida de vídeos por chunks (3.5 GB) — raw body stream, sin /tmp
-│   │   ├── upload-imagen.php        # Subida de imágenes de portada de curso (5 MB)
-│   │   ├── video.php                # Proxy seguro de streaming (range requests)
-│   │   ├── mis-cursos.php           # Cursos del alumno (GET)
-│   │   ├── progreso.php             # Progreso por tema (GET/POST)
-│   │   ├── tickets.php              # Sistema de soporte (GET/POST/PUT/DELETE)
-│   │   ├── logs.php                 # Log de auditoría (GET)
-│   │   ├── log-error.php            # Captura de errores JS del frontend (POST)
-│   │   ├── errores.php              # Lectura/borrado de errores JS (GET/DELETE)
-│   │   ├── perfil-admin.php         # Perfil admin (GET/PUT)
-│   │   ├── cambiar-password.php     # Cambio de contraseña con bcrypt (POST)
-│   │   ├── foto-perfil.php          # Foto de perfil (GET/POST)
-│   │   ├── info-limites.php         # Diagnóstico de límites PHP del servidor
-│   │   └── setup.php                # Migraciones de BD (protegido con ?key=SETUP_KEY)
-│   └── uploads/                     # Archivos subidos — en .gitignore
-│       ├── videos/
-│       ├── documentos/
-│       └── imagenes/                # Portadas de curso y fotos de perfil
+│   ├── api/                      # API REST en PHP (un archivo por recurso)
+│   │   ├── db-config.php         # Credenciales + constantes + helpers — NO se versiona
+│   │   ├── db-connect.php        # Conexión PDO
+│   │   ├── login.php / logout.php / sesiones.php
+│   │   ├── alumnos.php / cursos.php / temas.php / materiales.php
+│   │   ├── packs.php / pack-cursos.php
+│   │   ├── upload.php / upload-chunk.php / upload-imagen.php
+│   │   ├── vdocipher-upload.php / vdocipher-status.php / vdocipher-otp.php
+│   │   ├── stripe-checkout.php / stripe-webhook.php / pago-status.php
+│   │   ├── validar-fiscal.php / email-helper.php / contacto.php
+│   │   ├── mis-cursos.php / progreso.php / tema-bloqueo.php
+│   │   ├── tickets.php / logs.php / errores.php / log-error.php
+│   │   ├── estadisticas.php / perfil-admin.php / cambiar-password.php
+│   │   ├── backup-db.php / info-limites.php
+│   │   └── ...migraciones y utilidades puntuales
+│   └── uploads/                  # Documentos/imágenes subidas — en .gitignore
 ├── src/
-│   ├── components/
-│   │   ├── CabeceraApp.astro        # Cabecera alumno
-│   │   ├── PanelDetalle.astro       # Panel lateral de detalle de curso
-│   │   ├── TarjetaCurso.astro       # Tarjeta de curso en listado
-│   │   ├── TarjetaLogin.astro       # Formulario de login
-│   │   ├── Boton.astro
-│   │   ├── CampoFormulario.astro
-│   │   ├── FondoLogin.astro
-│   │   └── PiePagina.astro
-│   ├── layouts/
-│   │   ├── Plantilla.astro          # Layout base (alumno)
-│   │   └── PlantillaAdmin.astro     # Layout con sidebar (admin)
-│   ├── pages/
-│   │   ├── index.astro              # Landing comercial pública (/)
-│   │   ├── login.astro              # Login (/login)
-│   │   ├── inicio.astro             # Panel del alumno (/inicio)
-│   │   ├── perfil.astro             # Perfil alumno (/perfil)
-│   │   ├── soporte.astro            # Soporte alumno (/soporte)
-│   │   ├── recuperar-contrasena.astro
-│   │   └── admin/
-│   │       ├── index.astro          # Dashboard (/admin)
-│   │       ├── cursos.astro         # Listado de cursos (/admin/cursos)
-│   │       ├── tickets.astro        # Soporte admin (/admin/tickets)
-│   │       ├── perfil.astro         # Perfil admin (/admin/perfil)
-│   │       ├── logs.astro           # Log de cambios (/admin/logs)
-│   │       ├── errores.astro        # Log de errores JS (/admin/errores)
-│   │       ├── alumnos/
-│   │       │   ├── index.astro      # Listado alumnos
-│   │       │   ├── crear-alumno.astro
-│   │       │   └── detalle.astro
-│   │       └── cursos/
-│   │           ├── crear-curso.astro
-│   │           └── editar.astro     # Editor de temas y materiales
-│   └── styles/                      # CSS por componente / página
-├── scripts/
-│   └── deploy.mjs                   # Script de despliegue SFTP
-├── base-de-datos/                   # SQL de estructura inicial
-├── .env.example
+│   ├── components/               # Componentes Astro reutilizables
+│   ├── layouts/                  # Plantilla (alumno) y PlantillaAdmin (sidebar)
+│   ├── pages/                    # Rutas: pública, /admin/**, área alumno
+│   ├── lib/                      # Helpers de cliente (auth, fetch interceptor)
+│   └── styles/                   # CSS por componente / página
+├── base-de-datos/                # estructura.sql + migraciones incrementales
+├── scripts/                      # deploy, migrar, backup-db, hash-password
+├── tests/e2e/                    # Tests Playwright de los flujos críticos
 ├── astro.config.mjs
-├── tsconfig.json
 └── package.json
 ```
 
@@ -124,55 +116,36 @@ cursosumme/
 
 | Tabla | Descripción |
 |-------|------------|
-| `usuarios` | Alumnos y admins (email, hash bcrypt, rol, fechas de acceso, `token_sesion`, `token_expira`) |
-| `cursos` | Cursos (título, descripción HTML, imagen de portada, etiqueta, pack, nivel, colores) |
-| `temas` | Temas de cada curso (título, descripción HTML, duración, orden) |
-| `materiales` | Archivos por tema (tipo: video/documento, ruta, tamaño KB) |
-| `usuarios_cursos` | Relación alumno ↔ curso asignado |
-| `progresos` | Temas vistos por cada alumno |
-| `tickets` | Consultas de soporte de los alumnos |
-| `ticket_respuestas` | Conversación admin ↔ alumno en cada ticket |
-| `logs` | Auditoría de acciones (creación, edición, eliminación) |
-| `errores` | Errores JS capturados del frontend (tipo, mensaje, url, línea, stack, usuario) |
-| `login_intentos` | Intentos de login por IP para rate limiting (5 fallos = 15 min bloqueo) |
+| `usuarios` | Alumnado y administración (email, hash bcrypt, rol, fechas de acceso/baja, datos fiscales) |
+| `sesiones` | Un registro por dispositivo activo (token, expiración, `ultimo_uso`) |
+| `cursos` | Cursos (título, descripción HTML, etiqueta, nivel, pack, precio, `stripe_price_id`, colores) |
+| `temas` | Temas de cada curso (título, duración, orden, descripción, color, `bloqueado_hasta`) |
+| `materiales` | Archivos por tema (vídeo VdoCipher o documento) |
+| `usuarios_cursos` | Asignación alumno ↔ curso |
+| `packs` | Packs comerciales (nombre, descripción, precio, `stripe_price_id`, etiqueta) |
+| `pack_cursos` | Relación N:N pack ↔ curso |
+| `pagos` | Pagos Stripe (sesión, email, importe, estado, datos fiscales y evidencia de desistimiento) |
+| `progresos` | Temas completados por cada alumno |
+| `temas_bloqueos_alumno` | Bloqueos de tema personalizados por alumno |
+| `tickets` / `ticket_respuestas` | Soporte: consultas y conversación |
+| `logs` | Auditoría de acciones de administración |
+| `errores` | Errores JS del frontend capturados (tipo, mensaje, url, stack, usuario) |
+| `api_rate_limits` | Control de intentos por IP para rate limiting |
+
+El esquema vive en [base-de-datos/estructura.sql](base-de-datos/estructura.sql) con migraciones incrementales (`ALTER TABLE ... IF NOT EXISTS`), ejecutables con `npm run migrar`.
 
 ---
 
-## Autenticación
+## Seguridad
 
-### Contraseñas
-- Hasheadas con **bcrypt** (`password_hash` con `PASSWORD_BCRYPT`, cost 12) en el servidor
-- Migración transparente desde SHA-256 legacy: al loguearse un usuario antiguo se detecta el hash (64 hex sin prefijo `$2y$`), se verifica y se re-hashea a bcrypt automáticamente
-- Contraseña por defecto para nuevos alumnos: `Umme@2024`
-
-### Rate limiting
-- Tabla `login_intentos` rastrea intentos por IP
-- Tras **5 fallos** consecutivos, la IP queda bloqueada durante **15 minutos**
-- Un login correcto resetea el contador
-
-### Tokens de sesión
-- Al hacer login el servidor genera un token aleatorio de 64 caracteres (`bin2hex(random_bytes(32))`)
-- El token se guarda en `usuarios.token_sesion` con `token_expira` a **8 horas**
-- El cliente lo almacena en `sessionStorage` (key: `umme_session`) junto con `userId`, `rol`, `nombre`, `email` y `exp`
-- Todas las llamadas a la API envían el header `Authorization: Bearer <token>` (ver helper `authHeaders()` en `src/lib/auth.ts`)
-- Los endpoints sensibles del backend validan el token con `requireAuth($pdo)` o `requireAdmin($pdo)` (en `db-config.php`)
-- Al cerrar pestaña o navegador, `sessionStorage` desaparece — el token queda huérfano en BD hasta que expire
-
----
-
-## Roles y accesos
-
-| Ruta | Pública | Alumno | Admin |
-|------|---------|--------|-------|
-| `/` (landing comercial) | ✓ | — | — |
-| `/login` | ✓ | ✓ | ✓ |
-| `/precios` | ✓ | — | — |
-| `/recuperar-contrasena` | ✓ | — | — |
-| `/pago-ok` / `/pago-ko` | ✓ | — | — |
-| `/inicio` | — | ✓ | ✓ (modo vista) |
-| `/perfil` | — | ✓ | — |
-| `/soporte` | — | ✓ | — |
-| `/admin/**` | — | ✗ | ✓ |
+- **Contraseñas** con **bcrypt** (cost 12), nunca en texto plano. Migración transparente desde hashes SHA-256 legacy al loguear.
+- **Sesiones por dispositivo** en la tabla `sesiones` (no en columnas de `usuarios`). El token de 64 caracteres viaja como header `X-Token`; el backend lo valida con fallback a `Authorization: Bearer` y a `?token=` para rutas donde el hosting elimina los headers (uploads grandes). Toda llamada protegida pasa por `requireAuth()` / `requireAdmin()`.
+- **Rate limiting** de login por IP (tabla `api_rate_limits`).
+- **Vídeo con DRM**: VdoCipher (Widevine L1 + FairPlay) con OTP firmado por petición y marca de agua dinámica con el email del alumno, para disuadir la captura y la redistribución.
+- **Stripe**: el webhook **verifica la firma** (`STRIPE_WEBHOOK_SECRET`) y rechaza eventos si no es válida; idempotencia mediante `stripe_session_id` único.
+- **CORS** del checkout limitado al dominio propio.
+- **Cumplimiento legal**: registro de la renuncia al desistimiento por compra (texto exacto + fecha + IP), datos fiscales para facturación, páginas legales y RGPD.
+- **Secretos fuera del repositorio**: `db-config.php`, `.env`, `uploads/` y `backups/` están en `.gitignore` y nunca se versionan.
 
 ---
 
@@ -180,7 +153,7 @@ cursosumme/
 
 ### Requisitos
 - Node.js 18+
-- Servidor PHP 8 + MySQL (o MariaDB)
+- Servidor PHP 8 + MySQL / MariaDB
 
 ### 1. Instalar dependencias
 
@@ -188,71 +161,89 @@ cursosumme/
 npm install
 ```
 
-### 2. Configurar BD
+### 2. Configurar `public/api/db-config.php`
 
-Crear `public/api/db-config.php` (no está en el repositorio):
+Este archivo **no está en el repositorio** (contiene secretos). Debe definir, como mínimo, estas constantes y los helpers de autenticación:
 
 ```php
 <?php
-define('DB_HOST',     'tu-host-mysql');
-define('DB_NOMBRE',   'nombre_bd');
-define('DB_USUARIO',  'usuario_bd');
-define('DB_PASSWORD', 'contraseña_bd');
-define('SETUP_KEY',   'una_clave_secreta_larga');
+// Base de datos
+define('DB_HOST', '...'); define('DB_PORT', '3306');
+define('DB_NOMBRE', '...'); define('DB_USUARIO', '...'); define('DB_PASSWORD', '...');
+
+// Pagos
+define('STRIPE_SECRET_KEY', '...');     define('STRIPE_PUBLISHABLE_KEY', '...');
+define('STRIPE_WEBHOOK_SECRET', '...'); define('STRIPE_TAX_RATE_IVA', '...');
+
+// Email (SMTP IONOS)
+define('SMTP_HOST', '...'); define('SMTP_PORT', '...');
+define('SMTP_USER', '...'); define('SMTP_PASS', '...'); define('SMTP_FROM_NAME', '...');
+
+// Vídeo
+define('VDOCIPHER_API_KEY', '...'); define('VDOCIPHER_PLAYER_ID', '...');
+
+// Backups
+define('BACKUP_SECRET', '...');
+
+// + helpers: requireAuth(), requireAdmin(), sanitizeText(), rateLimit()
 ```
 
-`SETUP_KEY` protege la ejecución de `setup.php`: sin `?key=...` el endpoint devuelve 403.
+### 3. Configurar `.env` (para migraciones y despliegue)
 
-### 3. Inicializar tablas
+```
+DB_HOST, DB_PORT, DB_USER, DB_PASS, DB_NAME
+SFTP_HOST, SFTP_PORT, SFTP_USER, SFTP_PASS, SFTP_REMOTE_PATH
+```
 
-Acceder una vez a `/api/setup.php?key=<SETUP_KEY>` en el servidor para crear todas las tablas y migraciones (incluye `errores`, `login_intentos` y las columnas `token_sesion`/`token_expira`). Es seguro ejecutarlo varias veces (`IF NOT EXISTS`).
-
-### 4. Desarrollo local
+### 4. Crear las tablas
 
 ```bash
-npm run dev
+npm run migrar
 ```
 
-Las llamadas a `/api/*.php` apuntan al servidor real. Se necesita conexión o un servidor PHP local con la misma BD.
+Ejecuta `base-de-datos/estructura.sql` y las migraciones. Es idempotente (`IF NOT EXISTS`).
 
-### 5. Build de producción
+### 5. Desarrollo
 
 ```bash
-npm run build
+npm run dev      # http://localhost:4321
 ```
 
-Genera `dist/` con todos los archivos optimizados.
+Las llamadas a `/api/*.php` apuntan al servidor real, así que se necesita conexión (o un PHP + MySQL local con la misma BD).
+
+### 6. Producción
+
+```bash
+npm run build    # genera dist/
+npm run deploy   # build + subida SFTP a IONOS
+```
 
 ---
 
-## Despliegue
+## Servicios externos necesarios
 
-```bash
-npm run deploy
-```
+| Servicio | Para qué | Configuración |
+|----------|----------|---------------|
+| **IONOS** (hosting + MySQL) | Web, API PHP y base de datos | `.env` + `db-config.php` |
+| **Stripe** | Cobro de cursos y packs | Claves en `db-config.php`; webhook a `/api/stripe-webhook.php` |
+| **VdoCipher** | Alojamiento y reproducción de vídeo con DRM | `VDOCIPHER_API_KEY` |
+| **SMTP IONOS** | Emails de bienvenida y contacto | Credenciales `SMTP_*` |
 
-Hace build y sube `dist/` al servidor por SFTP automáticamente.
-
-**Importante:** al modificar cualquier `.astro`, los nombres de los bundles en `dist/_astro/` cambian (llevan hash del contenido). Siempre desplegar `_astro/` completo junto con los HTML modificados.
+> El proyecto se entrega con Stripe en **modo test**. Para cobrar de verdad hay que sustituir las claves por `sk_live_*` y regenerar el secreto del webhook en el panel de Stripe.
 
 ---
 
-## Límites de subida
+## Testing
 
-| Tipo | Límite | Notas |
-|------|--------|-------|
-| Vídeo | 3.5 GB | Validación en cliente y servidor; subida por chunks de 800 MB |
-| Documento / audio | 100 MB | Validación en cliente y servidor |
-| Imagen de portada de curso | 5 MB | Solo jpg/jpeg/png/webp |
-| Foto de perfil | (gestionada por `foto-perfil.php`) | |
+Tests E2E con Playwright de los flujos críticos (login, "recordarme", subida por chunks, autorización de vídeo, estadísticas, responsive, etc.):
 
-Los vídeos se suben en chunks de 800 MB vía `upload-chunk.php` y los documentos en una sola petición vía `upload.php`. Ambos usan **raw body streaming** (`php://input`) — el archivo se escribe directamente al destino sin pasar por `/tmp`, evitando problemas de cuota de disco en IONOS. El límite por chunk (800 MB) está por debajo del límite de nginx de IONOS (1 GB).
-
-Para comprobar los límites efectivos en producción, acceder a:
-
+```bash
+npm test           # ejecuta todos los tests
+npm run test:ui    # modo interactivo
+npm run test:report
 ```
-https://<tu-dominio>/api/info-limites.php
-```
+
+Los tests usan un usuario de prueba dedicado, nunca datos reales de alumnado.
 
 ---
 
@@ -260,31 +251,19 @@ https://<tu-dominio>/api/info-limites.php
 
 | Comando | Descripción |
 |---------|------------|
-| `npm run dev` | Servidor de desarrollo en `http://localhost:4321` |
-| `npm run build` | Genera archivos optimizados en `dist/` |
-| `npm run preview` | Previsualiza el build de producción |
-| `npm run deploy` | Build + subida SFTP al servidor |
+| `npm run dev` | Servidor de desarrollo (`http://localhost:4321`) |
+| `npm run build` | Build de producción en `dist/` |
+| `npm run preview` | Previsualiza el build |
+| `npm run deploy` | Build + subida SFTP a IONOS |
+| `npm run migrar` | Crea/actualiza las tablas de la BD |
+| `npm run backup-db` | Backup de la BD (conserva los últimos 10) |
+| `npm run hash-password` | Genera un hash bcrypt para una contraseña |
+| `npm test` | Tests E2E con Playwright |
 
 ---
 
-## Seguridad
+## Autoría y licencia
 
-- Contraseñas hasheadas con **bcrypt** (cost 12), nunca en texto plano; migración transparente desde SHA-256 legacy
-- **Rate limiting** de login: 5 fallos por IP bloquean 15 minutos (tabla `login_intentos`)
-- Autenticación vía **token Bearer** de 64 caracteres emitido por el servidor y validado en cada endpoint sensible (`requireAuth` / `requireAdmin`)
-- Sesión en `sessionStorage` (no persiste al cerrar el navegador), token expira a las **8 horas**
-- Vídeos servidos siempre por proxy PHP (`video.php`) que verifica acceso antes de enviar los bytes
-- Soporte de range requests para streaming correcto en todos los navegadores
-- Marca de agua del email del alumno superpuesta en los vídeos
-- Bloqueo de clic derecho y arrastre en el reproductor
-- Área `/admin` solo accesible para usuarios con `rol = 'admin'`
-- `setup.php` protegido con `SETUP_KEY`: sin la clave devuelve 403
-- Captura global de errores JS del frontend (`window.onerror` + `unhandledrejection`) en la tabla `errores`, visible para admins
-- Archivos sensibles (`db-config.php`, `uploads/`, `.env`) excluidos del repositorio
+Proyecto de **María Sánchez Fernández** y **José Manuel Borrás Rodríguez**, desarrollado como Trabajo de Fin de Máster.
 
----
-
-## Más información
-
-- [Documentación oficial de Astro](https://docs.astro.build/)
-- [PDO — PHP Data Objects](https://www.php.net/manual/es/book.pdo.php)
+Todos los derechos reservados. El repositorio se publica con fines de portfolio y entrega académica: la consulta del código está permitida; su reutilización, redistribución o uso comercial, no. Ver [LICENSE](LICENSE).
