@@ -111,7 +111,7 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
           </div>
         </div>
 
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+        <div class="form-grid-2">
           <div class="form-grupo">
             <label class="form-label" for="etiqueta">Categoría</label>
             <input class="form-input" type="text" id="etiqueta" name="etiqueta" required />
@@ -496,9 +496,16 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
 }
 .barra-guardar.dirty .barra-estado::before { background: #ffa726; }
 .barra-guardar-acciones { display: flex; align-items: center; gap: 0.6rem; flex-shrink: 0; }
+
+/* Grid de 2 columnas de los formularios; minmax(0,1fr) deja que las
+   columnas encojan (sin esto los inputs desbordaban en móvil). Colapsa
+   a 1 columna en pantallas pequeñas. */
+.form-grid-2 { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 1rem; }
+
 @media (max-width: 600px) {
   .barra-guardar { flex-direction: column; align-items: stretch; }
   .barra-guardar-acciones { justify-content: space-between; }
+  .form-grid-2 { grid-template-columns: 1fr; }
 }
 
 /* Estado "guardado" en la barra sticky */

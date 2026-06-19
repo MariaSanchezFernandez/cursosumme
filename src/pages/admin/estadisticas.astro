@@ -119,6 +119,19 @@ import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
     </div>
   </div>
 
+  <style>
+    /* Acota las dos tablas largas: en vez de alargar la página sin fin,
+       cada una tiene scroll interno y la cabecera se queda fija arriba.
+       Así se reduce mucho el scroll vertical de la página. */
+    .tabla-wrap { max-height: 60vh; overflow: auto; }
+    .tabla-wrap thead th {
+      position: sticky;
+      top: 0;
+      background: #fff;
+      z-index: 2;
+    }
+  </style>
+
 </PlantillaAdmin>
 
 <script>

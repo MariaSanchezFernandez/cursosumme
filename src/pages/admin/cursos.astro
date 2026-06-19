@@ -6,12 +6,12 @@ import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
 
   <!-- Barra superior -->
   <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:0.75rem;">
-    <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap; flex:1;">
+    <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap; flex:1; min-width:0;">
       <div style="display:flex; gap:0.5rem; flex-wrap:wrap;" id="filtros-pack"></div>
       <input id="buscador-cursos" type="search" placeholder="Buscar curso…" autocomplete="off"
-        style="border:1px solid var(--color-borde); border-radius:6px; padding:0.35rem 0.7rem; font-size:0.82rem; width:200px; outline:none;">
+        style="border:1px solid var(--color-borde); border-radius:6px; padding:0.35rem 0.7rem; font-size:0.82rem; width:200px; max-width:100%; box-sizing:border-box; outline:none;">
     </div>
-    <div style="display:flex; gap:0.5rem;">
+    <div style="display:flex; gap:0.5rem; flex-wrap:wrap; justify-content:flex-end;">
       <button id="btn-comprimir-imgs" class="btn-admin" title="Reduce el peso de las portadas ya subidas">
         <svg viewBox="0 0 16 16" fill="none">
           <path d="M2 8l3-3M2 8l3 3M2 8h5M14 8l-3-3M14 8l-3 3M14 8H9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
@@ -231,6 +231,7 @@ import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
 .curso-tag.inactivo { background: #f5e8e8; color: #a33; }
 .curso-card-footer {
   display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 0.5rem;
   padding: 0.7rem 1.25rem;
   border-top: 1px solid #f0f4f2;
   background: #fafcfb;
@@ -239,7 +240,7 @@ import PlantillaAdmin from '../../layouts/PlantillaAdmin.astro';
 .curso-temas { font-size: 0.75rem; color: var(--color-text-muted); }
 .curso-stat-sep { font-size: 0.7rem; color: var(--color-text-muted); opacity: 0.5; }
 .curso-progreso-badge { font-size: 0.72rem; font-weight: 700; background: #e8f4ee; color: #2e7d55; border-radius: 20px; padding: 0.1rem 0.5rem; }
-.curso-card-acciones { display: flex; gap: 0.4rem; align-items: center; }
+.curso-card-acciones { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
 .btn-card-dup {
   width: 30px; height: 30px; border-radius: 8px; border: 1px solid #d8e8e0;
   background: #fff; cursor: pointer; display: flex; align-items: center;

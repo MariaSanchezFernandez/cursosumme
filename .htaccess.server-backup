@@ -20,15 +20,6 @@
     RewriteCond %{HTTPS} !=on [OR]
     RewriteCond %{HTTP_HOST} ^www\.cursosumme\.es$ [NC]
     RewriteRule ^(.*)$ https://cursosumme.es/$1 [R=301,L]
-
-    # 3) /cursos/<id> inexistente (p. ej. /cursos/1) → 404 limpio.
-    #    IONOS ignora `Options -MultiViews`, así que la negociación de
-    #    MultiViews devolvía un feo "300 Multiple Choices". Aquí, si la
-    #    ruta no es un fichero/carpeta real, forzamos un 404 y se sirve
-    #    /404.html (vía ErrorDocument). mod_rewrite sí lo respeta IONOS.
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^cursos/ - [R=404,L]
 </IfModule>
 
 # ── Errores y negociación de contenido ───────────────────────────────

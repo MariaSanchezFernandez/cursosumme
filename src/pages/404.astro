@@ -1,0 +1,121 @@
+---
+/**
+ * PÁGINA: 404 — No encontrada
+ * ---------------------------
+ * Página de error propia, con la marca de Cursos Umme, en lugar del
+ * 404/300 genérico y feo del hosting. Astro la compila a /404.html;
+ * el .htaccess la sirve vía `ErrorDocument 404 /404.html` para cualquier
+ * ruta inexistente (p. ej. /cursos/1, que no corresponde a ningún curso).
+ *
+ * Las URLs de curso válidas son /cursos/<id> solo para los cursos
+ * publicados; los ids no son correlativos, así que un id inventado cae aquí.
+ */
+import Plantilla from '../layouts/Plantilla.astro';
+import CabeceraPublica from '../components/CabeceraPublica.astro';
+import PiePagina from '../components/PiePagina.astro';
+import '../styles/global.css';
+---
+
+<Plantilla titulo="Página no encontrada — Cursos Umme">
+  <CabeceraPublica activa="" />
+
+  <main class="e404">
+    <div class="e404-deco" aria-hidden="true"></div>
+    <div class="e404-inner">
+      <p class="e404-codigo">404</p>
+      <h1 class="e404-titulo">Esta página se ha perdido</h1>
+      <p class="e404-texto">
+        El enlace no existe o el contenido ya no está disponible.
+        Puede que la dirección esté mal escrita.
+      </p>
+      <div class="e404-acciones">
+        <a class="e404-btn e404-btn--primario" href="/">Volver al inicio</a>
+        <a class="e404-btn e404-btn--secundario" href="/precios">Ver cursos</a>
+      </div>
+    </div>
+  </main>
+
+  <PiePagina />
+</Plantilla>
+
+<style>
+  .e404 {
+    position: relative;
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 1.5rem;
+    overflow: hidden;
+    background: linear-gradient(135deg, #def1ec 0%, #fff 55%, #ffe9e3 100%);
+  }
+  .e404-deco {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 18% 20%, rgba(179, 232, 218, .55), transparent 42%),
+      radial-gradient(circle at 82% 78%, rgba(255, 181, 167, .45), transparent 45%);
+    z-index: 0;
+  }
+  .e404-inner {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    max-width: 34rem;
+  }
+  .e404-codigo {
+    font-size: clamp(5rem, 16vw, 9rem);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -.04em;
+    color: #121212;
+    margin: 0;
+  }
+  .e404-codigo::after {
+    content: "";
+    display: block;
+    width: 3.5rem;
+    height: .5rem;
+    border-radius: 999px;
+    background: #b3e8da;
+    margin: .6rem auto 0;
+  }
+  .e404-titulo {
+    font-size: clamp(1.5rem, 4vw, 2.1rem);
+    font-weight: 700;
+    color: #121212;
+    margin: 1.4rem 0 .6rem;
+  }
+  .e404-texto {
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: #555;
+    margin: 0 auto 2rem;
+    max-width: 30rem;
+  }
+  .e404-acciones {
+    display: flex;
+    gap: .9rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .e404-btn {
+    display: inline-block;
+    padding: .8rem 1.6rem;
+    border-radius: 999px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .e404-btn:hover { transform: translateY(-2px); }
+  .e404-btn--primario {
+    background: #ffb5a7;
+    color: #2a1a16;
+    box-shadow: 0 10px 24px -12px rgba(255, 181, 167, .9);
+  }
+  .e404-btn--secundario {
+    background: #fff;
+    color: #121212;
+    border: 1.5px solid #121212;
+  }
+</style>

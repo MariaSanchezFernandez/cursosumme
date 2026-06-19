@@ -30,3 +30,8 @@ npm-debug.log*
 
 # Archivos pendientes de eliminar (código muerto, contenido viejo, etc.)
 pendientes-de-eliminar/
+
+#Presentación
+presentacion.html
+PRESENTACION.MD
+capturas/

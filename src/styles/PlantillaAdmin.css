@@ -172,10 +172,11 @@ tr:hover td { background: #fafcfb; }
   color: var(--color-text);
   cursor: pointer;
   text-decoration: none;
+  white-space: nowrap;
   transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
 }
 
-.btn-admin svg { width: 13px; height: 13px; }
+.btn-admin svg { width: 13px; height: 13px; flex-shrink: 0; }
 
 .btn-admin:hover {
   background: #f4faf8;

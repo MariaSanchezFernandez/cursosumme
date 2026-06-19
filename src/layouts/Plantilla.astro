@@ -48,6 +48,16 @@ const imagenOgAbs = imagenOg.startsWith('http')
     <meta name="generator" content={Astro.generator} />
     <link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+
+    <!-- PWA / acceso directo en móvil ("Añadir a pantalla de inicio") -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Cursos Umme" />
+
     <title>{titulo}</title>
 
     <!-- SEO básico -->
