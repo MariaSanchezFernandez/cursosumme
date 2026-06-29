@@ -30,14 +30,22 @@ if ($method === 'GET') {
     $fila = $st->fetch();
     if (!$fila) { echo json_encode(['ok' => false, 'mensaje' => 'Usuario no encontrado']); exit; }
 
-    // Una fila por dispositivo (etiqueta + IP) — varios tokens del mismo
-    // dispositivo cuentan como 1 sesión. Esto refleja el modelo de límite
-    // por dispositivo que aplica login.php.
+    // Una fila por slot de dispositivo — misma clave que usa login.php para
+    // contar (COALESCE(device_id, 'sin-device')), no solo dispositivo+IP.
+    // Si no se alinean, el admin puede ver menos sesiones de las que
+    // login.php está contando realmente (ver memoria project-device-limit).
+    // Por cada slot se muestra la fila más reciente (ip/dispositivo pueden
+    // variar entre logins del mismo device_id, p.ej. móvil cambiando de red).
     $st2 = $pdo->prepare(
-        'SELECT ip, dispositivo, MAX(creado_en) AS creado_en, MAX(expira_en) AS expira_en
-         FROM sesiones WHERE usuario_id = :id AND expira_en > NOW()
-         GROUP BY dispositivo, ip
-         ORDER BY creado_en DESC'
+        'SELECT s.ip, s.dispositivo, s.creado_en, s.expira_en
+         FROM sesiones s
+         WHERE s.usuario_id = :id AND s.expira_en > NOW()
+           AND s.creado_en = (
+             SELECT MAX(s2.creado_en) FROM sesiones s2
+             WHERE s2.usuario_id = s.usuario_id AND s2.expira_en > NOW()
+               AND COALESCE(s2.device_id, "sin-device") = COALESCE(s.device_id, "sin-device")
+           )
+         ORDER BY s.creado_en DESC'
     );
     $st2->execute([':id' => $uid]);
     $lista = $st2->fetchAll(PDO::FETCH_ASSOC);

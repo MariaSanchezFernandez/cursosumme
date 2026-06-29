@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { getAdmin } from './helpers/auth';
 
 const ALUMNO_EMAIL = process.env.TEST_ALUMNO_EMAIL;
 const ALUMNO_PASS  = process.env.TEST_ALUMNO_PASS;
@@ -35,5 +36,31 @@ test.describe('Login', () => {
 
     await page.waitForURL((url) => url.pathname.startsWith('/admin'));
     expect(page.url()).toContain('/admin');
+  });
+
+  test('logins repetidos sin device_id no acumulan slots fantasma', async ({ request }) => {
+    test.skip(!ALUMNO_EMAIL || !ALUMNO_PASS || !ADMIN_EMAIL || !ADMIN_PASS, 'Credenciales alumno/admin no configuradas');
+
+    // Simula un navegador que nunca persiste el device_id (Safari ITP, modo
+    // privado...): cada login llega sin device_id en el body. Antes del fix,
+    // cada uno generaba un slot nuevo en `sesiones` hasta agotar max_sesiones
+    // y bloquear el acceso pese a ser siempre "el mismo" dispositivo.
+    const admin = getAdmin();
+    const resAlumnos = await request.get('/api/alumnos.php', { headers: { 'X-Token': admin.token } });
+    const alumnoId = (await resAlumnos.json()).alumnos
+      .find((a: { email: string }) => a.email.toLowerCase() === ALUMNO_EMAIL!.toLowerCase())?.id;
+    await request.delete(`/api/sesiones.php?usuario_id=${alumnoId}`, { headers: { 'X-Token': admin.token } });
+
+    let ultimoToken = '';
+    for (let i = 0; i < 5; i++) {
+      const res = await request.post('/api/login.php', {
+        data: { email: ALUMNO_EMAIL, contrasena: ALUMNO_PASS },
+      });
+      const body = await res.json();
+      expect(body.ok, `login #${i + 1}: ${body.mensaje}`).toBe(true);
+      ultimoToken = body.token;
+    }
+
+    await request.post('/api/logout.php', { headers: { Authorization: `Bearer ${ultimoToken}` } });
   });
 });
