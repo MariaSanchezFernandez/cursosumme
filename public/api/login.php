@@ -100,41 +100,58 @@ $pdo->prepare('DELETE FROM login_intentos WHERE ip = :ip')->execute([':ip' => $i
 $pdo->prepare('DELETE FROM sesiones WHERE usuario_id = :id AND expira_en < NOW()')
     ->execute([':id' => $usuario['id']]);
 
-// Parsear el dispositivo ANTES del control de límite — necesitamos saber
-// si este login es desde un dispositivo que ya tenía sesión (en cuyo caso
-// no cuenta como sesión nueva, simplemente se reemplaza).
+// ── Identificar dispositivo ───────────────────────────────────
+// Estrategia: UUID persistente generado en el navegador (localStorage)
+// enviado como device_id en el body. No depende de la IP, sobrevive
+// cambios de red (4G↔WiFi, IP dinámica del ISP).
 //
-// IMPORTANTE: la etiqueta es SOLO el sistema operativo, deliberadamente SIN
-// el navegador. El objetivo del límite es evitar que se comparta la cuenta
-// entre personas/equipos distintos, NO penalizar a quien usa dos navegadores
-// en el mismo aparato. Como la identidad se combina luego con la IP
-// (dispositivo + ip), Chrome y Firefox en el mismo equipo y red producen la
-// misma clave ("Windows|IP") → cuentan como UNA sesión. Distinta persona o
-// ubicación implica distinta IP → cuenta aparte.
+// Si el cliente no envía device_id válido (petición directa a la API,
+// navegador sin JS, o localStorage que no persiste — Safari ITP borra
+// storage tras inactividad, modo privado, etc.) NO se genera un UUID
+// nuevo: se guarda NULL. Generar uno aleatorio creaba una fila "fantasma"
+// distinta en cada login de ese dispositivo, que se acumulaba hasta
+// agotar el límite de sesiones aunque fuera siempre el mismo aparato.
+$deviceIdCliente = trim($body['device_id'] ?? '');
+$deviceId = preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $deviceIdCliente)
+    ? $deviceIdCliente
+    : null;
+
+// Etiqueta legible del dispositivo (solo OS, sin navegador — quien usa
+// Chrome y Firefox en el mismo equipo no debe consumir dos slots).
 $ua = substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 300);
 function parsearDispositivo(string $ua): string {
-    if (preg_match('/iPhone|iPad/i', $ua))            return str_contains($ua, 'iPad') ? 'iPad' : 'iPhone';
-    if (preg_match('/Android/i', $ua))                return 'Android';
-    if (preg_match('/Windows/i', $ua))                return 'Windows';
-    if (preg_match('/Macintosh|Mac OS X/i', $ua))     return 'Mac';
-    if (preg_match('/Linux/i', $ua))                  return 'Linux';
+    if (str_contains($ua, 'iPad'))                         return 'iPad';
+    if (str_contains($ua, 'iPhone'))                       return 'iPhone';
+    if (preg_match('/Android/i', $ua))                     return 'Android';
+    if (preg_match('/Windows/i', $ua))                     return 'Windows';
+    if (preg_match('/Macintosh|Mac OS X/i', $ua))          return 'Mac';
+    if (preg_match('/Linux/i', $ua))                       return 'Linux';
     return 'Desconocido';
 }
-$dispositivo = $ua ? parsearDispositivo($ua) : 'Dispositivo desconocido';
+$dispositivo = $ua ? parsearDispositivo($ua) : 'Desconocido';
 
-// El límite se cuenta por DISPOSITIVO ÚNICO (etiqueta + IP), no por token.
-// Si este login es desde un dispositivo+IP que ya tenía sesión activa, la
-// borramos primero — el nuevo token reemplaza al anterior y no suma al
-// contador.
-$pdo->prepare(
-    'DELETE FROM sesiones
-     WHERE usuario_id = :id AND dispositivo = :d AND ip = :ip'
-)->execute([':id' => $usuario['id'], ':d' => $dispositivo, ':ip' => $ip]);
+if ($deviceId !== null) {
+    // Si este device_id ya tenía una sesión activa, la reemplazamos —
+    // re-login desde el mismo navegador no consume un slot nuevo.
+    $pdo->prepare(
+        'DELETE FROM sesiones WHERE usuario_id = :id AND device_id = :did'
+    )->execute([':id' => $usuario['id'], ':did' => $deviceId]);
+} else {
+    // Sin device_id rastreable no podemos saber si es el mismo aparato
+    // de antes, así que TODAS las sesiones no rastreables de esta cuenta
+    // comparten un único slot (la nueva sustituye a la anterior) en vez
+    // de crear una fila distinta por login.
+    $pdo->prepare(
+        'DELETE FROM sesiones WHERE usuario_id = :id AND device_id IS NULL'
+    )->execute([':id' => $usuario['id']]);
+}
 
-// Ahora sí, contar dispositivos activos distintos
+// Contar slots activos distintos. Las sesiones sin device_id (legacy o
+// sin localStorage persistente) cuentan juntas como un único slot — ver
+// DELETE de arriba, nunca hay más de una fila con device_id IS NULL.
 $stCount = $pdo->prepare(
-    'SELECT COUNT(DISTINCT CONCAT(dispositivo, "|", ip))
-     FROM sesiones WHERE usuario_id = :id AND expira_en > NOW()'
+    "SELECT COUNT(DISTINCT COALESCE(device_id, 'sin-device'))
+     FROM sesiones WHERE usuario_id = :id AND expira_en > NOW()"
 );
 $stCount->execute([':id' => $usuario['id']]);
 $activasCuenta = (int)$stCount->fetchColumn();
@@ -142,7 +159,7 @@ $activasCuenta = (int)$stCount->fetchColumn();
 if ($usuario['rol'] !== 'admin') {
     $stMax = $pdo->prepare('SELECT max_sesiones FROM usuarios WHERE id = :id LIMIT 1');
     $stMax->execute([':id' => $usuario['id']]);
-    $maxSesiones = (int)$stMax->fetchColumn() ?: 2;
+    $maxSesiones = (int)$stMax->fetchColumn() ?: 3;
 
     if ($activasCuenta >= $maxSesiones) {
         $msg = $maxSesiones === 1
@@ -157,8 +174,9 @@ if ($usuario['rol'] !== 'admin') {
 $token  = bin2hex(random_bytes(32));
 $expira = date('Y-m-d H:i:s', strtotime('+15 days'));
 $pdo->prepare(
-    'INSERT INTO sesiones (usuario_id, token, ip, dispositivo, expira_en) VALUES (:uid, :t, :ip, :d, :e)'
-)->execute([':uid' => $usuario['id'], ':t' => $token, ':ip' => $ip, ':d' => $dispositivo, ':e' => $expira]);
+    'INSERT INTO sesiones (usuario_id, token, ip, dispositivo, device_id, expira_en)
+     VALUES (:uid, :t, :ip, :d, :did, :e)'
+)->execute([':uid' => $usuario['id'], ':t' => $token, ':ip' => $ip, ':d' => $dispositivo, ':did' => $deviceId, ':e' => $expira]);
 
 echo json_encode([
     'ok'        => true,

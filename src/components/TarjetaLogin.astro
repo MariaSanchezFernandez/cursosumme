@@ -63,12 +63,22 @@ import '../styles/TarjetaLogin.css';
     const contrasena = (form.querySelector('#password') as HTMLInputElement).value;
     errorMsg.style.display = 'none';
 
+    // UUID persistente por dispositivo/navegador — se genera una vez y se
+    // reutiliza en todos los logins posteriores desde este navegador.
+    // Resuelve el problema de IPs dinámicas que consumían slots de dispositivo.
+    const DEVICE_KEY = 'umme_device_id';
+    let deviceId = localStorage.getItem(DEVICE_KEY) ?? '';
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(deviceId)) {
+      deviceId = crypto.randomUUID();
+      localStorage.setItem(DEVICE_KEY, deviceId);
+    }
+
     await window.botonCargando(boton, 'Entrando…', async () => {
       try {
         const respuesta = await fetch('/api/login.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, contrasena }),
+          body: JSON.stringify({ email, contrasena, device_id: deviceId }),
         });
 
         const datos = await respuesta.json();

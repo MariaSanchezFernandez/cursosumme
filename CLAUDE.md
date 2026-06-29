@@ -19,3 +19,4 @@ Ver [../AGENTS.md](../AGENTS.md): documentar al inicio de cada archivo, leer ant
 @.claude/memory/feedback-backup-db.md
 @.claude/memory/project-auth-tokens.md
 @.claude/memory/feedback-lenguaje-neutro.md
+@.claude/memory/project-device-limit.md
