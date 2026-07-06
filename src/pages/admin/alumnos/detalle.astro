@@ -433,15 +433,39 @@ async function cargar() {
       } else {
         sesionesLista.innerHTML = lista.map((s: any) => {
           const fecha = new Date(s.creado_en).toLocaleString('es-ES', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
-          return `<div class="sesion-item">
+          return `<div class="sesion-item" data-id="${s.id}">
             <svg viewBox="0 0 16 16" fill="none" width="14" height="14" style="flex-shrink:0;color:#5a8a72">
               <rect x="1" y="2" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
               <path d="M5 14h6M8 12v2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
             </svg>
             <span class="sesion-dispositivo">${s.dispositivo || 'Dispositivo desconocido'}</span>
             <span class="sesion-meta">${s.ip || '—'} · desde ${fecha}</span>
+            <button class="btn-cerrar-sesion-individual btn-admin"
+              data-sid="${s.id}"
+              style="margin-left:auto; height:26px; padding:0 0.55rem; font-size:0.72rem; color:#c33; border-color:#f5c6c6; flex-shrink:0;"
+              title="Cerrar esta sesión">
+              Cerrar
+            </button>
           </div>`;
         }).join('');
+
+        sesionesLista.querySelectorAll<HTMLButtonElement>('.btn-cerrar-sesion-individual').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const sid = btn.dataset.sid;
+            const ok = await window.confirmar({
+              titulo: 'Cerrar sesión',
+              mensaje: '¿Cerrar esta sesión? El dispositivo tendrá que iniciar sesión de nuevo.',
+              textoConfirmar: 'Cerrar',
+              peligro: true,
+            });
+            if (!ok) return;
+            btn.disabled = true; btn.textContent = '…';
+            const res  = await fetch(`/api/sesiones.php?usuario_id=${alumnoId}&id=${sid}`, { method: 'DELETE', headers: authH });
+            const data = await res.json();
+            if (data.ok) { mostrarMsg('✓ Sesión cerrada.', 'ok'); await cargarSesiones(); }
+            else { mostrarMsg(data.mensaje || 'No se pudo cerrar la sesión.', 'error'); btn.disabled = false; btn.textContent = 'Cerrar'; }
+          });
+        });
       }
     } catch (e) { console.error('[sesiones] excepción:', e); }
   }

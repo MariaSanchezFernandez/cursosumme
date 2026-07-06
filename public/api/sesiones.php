@@ -2,9 +2,10 @@
 // ─────────────────────────────────────────────────────────────
 // api/sesiones.php  —  Gestión de sesiones activas por usuario (admin)
 //
-//   GET  ?usuario_id=X         → { ok, activas, max, lista:[{ip,dispositivo,creado_en,expira_en}] }
+//   GET  ?usuario_id=X              → { ok, activas, max, lista:[{id,ip,dispositivo,creado_en,expira_en}] }
 //   PATCH body {usuario_id, max_sesiones} → actualiza límite
-//   DELETE ?usuario_id=X       → cierra todas las sesiones del alumno
+//   DELETE ?usuario_id=X            → cierra todas las sesiones del alumno
+//   DELETE ?usuario_id=X&id=Y       → cierra solo esa sesión (id de la lista del GET)
 // ─────────────────────────────────────────────────────────────
 
 header('Content-Type: application/json; charset=utf-8');
@@ -37,7 +38,7 @@ if ($method === 'GET') {
     // Por cada slot se muestra la fila más reciente (ip/dispositivo pueden
     // variar entre logins del mismo device_id, p.ej. móvil cambiando de red).
     $st2 = $pdo->prepare(
-        'SELECT s.ip, s.dispositivo, s.creado_en, s.expira_en
+        'SELECT s.id, s.ip, s.dispositivo, s.creado_en, s.expira_en
          FROM sesiones s
          WHERE s.usuario_id = :id AND s.expira_en > NOW()
            AND s.creado_en = (
@@ -79,7 +80,15 @@ if ($method === 'DELETE') {
     $uid = (int)($_GET['usuario_id'] ?? 0);
     if (!$uid) { echo json_encode(['ok' => false, 'mensaje' => 'Falta usuario_id']); exit; }
 
-    $pdo->prepare('DELETE FROM sesiones WHERE usuario_id = :id')->execute([':id' => $uid]);
+    $sesionId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+    if ($sesionId) {
+        // Cierra solo esa sesión — el id siempre va acotado por usuario_id
+        // para que un admin no pueda cerrar la sesión de otra cuenta.
+        $pdo->prepare('DELETE FROM sesiones WHERE id = :sid AND usuario_id = :id')
+            ->execute([':sid' => $sesionId, ':id' => $uid]);
+    } else {
+        $pdo->prepare('DELETE FROM sesiones WHERE usuario_id = :id')->execute([':id' => $uid]);
+    }
     echo json_encode(['ok' => true]);
     exit;
 }

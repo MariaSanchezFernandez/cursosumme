@@ -170,7 +170,7 @@ function barra(pct: number, sub?: string): string {
       <span style="font-size:0.78rem; font-weight:700; color:#555; min-width:42px; text-align:right;">${txt}</span>
     </div>
     ${sub ? `<p style="font-size:0.7rem; color:#999; margin:0.25rem 0 0;">${sub}</p>` : ''}
-  `.replace(/<\/div>\s*<p/, '</div><p').trim() + '__SKIP__';
+  `.replace(/<\/div>\s*<p/, '</div><p').trim();
 }
 
 // Barra mini "X / Y" para celdas compactas (Vídeos vistos, Temas completados).
