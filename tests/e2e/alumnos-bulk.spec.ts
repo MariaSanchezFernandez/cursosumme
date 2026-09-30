@@ -52,5 +52,10 @@ test.describe('Acciones en bloque de alumnos', () => {
     await page.locator('#bulk-accion').selectOption('asignar_cursos');
     await expect(page.locator('#bulk-cursos')).toBeVisible();
     await expect(page.locator('#bulk-aplicar')).toBeDisabled();
+
+    // En "Desbloquear temas", marcar un curso muestra sus temas
+    await page.locator('#bulk-accion').selectOption('desbloquear_temas');
+    await page.locator('#bulk-cursos-lista input').first().check();
+    await expect(page.locator('#bulk-temas')).toBeVisible();
   });
 });

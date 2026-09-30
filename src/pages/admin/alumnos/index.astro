@@ -64,6 +64,9 @@ import PlantillaAdmin from '../../../layouts/PlantillaAdmin.astro';
       <div class="bulk-cursos" id="bulk-cursos" hidden>
         <span class="bulk-cursos-ayuda" id="bulk-cursos-ayuda">Cursos:</span>
         <div class="bulk-cursos-lista" id="bulk-cursos-lista"></div>
+        <!-- Solo en "Desbloquear temas": temas de cada curso marcado.
+             Sin temas marcados en un curso → se desbloquea el curso entero. -->
+        <div class="bulk-temas" id="bulk-temas" hidden></div>
       </div>
     </div>
 
@@ -299,7 +302,10 @@ const bulkAplicar  = document.getElementById('bulk-aplicar') as HTMLButtonElemen
 const bulkCursos   = document.getElementById('bulk-cursos')!;
 const bulkCursosLista = document.getElementById('bulk-cursos-lista')!;
 const bulkCursosAyuda = document.getElementById('bulk-cursos-ayuda')!;
+const bulkTemas    = document.getElementById('bulk-temas')!;
 let cursosCargados = false;
+let cursosBulk: { id: number; titulo: string }[] = [];
+const temasPorCurso = new Map<number, { id: number; titulo: string }[]>();
 
 const ACCIONES_CON_CURSOS = ['asignar_cursos', 'quitar_cursos', 'desbloquear_temas'];
 const TEXTO_ACCION: Record<string, string> = {
@@ -342,9 +348,10 @@ function actualizarAccion() {
   const usaCursos = ACCIONES_CON_CURSOS.includes(accion);
   bulkCursos.hidden = !usaCursos;
   bulkCursosAyuda.textContent = accion === 'desbloquear_temas'
-    ? 'Cursos (sin marcar ninguno = todos los temas):'
+    ? 'Cursos (sin marcar ninguno = todos los temas). Dentro de un curso puedes elegir temas concretos:'
     : 'Cursos:';
   if (usaCursos) cargarCursosBulk();
+  pintarTemas();
   const faltanCursos = (accion === 'asignar_cursos' || accion === 'quitar_cursos') && cursosSeleccionados().length === 0;
   bulkAplicar.disabled = !accion || faltanCursos || idsSeleccionados().length === 0;
 }
@@ -356,6 +363,7 @@ async function cargarCursosBulk() {
     const res  = await fetch('/api/cursos.php');
     const data = await res.json();
     const cursos = (data.cursos ?? []).filter((c: any) => Number(c.activo) === 1);
+    cursosBulk = cursos.map((c: any) => ({ id: Number(c.id), titulo: String(c.titulo) }));
     bulkCursosLista.innerHTML = cursos.map((c: any) => `
       <label class="bulk-curso"><input type="checkbox" value="${c.id}" /> <span></span></label>`).join('');
     // Título por textContent para no interpretar HTML
@@ -364,6 +372,58 @@ async function cargarCursosBulk() {
     cursosCargados = false;
     bulkCursosLista.textContent = 'Error al cargar los cursos.';
   }
+}
+
+// Temas de los cursos marcados (solo para "Desbloquear temas"). Se
+// cargan bajo demanda y se cachean; se conserva lo que ya estuviera marcado.
+async function pintarTemas() {
+  const cursosMarcados = bulkAccion.value === 'desbloquear_temas' ? cursosSeleccionados() : [];
+  bulkTemas.hidden = cursosMarcados.length === 0;
+  if (!cursosMarcados.length) return;
+
+  const faltan = cursosMarcados.filter(id => !temasPorCurso.has(id));
+  await Promise.all(faltan.map(async id => {
+    try {
+      const res  = await fetch(`/api/temas.php?curso_id=${id}`);
+      const data = await res.json();
+      temasPorCurso.set(id, (data.temas ?? []).map((t: any) => ({ id: Number(t.id), titulo: String(t.titulo) })));
+    } catch {
+      temasPorCurso.set(id, []);
+    }
+  }));
+
+  const marcados = new Set(temasSeleccionados());
+  bulkTemas.innerHTML = '';
+  cursosSeleccionados().forEach(cid => {
+    const grupo = document.createElement('div');
+    grupo.className = 'bulk-temas-grupo';
+    const tit = document.createElement('div');
+    tit.className = 'bulk-temas-titulo';
+    tit.textContent = cursosBulk.find(c => c.id === cid)?.titulo ?? `Curso ${cid}`;
+    grupo.appendChild(tit);
+    const lista = document.createElement('div');
+    lista.className = 'bulk-cursos-lista';
+    (temasPorCurso.get(cid) ?? []).forEach(t => {
+      const lab = document.createElement('label');
+      lab.className = 'bulk-curso';
+      const chk = document.createElement('input');
+      chk.type = 'checkbox';
+      chk.value = String(t.id);
+      chk.dataset.curso = String(cid);
+      chk.checked = marcados.has(t.id);
+      const sp = document.createElement('span');
+      sp.textContent = t.titulo;
+      lab.append(chk, sp);
+      lista.appendChild(lab);
+    });
+    if (!lista.children.length) lista.textContent = 'Este curso no tiene temas.';
+    grupo.appendChild(lista);
+    bulkTemas.appendChild(grupo);
+  });
+}
+
+function temasSeleccionados() {
+  return Array.from(bulkTemas.querySelectorAll<HTMLInputElement>('input:checked')).map(c => Number(c.value));
 }
 
 tbody.addEventListener('change', e => {
@@ -383,8 +443,17 @@ document.getElementById('bulk-limpiar')!.addEventListener('click', () => {
 bulkAplicar.addEventListener('click', async () => {
   const accion = bulkAccion.value;
   const ids    = idsSeleccionados();
-  const cursos = ACCIONES_CON_CURSOS.includes(accion) ? cursosSeleccionados() : [];
+  let cursos = ACCIONES_CON_CURSOS.includes(accion) ? cursosSeleccionados() : [];
+  let temas: number[] = [];
   if (!accion || ids.length === 0) return;
+  if (accion === 'desbloquear_temas') {
+    // Cursos con temas marcados → solo esos temas; el resto → curso entero
+    const chkTemas = Array.from(bulkTemas.querySelectorAll<HTMLInputElement>('input:checked'))
+      .filter(c => cursos.includes(Number(c.dataset.curso)));
+    const cursosConTemas = new Set(chkTemas.map(c => Number(c.dataset.curso)));
+    temas  = chkTemas.map(c => Number(c.value));
+    cursos = cursos.filter(id => !cursosConTemas.has(id));
+  }
 
   const peligro = accion === 'quitar_cursos' || accion === 'desactivar';
   const ok = await (window as any).confirmar({
@@ -400,13 +469,15 @@ bulkAplicar.addEventListener('click', async () => {
       const res  = await fetch('/api/alumnos-bulk.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accion, ids, cursos }),
+        body: JSON.stringify({ accion, ids, cursos, temas }),
       });
       const data = await res.json();
       if (!data.ok) throw new Error(data.mensaje || 'Error');
       (window as any).toast.success(`Hecho: ${data.alumnos} alumnos · ${data.afectados} cambios aplicados`);
       bulkAccion.value = '';
       bulkCursosLista.querySelectorAll<HTMLInputElement>('input').forEach(c => { c.checked = false; });
+      bulkTemas.innerHTML = '';
+      bulkTemas.hidden = true;
       await cargarAlumnos();
     } catch (err: any) {
       (window as any).toast.error(err?.message || 'No se pudo aplicar la acción');
@@ -503,6 +574,20 @@ bulkAplicar.addEventListener('click', async () => {
     border-radius: 16px;
     background: #fff;
     font-size: 0.76rem;
+    cursor: pointer;
+  }
+  .bulk-temas[hidden] { display: none; }
+  .bulk-temas { display: flex; flex-direction: column; gap: 0.5rem; padding-left: 0.75rem; border-left: 2px solid #d8e4df; }
+  #bulk-temas :global(.bulk-temas-titulo) { font-size: 0.74rem; font-weight: 700; color: var(--color-text); margin-bottom: 0.25rem; }
+  #bulk-temas :global(.bulk-curso) {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.65rem;
+    border: 1px solid #d8e4df;
+    border-radius: 16px;
+    background: #fff;
+    font-size: 0.74rem;
     cursor: pointer;
   }
   #tabla-alumnos :global(.badge-inactiva) {

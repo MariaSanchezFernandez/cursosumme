@@ -3,13 +3,14 @@
 // api/alumnos-bulk.php  —  Acciones en bloque sobre varios alumnos
 // (solo admin). Se usa desde /admin/alumnos al seleccionar filas.
 //
-// POST { accion, ids: [usuario_id,...], cursos: [curso_id,...] }
+// POST { accion, ids: [usuario_id,...], cursos: [curso_id,...], temas: [tema_id,...] }
 //
 //   accion = 'asignar_cursos'     → da acceso a `cursos` (INSERT IGNORE)
 //   accion = 'quitar_cursos'      → retira el acceso a `cursos`
 //   accion = 'desbloquear_temas'  → borra los bloqueos de temas por alumna
-//                                   (temas_bloqueos_alumno) de los temas de
-//                                   `cursos`; si `cursos` va vacío, de TODOS
+//                                   (temas_bloqueos_alumno): de todos los temas
+//                                   de `cursos` + de los `temas` sueltos; si
+//                                   ambos van vacíos, de TODOS
 //   accion = 'activar'            → usuarios.activo = 1
 //   accion = 'desactivar'         → usuarios.activo = 0 y cierra sus sesiones
 //
@@ -52,13 +53,15 @@ $normalizar = function ($lista): array {
 };
 $ids    = $normalizar($body['ids'] ?? []);
 $cursos = $normalizar($body['cursos'] ?? []);
+// Temas sueltos: solo se usan en 'desbloquear_temas'
+$temas  = $accion === 'desbloquear_temas' ? $normalizar($body['temas'] ?? []) : [];
 
 if (!$ids) {
     http_response_code(400);
     echo json_encode(['ok' => false, 'mensaje' => 'No hay alumnos seleccionados']);
     exit;
 }
-if (count($ids) > 1000 || count($cursos) > 200) {
+if (count($ids) > 1000 || count($cursos) > 200 || count($temas) > 2000) {
     http_response_code(400);
     echo json_encode(['ok' => false, 'mensaje' => 'Demasiados elementos en una sola operación']);
     exit;
@@ -116,13 +119,23 @@ try {
             break;
 
         case 'desbloquear_temas':
-            if ($cursos) {
+            if ($cursos || $temas) {
+                // Curso entero y/o temas concretos (OR entre ambos)
+                $filtros = [];
+                $params  = $ids;
+                if ($cursos) {
+                    $filtros[] = "tema_id IN (SELECT id FROM temas WHERE curso_id IN ($inCursos))";
+                    $params = array_merge($params, $cursos);
+                }
+                if ($temas) {
+                    $filtros[] = 'tema_id IN (' . implode(',', array_fill(0, count($temas), '?')) . ')';
+                    $params = array_merge($params, $temas);
+                }
                 $del = $pdo->prepare(
                     "DELETE FROM temas_bloqueos_alumno
-                      WHERE usuario_id IN ($inIds)
-                        AND tema_id IN (SELECT id FROM temas WHERE curso_id IN ($inCursos))"
+                      WHERE usuario_id IN ($inIds) AND (" . implode(' OR ', $filtros) . ')'
                 );
-                $del->execute(array_merge($ids, $cursos));
+                $del->execute($params);
             } else {
                 $del = $pdo->prepare("DELETE FROM temas_bloqueos_alumno WHERE usuario_id IN ($inIds)");
                 $del->execute($ids);
@@ -150,7 +163,8 @@ try {
     exit;
 }
 
-$detalleCursos = $cursos ? ' · cursos [' . implode(',', $cursos) . ']' : '';
+$detalleCursos = ($cursos ? ' · cursos [' . implode(',', $cursos) . ']' : '')
+               . ($temas ? ' · temas [' . implode(',', $temas) . ']' : '');
 registrar_log(
     $pdo,
     'alumnos_bulk_' . $accion,
