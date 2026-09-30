@@ -78,6 +78,11 @@ async function main() {
   const localDist  = join(ROOT, 'dist');
 
   let password = process.env.SFTP_PASS || '';
+  if (!password && process.env.CI) {
+    // En GitHub Actions no hay terminal: pedirla dejaría el job colgado
+    console.error('Falta SFTP_PASS (secret de GitHub Actions). Abortando.');
+    process.exit(1);
+  }
   if (!password) {
     password = await askPassword(`Contraseña SFTP para ${user}@${host}: `);
   }

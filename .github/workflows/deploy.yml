@@ -1,0 +1,56 @@
+# ─────────────────────────────────────────────────────────────
+# deploy.yml — Despliegue automático a https://cursosumme.es
+#
+# Se lanza en cada push a main (y a mano desde la pestaña Actions).
+# Ejecuta el mismo `npm run deploy` que en local: build de Astro y
+# subida de dist/ por SFTP al hosting de IONOS.
+#
+# IMPORTANTE — db-config.php:
+#   public/api/db-config.php está en .gitignore, así que en CI NO existe
+#   y el dist/ generado no lo incluye. uploadDir solo sube/sobrescribe,
+#   no borra, de modo que el db-config.php del servidor se conserva
+#   intacto. Si hay que cambiar ese archivo, se sigue haciendo con un
+#   deploy manual desde local.
+#
+# Secrets necesarios (Settings → Secrets and variables → Actions):
+#   SFTP_HOST, SFTP_PORT, SFTP_USER, SFTP_PASS
+# ─────────────────────────────────────────────────────────────
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Nunca dos despliegues a la vez: el segundo espera al primero
+concurrency:
+  group: deploy-produccion
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Build y subida por SFTP
+        run: npm run deploy
+        env:
+          SFTP_HOST: ${{ secrets.SFTP_HOST }}
+          SFTP_PORT: ${{ secrets.SFTP_PORT }}
+          SFTP_USER: ${{ secrets.SFTP_USER }}
+          SFTP_PASS: ${{ secrets.SFTP_PASS }}
+          SFTP_REMOTE_PATH: /
